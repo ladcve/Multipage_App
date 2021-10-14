@@ -28,6 +28,9 @@ QUERY_DIRECTORY = "./querys"
 #Lee el archivo de configuracion
 configuracion = configparser.ConfigParser()
 
+#Variable con la ruta para salvar los querys
+QUERY_DIRECTORY = "./querys"
+
 if os.path.isfile('config.ini'):
 
     configuracion.read('config.ini')
@@ -52,12 +55,12 @@ well_list = well_list.sort_values('NOMBRE')['NOMBRE'].unique()
 pathway = './querys'
 files = [f for f in listdir(pathway) if isfile(join(pathway, f))]
 
+file_name = ''
 
 layout = html.Div([
     dbc.Row([
         dbc.Col([
             html.Label(['Consulta:'],style={'font-weight': 'bold', "text-align": "left"}),
-            
             dcc.Dropdown(
                 id='dpd-query-list',
                 options=[
@@ -75,9 +78,11 @@ layout = html.Div([
             ),
         ], width=1),
         dbc.Col([
+            html.Br(),
             dbc.Button("Ejecutar Reporte", id="btn_execute_report", color="success", className="mr-3"),
         ], width=2),
         dbc.Col([
+            html.Br(),
             dbc.Button("Exportar Excel", id="btn_export_excel", color="warning", className="mr-3"),
         ]),
     ]),
@@ -87,24 +92,28 @@ layout = html.Div([
             dbc.Card([
                 dbc.CardHeader(html.Label(['Reporte'],style={'font-weight': 'bold', "text-align": "left"})),
                 dbc.CardBody([
-                    dash_table.DataTable(
-                        id='dt_report_results',
+                    dbc.Spinner(
+                        dash_table.DataTable(id="dt_report_results", 
+                        style_as_list_view=True,
+                        style_cell={'padding': '5px'},
+                        style_header={
+                            'backgroundColor': 'blue',
+                            'fontWeight': 'bold',
+                            'color': 'white'
+                        },
+                        style_table={'overflowX': 'auto'},
                         editable=False,
                         filter_action="native",
                         sort_action="native",
                         sort_mode="multi",
                         column_selectable="single",
-                        row_selectable="multi",
-                        row_deletable=False,
-                        selected_columns=[],
-                        selected_rows=[],
                         page_action="native",
                         page_current= 0,
-                        page_size= 20,
+                        page_size= 13,),
                     ),
                 ])
             ]),
-        ], width=8),
+        ], width=9),
         dbc.Col([
             dbc.Card([
                 dbc.CardHeader(html.Label(['Opciones'],style={'font-weight': 'bold', "text-align": "left"})),
@@ -112,6 +121,36 @@ layout = html.Div([
 
                 ])
             ]),
-        ], width=4),
+        ], width=3),
     ]),
 ])
+
+@app.callback(
+    [Output("dt_report_results", "data"), Output("dt_report_results", "columns")],
+    [Input("btn_execute_report", "n_clicks"),
+     Input('dpd-query-list', 'value'), 
+     Input('dpd-well-list', 'value')],
+    [State('dt_report_results', 'data'), State('dt_report_results', 'columns')]
+)
+def update_table(n_clicks, file_name, well_name, data, columns):
+    data_results = pd.DataFrame()
+    quer= ''
+    changed_id = [p['prop_id'] for p in dash.callback_context.triggered][0]
+
+    if 'btn_execute_report' in changed_id:
+        con = sqlite3.connect(archivo)
+        if file_name is not None:
+            with open(os.path.join(QUERY_DIRECTORY, file_name)) as f:
+                contenido = f.readlines()
+            if contenido is not None:
+                if well_name is not None:
+                    for linea in contenido:
+                        query =  linea + " WHERE NOMBRE='"+well_name+"'"
+                else:
+                    for linea in contenido:
+                        query =  linea
+                data_results =pd.read_sql(query, con)
+
+    columns = [{'name': i, 'id': i} for i in data_results.columns]
+    data = data_results.to_dict('records')
+    return data, columns

@@ -72,133 +72,186 @@ def save_file(name, content):
 
 
 layout = html.Div([
-    dbc.Row(dbc.Col(html.Label(['Nombre de Archivo:'],style={'font-weight': 'bold', "text-align": "left"}),)),
-    dbc.Row([
-        dbc.Col([
-            dbc.Input(id="input-ruta", placeholder="Type something...", type="text", style={'backgroundColor':'white'}),
-            html.Div(id="loading-message")
-        ], width=4),
-        dbc.Col([
-            dcc.Upload(
-                html.Button('Cargar Archivo'),
-                id='upload-data',
-                # Allow multiple files to be uploaded
-                multiple=False
-            ),
-        ], width=2),
-         dbc.Col([
-             dbc.Button("Savar Archivo", id="btn_save_file", color="primary", n_clicks=0, className="mr-1"),
-             dcc.Download(id="save_file")
-        ], width=1),
-    ]),
-    html.Br(),
-     dbc.Row([
-        dbc.Col([
-            dbc.Card([
+    dbc.Tabs([
+        dbc.Tab([
+            html.Br(),
+            dbc.Row(dbc.Col(html.Label(['Nombre de Archivo:'],style={'font-weight': 'bold', "text-align": "left"}),)),
+            dbc.Row([
+                dbc.Col([
+                    dbc.Input(id="inp-ruta-edit", placeholder="Type something...", type="text", style={'backgroundColor':'white'}),
+                    html.Div(id="loading-message")
+                ], width=4),
+                dbc.Col([
+                    dcc.Upload(
+                        html.Button('Cargar Archivo'),
+                        id='upload-data',
+                        # Allow multiple files to be uploaded
+                        multiple=False
+                    ),
+                ], width=2),
+                dbc.Col([
+                    dbc.Button("Savar Archivo", id="btn_save_file_edit", color="primary", n_clicks=0, className="mr-1"),
+                    dcc.Download(id="dwd_save_file_edit")
+                ], width=1),
+            ]),
+            html.Br(),
+            dbc.Row([
+                dbc.Card([
+                    dbc.CardHeader(html.Label(['Consulta'],style={'font-weight': 'bold', "text-align": "left"})),
+                    dbc.CardBody(
+                        dcc.Textarea(
+                            id='textarea-edit',
+                            value='',
+                            style={'width': '300%', 'height': 250, 'background-color' : '#d1d1d1'},
+                        ),
+                    ),
+                ], color="light", ),
+            ]),
+            dbc.Row([
+                dbc.Button("Ejecutar", id="btn_ejecutar_query_edit", color="success", n_clicks=0, className="mr-2"),
+            ]),
+            dbc.Row([
+                dbc.Card([
+                    dbc.CardHeader(html.Label(['Resultados Consulta'],style={'font-weight': 'bold', "text-align": "left"})),
                     dbc.CardBody([
-                         dbc.Row([
-                            dbc.Col([
-                                dbc.Card([
-                                    dbc.CardHeader(html.Label(['SELECT'],style={'font-weight': 'bold', "text-align": "left"})),
-                                    dbc.CardBody(
-                                        dcc.Textarea(
-                                            id='textarea-fields',
-                                            value='SELECT ',
-                                            style={'width': '100%', 'height': 110, 'background-color' : '#d1d1d1'},
-                                        ),
-                                    ),
-                                ], color="light", ),
-                                dbc.Card([
-                                    dbc.CardHeader(html.Label(['FROM'],style={'font-weight': 'bold', "text-align": "left"})),
-                                    dbc.CardBody(
-                                        dcc.Textarea(
-                                            id='textarea-tables',
-                                            value='FROM ',
-                                            style={'width': '100%', 'height': 110, 'background-color' : '#d1d1d1'},
-                                        ),
-                                    ),
-                                ], color="light", ),
-                                html.Br(),
-
+                        dbc.Spinner(
+                            dash_table.DataTable(id="dt_query_results_edit", 
+                            style_as_list_view=True,
+                            style_cell={'padding': '5px'},
+                            style_header={
+                                'backgroundColor': 'blue',
+                                'fontWeight': 'bold',
+                                'color': 'white'
+                            },
+                            page_action="native",
+                            page_current= 0,
+                            page_size= 10,),
+                        ),
+                    ]),
+                ]),
+            ]),
+        ], label="Editar Consulta"),
+        dbc.Tab([
+            html.Br(),
+            dbc.Row(dbc.Col(html.Label(['Nombre de Archivo:'],style={'font-weight': 'bold', "text-align": "left"}),)),
+            dbc.Row([
+                dbc.Col([
+                    dbc.Input(id="input-ruta", placeholder="Type something...", type="text", style={'backgroundColor':'white'}),
+                    html.Div(id="loading-message")
+                ], width=4),
+                dbc.Col([
+                    dbc.Button("Savar Archivo", id="btn_save_file", color="primary", n_clicks=0, className="mr-1"),
+                    dcc.Download(id="save_file")
+                ], width=1),
+            ]),
+            html.Br(),
+            dbc.Row([
+                dbc.Col([
+                    dbc.Card([
+                            dbc.CardBody([
                                 dbc.Row([
-                                    dbc.Button("Ejecutar", id="ejecutar_query", color="success", n_clicks=0, className="mr-2"),
-                                    dbc.Col(html.Label(['F5 para limpiar la pantalla'],style={'font-weight': 'bold', "text-align": "left"})),
+                                    dbc.Col([
+                                        dbc.Card([
+                                            dbc.CardHeader(html.Label(['SELECT'],style={'font-weight': 'bold', "text-align": "left"})),
+                                            dbc.CardBody(
+                                                dcc.Textarea(
+                                                    id='textarea-fields',
+                                                    value='SELECT ',
+                                                    style={'width': '100%', 'height': 110, 'background-color' : '#d1d1d1'},
+                                                ),
+                                            ),
+                                        ], color="light", ),
+                                        dbc.Card([
+                                            dbc.CardHeader(html.Label(['FROM'],style={'font-weight': 'bold', "text-align": "left"})),
+                                            dbc.CardBody(
+                                                dcc.Textarea(
+                                                    id='textarea-tables',
+                                                    value='FROM ',
+                                                    style={'width': '100%', 'height': 110, 'background-color' : '#d1d1d1'},
+                                                ),
+                                            ),
+                                        ], color="light", ),
+                                        html.Br(),
+
+                                        dbc.Row([
+                                            dbc.Button("Ejecutar", id="ejecutar_query", color="success", n_clicks=0, className="mr-2"),
+                                            dbc.Col(html.Label(['F5 para limpiar la pantalla'],style={'font-weight': 'bold', "text-align": "left"})),
+                                        ]),
+                                    ]),
+                                    dbc.Col([
+                                        dbc.Card([
+                                                dbc.CardHeader(html.Label(['WHERE'],style={'font-weight': 'bold', "text-align": "left"})),
+                                                dbc.CardBody(
+                                                    dcc.Textarea(
+                                                        id='textarea-where',
+                                                        value='',
+                                                        style={'width': '100%', 'height': 300, 'background-color' : '#d1d1d1'},
+                                                    ),
+                                                ),
+                                        ], color="light", ),
+                                        html.Br(),
+                                    ]),
                                 ]),
                             ]),
-                            dbc.Col([
-                                dbc.Card([
-                                        dbc.CardHeader(html.Label(['WHERE'],style={'font-weight': 'bold', "text-align": "left"})),
-                                        dbc.CardBody(
-                                            dcc.Textarea(
-                                                id='textarea-where',
-                                                value='',
-                                                style={'width': '100%', 'height': 300, 'background-color' : '#d1d1d1'},
-                                            ),
-                                        ),
-                                ], color="light", ),
+                    ], color="light", ),
+                ], width=8),
+                dbc.Col([
+                    dbc.Card([
+                            dbc.CardHeader(html.Label(['Parametros'],style={'font-weight': 'bold', "text-align": "left"})),
+                            dbc.CardBody([
+                                html.Label(['Tablas'],style={'font-weight': 'bold', "text-align": "left"}),
+                                dcc.Dropdown(
+                                        id='list-tables',
+                                        options=[{'label': i, 'value': i} for i in tables_list],
+                                        clearable=False
+                                    ),
                                 html.Br(),
-                                
+                                html.Label(['Atributos'],style={'font-weight': 'bold', "text-align": "left"}),
+                                dcc.Dropdown(
+                                        id='list-atributes',
+                                        clearable=False,
+                                        multi=True
+                                    ),
+
+                                html.Br(),
+                                dbc.Button("Agregar Elementos", id="add_elements", color="success", className="mr-1"),
+                                html.Br(),
+                                html.Br(),
+                                html.Label(['Condiciones:'],style={'font-weight': 'bold', "text-align": "left"}),
+                                dbc.Input(id="input-condition", placeholder="Type something...", type="text", style={'backgroundColor':'white'}),
+                                html.Br(),
+                                html.Label(['Ordenado por'],style={'font-weight': 'bold', "text-align": "left"}),
+                                dbc.Input(id="input-order", placeholder="Type something...", type="text", style={'backgroundColor':'white'}),
+                                html.Br(),
+                                html.Label(['Agrupado por'],style={'font-weight': 'bold', "text-align": "left"}),
+                                dbc.Input(id="input-group", placeholder="Type something...", type="text", style={'backgroundColor':'white'}),
                                 
                             ]),
-                         ]),
-                    ]),
-            ], color="light", ),
-        ], width=8),
-        dbc.Col([
-            dbc.Card([
-                    dbc.CardHeader(html.Label(['Parametros'],style={'font-weight': 'bold', "text-align": "left"})),
-                    dbc.CardBody([
-                        html.Label(['Tablas'],style={'font-weight': 'bold', "text-align": "left"}),
-                        dcc.Dropdown(
-                                id='list-tables',
-                                options=[{'label': i, 'value': i} for i in tables_list],
-                                clearable=False
-                            ),
-                        html.Br(),
-                        html.Label(['Atributos'],style={'font-weight': 'bold', "text-align": "left"}),
-                        dcc.Dropdown(
-                                id='list-atributes',
-                                clearable=False,
-                                multi=True
-                            ),
-
-                        html.Br(),
-                        dbc.Button("Agregar Elementos", id="add_elements", color="success", className="mr-1"),
-                        html.Br(),
-                        html.Br(),
-                        html.Label(['Condiciones:'],style={'font-weight': 'bold', "text-align": "left"}),
-                        dbc.Input(id="input-condition", placeholder="Type something...", type="text", style={'backgroundColor':'white'}),
-                        html.Br(),
-                        html.Label(['Ordenado por'],style={'font-weight': 'bold', "text-align": "left"}),
-                        dbc.Input(id="input-order", placeholder="Type something...", type="text", style={'backgroundColor':'white'}),
-                        html.Br(),
-                        html.Label(['Agrupado por'],style={'font-weight': 'bold', "text-align": "left"}),
-                        dbc.Input(id="input-group", placeholder="Type something...", type="text", style={'backgroundColor':'white'}),
-                        
-                    ]),
-            ], color="light", ),
-        ], width=4),
-     ]),
-    html.Br(),
-    dbc.Row([
-        dbc.Card([
-            dbc.CardHeader(html.Label(['Resultados Consulta'],style={'font-weight': 'bold', "text-align": "left"})),
-            dbc.CardBody([
-                dbc.Spinner(
-                    dash_table.DataTable(id="query_results", 
-                    style_as_list_view=True,
-                    style_cell={'padding': '5px'},
-                    style_header={
-                        'backgroundColor': 'blue',
-                        'fontWeight': 'bold',
-                        'color': 'white'
-                    },
-                    page_action="native",
-                    page_current= 0,
-                    page_size= 10,),
-                ),
+                    ], color="light", ),
+                ], width=4),
             ]),
-        ]),
+            html.Br(),
+            dbc.Row([
+                dbc.Card([
+                    dbc.CardHeader(html.Label(['Resultados Consulta'],style={'font-weight': 'bold', "text-align": "left"})),
+                    dbc.CardBody([
+                        dbc.Spinner(
+                            dash_table.DataTable(id="query_results", 
+                            style_as_list_view=True,
+                            style_cell={'padding': '5px'},
+                            style_header={
+                                'backgroundColor': 'blue',
+                                'fontWeight': 'bold',
+                                'color': 'white'
+                            },
+                            page_action="native",
+                            page_current= 0,
+                            page_size= 10,),
+                        ),
+                    ]),
+                ]),
+            ]),
+        ], label="Creacion de Consulta")
     ]),
 ])
 
