@@ -1,0 +1,9 @@
+# pip3 install -r requirements.txt
+ dash
+ sqlite3
+ configparser
+ sys
+ os.path
+ os
+ pandas
+ pyodbc
