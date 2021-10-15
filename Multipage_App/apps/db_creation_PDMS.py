@@ -128,6 +128,9 @@ con.execute('''CREATE TABLE IF NOT EXISTS SURVEY
 con.execute('''CREATE TABLE IF NOT EXISTS NODAL
                (NOMBRE text, TASA_GAS decimal, VLP DECIMAL, IPR DECIMAL)''')
 
+con.execute('''CREATE TABLE IF NOT EXISTS EVENTOS
+               (FECHA datetime, EVENTO text)''')
+
 con.commit()
 # We can also close the connection if we are done with it.
 # Just be sure any changes have been committed or they will be lost.

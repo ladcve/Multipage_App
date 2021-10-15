@@ -53,6 +53,8 @@ query = "SELECT NOMBRE FROM ITEMS WHERE ESTATUS=1 "
 well_list =pd.read_sql(query, con)
 well_list = well_list.sort_values('NOMBRE')['NOMBRE'].unique()
 
+con.close()
+
 #Listado de query
 pathway = './querys'
 files = [f for f in listdir(pathway) if isfile(join(pathway, f))]
@@ -92,7 +94,7 @@ layout = html.Div([
     dbc.Row([
         dbc.Col([
             dbc.Card([
-                dbc.CardHeader(html.Label(['Gráfico'],style={'font-weight': 'bold', "text-align": "left"})),
+                dbc.CardHeader(html.Label(['Gráfico de Líneas'],style={'font-weight': 'bold', "text-align": "left"})),
                 dbc.CardBody([
                     dbc.Spinner(
                         dcc.Graph(id='cht-line-chart'),
@@ -229,6 +231,7 @@ def update_line_chart(n_clicks, file_name, well_name, column_list_y1, column_lis
                     xanchor="right",
                     x=1
                 ))
+        con.close()
     return fig
 
 @app.callback(
@@ -249,6 +252,7 @@ def update_column_list(file_name):
                     query =  linea
                 data_results =pd.read_sql(query, con)
                 columns = [{'label': i, 'value': i} for i in data_results.columns]
+        con.close()
 
     return columns
 
@@ -270,5 +274,6 @@ def update_column_list(file_name):
                     query =  linea
                 data_results =pd.read_sql(query, con)
                 columns = [{'label': i, 'value': i} for i in data_results.columns]
+        con.close()
 
     return columns
