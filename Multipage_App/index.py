@@ -9,7 +9,7 @@ import datetime
 from app import app
 
 # Connect to your app pages
-from apps import report_builder, line_chart, bar_chart, pie_chart, events_loader, survey_loader, dashboard, sql_builder
+from apps import report_builder, line_chart, bar_chart, pie_chart, events_loader, survey_loader, dashboard, sql_builder, decline_analysis
 
 logo_filename = '.\pictures\LogoProdAnalysis.png'
 home_filename = '.\pictures\home.png'
@@ -76,8 +76,8 @@ sidebar = html.Div(
                 dbc.NavLink("Gráfico Barras", href="/apps/bar_chart", active="exact"),
                 dbc.NavLink("Gráfico Torta", href="/apps/pie_chart", active="exact"),
                 dbc.NavLink("Datos de Eventos", href="/apps/events_loader", active="exact"),
-                dbc.NavLink("Datos de Eventos", href="/apps/survey_loader", active="exact"),
-                dbc.NavLink("Ingenieria", href="/apps/live_bootstrap", active="exact"),
+                dbc.NavLink("Datos de Survey", href="/apps/survey_loader", active="exact"),
+                dbc.NavLink("Curva de Declinacion", href="/apps/decline_analysis", active="exact"),
                 dbc.NavLink("Variables Calculadas", href="/apps/live_bootstrap", active="exact"),    
                 dbc.NavLink("SQL Builder", href="/apps/sql_builder", active="exact"),          
             ],
@@ -147,6 +147,8 @@ def display_page(pathname):
         return dashboard.layout
     if pathname == '/apps/sql_builder':
         return sql_builder.layout
+    if pathname == '/apps/decline_analysis':
+        return decline_analysis.layout
     else:
         return "404 Page Error! Please choose a link"
 
