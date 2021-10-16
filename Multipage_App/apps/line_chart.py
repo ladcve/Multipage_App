@@ -20,6 +20,7 @@ import pandas as pd
 from datetime import date
 from collections import OrderedDict
 import base64
+import json
 import os
 
 from app import app 
@@ -32,6 +33,7 @@ configuracion = configparser.ConfigParser()
 
 #Variable con la ruta para salvar los querys
 QUERY_DIRECTORY = "./querys"
+CHART_DIRECTORY = "./template/"
 
 if os.path.isfile('config.ini'):
 
@@ -64,31 +66,59 @@ file_name = ''
 layout = html.Div([
     dbc.Row([
         dbc.Col([
-            html.Label(['Consulta:'],style={'font-weight': 'bold', "text-align": "left"}),
-            dcc.Dropdown(
-                id='dpd-query-list',
-                options=[
-                     {'label': i, 'value': i} for i in files
-                 ],
-                clearable=False
-            ),
-        ], width=2),
+            dbc.Card([
+                dbc.Row([
+                    dbc.Col([
+                        html.Label(['Consulta:'],style={'font-weight': 'bold', "text-align": "left"}),
+                        dcc.Dropdown(
+                            id='dpd-query-list',
+                            options=[
+                                {'label': i, 'value': i} for i in files
+                            ],
+                            clearable=False
+                        ),
+                    ], width={"size": 4, "offset": 1}),
+                    dbc.Col([
+                        html.Label(['Pozo:'],style={'font-weight': 'bold', "text-align": "left"}),
+                        dcc.Dropdown(
+                            id='dpd-well-list',
+                            options=[{'label': i, 'value': i} for i in well_list],
+                            clearable=False,
+                            multi=True
+                        ),
+                    ], width={"size": 4, "offset": 0}),
+                    dbc.Col([
+                        html.Br(),
+                        dbc.Button("Mostrar Grafico", id="btn_show_chart", color="success", className="mr-3"),
+                    ]),
+                ]),
+                html.Br(),
+            ]),
+        ], width={"size": 6, "offset": 0}),
         dbc.Col([
-            html.Label(['Pozo:'],style={'font-weight': 'bold', "text-align": "left"}),
-            dcc.Dropdown(
-                id='dpd-well-list',
-                options=[{'label': i, 'value': i} for i in well_list],
-                clearable=False
-            ),
-        ], width=1),
-        dbc.Col([
-            html.Br(),
-            dbc.Button("Mostrar Grafico", id="btn_show_chart", color="success", className="mr-3"),
-        ], width=2),
-        dbc.Col([
-            html.Br(),
-            dbc.Button("Exportar Imagen", id="btn_export_img", color="warning", className="mr-3"),
-        ]),
+            dbc.Card([
+                dbc.Row([
+                    dbc.Col([
+                        html.Label(['Nombre Archivo:'],style={'font-weight': 'bold', "text-align": "left"}),
+                        dbc.Input(id="inp-ruta-template", placeholder="Type something...", type="text", style={'backgroundColor':'white'}),
+                    ], width={"size": 3, "offset": 1}),
+                     dbc.Col([
+                        html.Br(),
+                        dcc.Upload(
+                            html.Button('Cargar Archivo'),
+                            id='btn_open_linechart',
+                            multiple=False
+                        ),
+                    ], width={"size": 3, "offset": 0}),
+                    dbc.Col([
+                        html.Br(),
+                        dbc.Button("Grabar Template", id="btn_save_linechart", n_clicks=0, color="warning", className="mr-3"),
+                        html.Div(id="save_message_report"),
+                    ]),
+                ]),
+                html.Br(),
+            ]),
+        ], width={"size": 6, "offset": 0}),
     ]),
     html.Br(),
     dbc.Row([
@@ -160,13 +190,14 @@ def update_line_chart(n_clicks, file_name, well_name, column_list_y1, column_lis
             with open(os.path.join(QUERY_DIRECTORY, file_name)) as f:
                 contenido = f.readlines()
             if contenido is not None:
-                if well_name is not None:
-                    for linea in contenido:
-                        query =  linea + " WHERE NOMBRE='"+well_name+"' ORDER BY FECHA"
-                else:
-                    for linea in contenido:
-                        query =  linea +" ORDER BY FECHA"
+                # if well_name is not None:
+                #     for linea in contenido:
+                #         query =  linea + " WHERE NOMBRE='"+well_name+"' ORDER BY FECHA"
+                # else:
+                for linea in contenido:
+                    query =  linea +" ORDER BY FECHA"
                 data_results =pd.read_sql(query, con)
+                data_results = data_results[data_results['NOMBRE'].isin(well_name)]
                 i=1
                 for columnas_y1 in column_list_y1:
                     fig.add_trace(
@@ -235,7 +266,8 @@ def update_line_chart(n_clicks, file_name, well_name, column_list_y1, column_lis
     return fig
 
 @app.callback(
-    Output('dpd-column-list-y1','options'),
+    [Output('dpd-column-list-y1','options'),
+     Output('dpd-column-list-y2','options')],
     [Input('dpd-query-list', 'value')])
 def update_column_list(file_name):
 
@@ -245,7 +277,7 @@ def update_column_list(file_name):
     changed_id = [p['prop_id'] for p in dash.callback_context.triggered][0]
     if 'dpd-query-list' in changed_id:
         con = sqlite3.connect(archivo)
-        if file_name is not None:
+        if file_name:
             with open(os.path.join(QUERY_DIRECTORY, file_name)) as f:
                 contenido = f.readlines()
                 for linea in contenido:
@@ -254,26 +286,50 @@ def update_column_list(file_name):
                 columns = [{'label': i, 'value': i} for i in data_results.columns]
         con.close()
 
-    return columns
+    return columns, columns
 
 @app.callback(
-    Output('dpd-column-list-y2','options'),
-    [Input('dpd-query-list', 'value')])
-def update_column_list(file_name):
-
-    data_results = pd.DataFrame()
-    columns = [{'label': i, 'value': i} for i in []]
-    quer= ''
+    Output('save_message_report','children'),
+    [Input('btn_save_linechart', 'n_clicks'),
+    Input('dpd-query-list', 'value'),
+    Input('dpd-column-list-y1', 'value'),
+    Input('dpd-column-list-y2', 'value'),
+    Input('inp-ruta-template', 'value')]) 
+def save_reporte(n_clicks, consulta, datos_y1, datos_y2, file_name ):
+    mensaje=''
     changed_id = [p['prop_id'] for p in dash.callback_context.triggered][0]
-    if 'dpd-query-list' in changed_id:
-        con = sqlite3.connect(archivo)
-        if file_name is not None:
-            with open(os.path.join(QUERY_DIRECTORY, file_name)) as f:
-                contenido = f.readlines()
-                for linea in contenido:
-                    query =  linea
-                data_results =pd.read_sql(query, con)
-                columns = [{'label': i, 'value': i} for i in data_results.columns]
-        con.close()
+    if 'btn_save_linechart' in changed_id:
+        data = {}
+        data['grafico'] = []
+        data['grafico'].append({
+            'consulta': consulta,
+            'datos_y1': datos_y1,
+            'datos_y2': datos_y2})
+        with open(CHART_DIRECTORY+file_name, 'w') as file:
+            json.dump(data, file, indent=4)
+        mensaje = 'Archivo guardado'
+    return mensaje
 
-    return columns
+@app.callback( [Output('inp-ruta-template', 'value'),
+                Output('dpd-query-list', 'value'),
+                Output('dpd-column-list-y1', 'value'),
+                Output('dpd-column-list-y2', 'value'),],
+              [Input('btn_open_linechart', 'filename'),
+              Input('btn_open_linechart', 'contents')]
+              )
+def open_linechart( list_of_names, list_of_contents):
+    archivo = list_of_names
+    consulta=[]
+    datos_y1=[]
+    datos_y2=[]
+
+    if list_of_names is not None:
+        print(list_of_names)
+        archivo = list_of_names
+        with open(CHART_DIRECTORY+archivo) as file:
+            data = json.load(file)
+            for drop_values   in data['grafico']:
+                consulta = str(drop_values['consulta'])
+                datos_y1 = drop_values['datos_y1']
+                datos_y2 = drop_values['datos_y2']
+    return archivo, consulta, datos_y1, datos_y2
