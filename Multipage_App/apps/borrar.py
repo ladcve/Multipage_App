@@ -1,79 +1,48 @@
-import base64
-import datetime
-import io
-
-import dash
-import dash_bootstrap_components as dbc
-from dash.dependencies import Input, Output, State
-import dash_core_components as dcc
-import dash_html_components as html
-import dash_table
-
+# importing pandas and numpylibraries
 import pandas as pd
+import numpy as np
 
-# meta_tags are required for the app layout to be mobile responsive
-app = dash.Dash(__name__, suppress_callback_exceptions=True, external_stylesheets=[dbc.themes.BOOTSTRAP],
-                meta_tags=[{'name': 'viewport',
-                            'content': 'width=device-width, initial-scale=1.0'}]
-                )
-# styling the sidebar
+#Link reference
+#https://stackoverflow.com/questions/60368528/how-could-i-store-lambda-functions-inside-a-dictionary-in-python
+#https://www.geeksforgeeks.org/applying-lambda-functions-to-pandas-dataframe/
+#https://towardsdatascience.com/apply-and-lambda-usage-in-pandas-b13a1ea037f7
 
-server = app.server
+# creating and initializing a nested list
+values_list = [[1.5, 2.5, 10.0], [2.0, 4.5, 5.0], [2.5, 5.2, 8.0],
+			[4.5, 5.8, 4.8], [4.0, 6.3, 70], [4.1, 6.4, 9.0],
+			[5.1, 2.3, 11.1]]
 
-app.layout = html.Div([
-    dcc.Upload(
-        id='upload-data'
-    ),
-    html.Div(id='output-data-upload'),
-])
+a = {
+    'linear': lambda t: t,
+    'easeInQuad': lambda t: t ** 2,
+    'easeOutQuad': lambda t: t * (2-t),
+    'easeOutQuint': lambda t: 1 + (t - 1) * t * t * t * t,
+    'WGR': lambda x: (x['Field_1'] * x['Field_2'] * x['Field_3']),
+}
 
-def parse_contents(contents, filename, date):
-    content_type, content_string = contents.split(',')
+def calculo(campo1,campo2,campo3):
+    return campo1*campo2*campo3
 
-    decoded = base64.b64decode(content_string)
-    try:
-        if 'csv' in filename:
-            # Assume that the user uploaded a CSV file
-            df = pd.read_csv(
-                io.StringIO(decoded.decode('utf-8')))
-        elif 'xls' in filename:
-            # Assume that the user uploaded an excel file
-            df = pd.read_excel(io.BytesIO(decoded))
-    except Exception as e:
-        print(e)
-        return html.Div([
-            'There was an error processing this file.'
-        ])
+# creating a pandas dataframe
+df = pd.DataFrame(values_list, columns=['Field_1', 'Field_2', 'Field_3'],
+				index=['a', 'b', 'c', 'd', 'e', 'f', 'g'])
 
-    return html.Div([
-        html.H5(filename),
-        html.H6(datetime.datetime.fromtimestamp(date)),
 
-        dash_table.DataTable(
-            data=df.to_dict('records'),
-            columns=[{'name': i, 'id': i} for i in df.columns]
-        ),
+# Apply function numpy.square() to square
+# the values of 2 rows only i.e. with row
+# index name 'b' and 'f' only
+df = df.apply(lambda x: np.square(x) if x.name in ['b', 'f'] else x, axis=1)
 
-        html.Hr(),  # horizontal line
+# Applying lambda function to find product of 3 columns
+# i.e 'Field_1', 'Field_2' and 'Field_3'
+func = lambda x: (x['Field_1'] * x['Field_2'] * x['Field_3'])
 
-        # For debugging, display the raw contents provided by the web browser
-        html.Div('Raw Content'),
-        html.Pre(contents[0:200] + '...', style={
-            'whiteSpace': 'pre-wrap',
-            'wordBreak': 'break-all'
-        })
-    ])
+func2 = 'WGR'
+#df = df.assign(Product=a[func2])
 
-@app.callback(Output('output-data-upload', 'children'),
-              Input('upload-data', 'contents'),
-              State('upload-data', 'filename'),
-              State('upload-data', 'last_modified'))
-def update_output(list_of_contents, list_of_names, list_of_dates):
-    if list_of_contents is not None:
-        children = [
-            parse_contents(c, n, d) for c, n, d in
-            zip(list_of_contents, list_of_names, list_of_dates)]
-        return children
+df['Product'] = df.apply(lambda x: calculo(x['Field_1'], x['Field_2'], x['Field_3']),axis=1)
 
-if __name__ == '__main__':
-    app.run_server(debug=True)
+
+# printing dataframe
+print(df)
+

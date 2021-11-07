@@ -1,66 +1,52 @@
 import dash
-from dash.dependencies import Input, Output
-import dash_table
-import dash_core_components as dcc
+from dash.dependencies import Input, Output, State, ALL, MATCH
 import dash_html_components as html
+import dash_bootstrap_components as dbc
+import dash_core_components as dcc
+import plotly.express as px
+import dash_daq as daq
+import sqlite3
 import pandas as pd
-import pyodbc 
+import configparser
+import sys
+import os.path
+import os
+import json
 
-conexion = pyodbc.connect('DRIVER={ODBC Driver 17 for SQL Server};SERVER=SVPTG01PMS91\MSSQLSERVER_PMS' + 
-';DATABASE=PDMS;UID=pdmsadm;PWD=Card0n2021$06')
+df = px.data.gapminder()
 
-df = pd.read_sql_query("SELECT * FROM CIERRE_DIARIO_POZO WHERE ITEMID IN (13,23,40) ORDER BY FECHA",conexion)
+# meta_tags are required for the app layout to be mobile responsive
+app = dash.Dash(__name__, title="Prod Analysis", suppress_callback_exceptions=True, external_stylesheets=[dbc.themes.BOOTSTRAP],
+                meta_tags=[{'name': 'viewport',
+                            'content': 'width=device-width, initial-scale=1.0'}]
+                )
+# styling the sidebar
 
-app = dash.Dash(__name__)
+server = app.server
 
-PAGE_SIZE = 5
+#Lee el archivo de configuracion
+configuracion = configparser.ConfigParser()
 
-app.layout = html.Div([
-    dash_table.DataTable(
-        id='datatable-paging-page-count',
-        columns=[
-            {"name": i, "id": i} for i in sorted(df.columns)
-        ],
-        page_current=0,
-        page_size=PAGE_SIZE,
-        page_action='custom'
-    ),
-    html.Br(),
-    dcc.Checklist(
-        id='datatable-use-page-count',
-        options=[
-            {'label': 'Use page_count', 'value': 'True'}
-        ],
-        value=['True']
-    ),
-    'Page count: ',
-    dcc.Input(
-        id='datatable-page-count',
-        type='number',
-        min=1,
-        max=29,
-        value=20
-    )
-])
+#Variable con la ruta para salvar los querys
+QUERY_DIRECTORY = "./querys"
+CHART_DIRECTORY = "./template/"
 
+if os.path.isfile('config.ini'):
 
-@app.callback(
-    Output('datatable-paging-page-count', 'data'),
-    Input('datatable-paging-page-count', "page_current"),
-    Input('datatable-paging-page-count', "page_size"))
-def update_table(page_current,page_size):
-    return df.iloc[
-        page_current*page_size:(page_current+ 1)*page_size
-    ].to_dict('records')
+    configuracion.read('config.ini')
 
-@app.callback(
-    Output('datatable-paging-page-count', 'page_count'),
-    Input('datatable-use-page-count', 'value'),
-    Input('datatable-page-count', 'value'))
-def update_table(use_page_count, page_count_value):
-    if len(use_page_count) == 0 or page_count_value is None:
-        return None
-    return page_count_value
+    if 'BasedeDatos' in configuracion:
+        Origen = configuracion['BasedeDatos']['Origen']
+        Catalogo = configuracion['BasedeDatos']['Catalogo']
+        Password = configuracion['BasedeDatos']['Password']
+        basededatos = configuracion['BasedeDatos']['Destino']
+        ruta = configuracion['BasedeDatos']['ruta']
 
-if __name__ == '__main__':
-    app.run_server(debug=True)
+#Ruta de la BD
+archivo = ruta +  basededatos
+con = sqlite3.connect(archivo)
+
+#Listado de pozos activos
+query = "SELECT NOMBRE FROM ITEMS WHERE ESTATUS=1 "
+well_list =pd.read_sql(query, con)
+well_list = well_list.sort_values('NOMBRE')['NOMBRE'].unique()

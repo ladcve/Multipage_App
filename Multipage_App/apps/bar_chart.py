@@ -7,6 +7,7 @@ from dash.dependencies import Input, Output, State
 from dash_html_components.Br import Br
 import plotly.graph_objects as go
 import plotly.express as px
+import plotly.express as px
 import dash_table
 import sqlite3
 import configparser
@@ -17,7 +18,7 @@ from os import listdir
 from os.path import isfile, join
 import numpy as np
 import pandas as pd
-from datetime import date
+from datetime import datetime, tzinfo, timezone, timedelta, date
 from collections import OrderedDict
 import base64
 import os
@@ -82,13 +83,16 @@ layout = html.Div([
         ], width=4),
         dbc.Col([
             html.Label(['Fecha: '],style={'font-weight': 'bold', "text-align": "left"}),
-            dcc.DatePickerSingle(
+            dcc.DatePickerRange(
                 id='dtp_fecha',
-                date=date.today(),
+                min_date_allowed= date(1995, 8, 5),
+                max_date_allowed=date.today(),
+                start_date = date.today()- timedelta(days=-7),
+                end_date=date.today(),
                 display_format='YYYY-MM-DD',
                 style={'backgroundColor':'white'},
             )
-        ], width=2),
+        ], width=3),
         dbc.Col([
             html.Br(),
             dbc.Button("Mostrar Grafico", id="btn_show_chart", color="success", className="mr-3"),
@@ -105,7 +109,7 @@ layout = html.Div([
                 dbc.CardHeader(html.Label(['Gráfico de Barras'],style={'font-weight': 'bold', "text-align": "left"})),
                 dbc.CardBody([
                     dbc.Spinner(
-                        dcc.Graph(id='cht-bar-chart'),
+                        dcc.Graph(id='cht-bar-chart',style={"height": 600, "width":1000}),
                     ),
                 ])
             ]),
@@ -144,47 +148,37 @@ layout = html.Div([
      Input('dpd-query-list', 'value'), 
      Input('dpd-well-list', 'value'),
      Input('dpd-column-list', 'value'),
-     Input('dtp_fecha', 'date'),
+     Input('dtp_fecha', 'start_date'),
+     Input('dtp_fecha', 'end_date'),
      Input('inp_chart_name', 'date'),
      Input('rdi_staked_columns', 'value')])
-def update_bar_chart(n_clicks, file_name, well_name, columns_list, dtp_fecha, chart_title, staked_columns):
+def update_bar_chart(n_clicks, file_name, well_name, columns_list, dtp_start_date, dtp_end_date, chart_title, staked_columns):
 
     data_results = pd.DataFrame()
     quer= ''
-    fecha = str(dtp_fecha)
+    fecha_inicio = str(dtp_start_date)
+    fecha_fin = str(dtp_end_date)
     changed_id = [p['prop_id'] for p in dash.callback_context.triggered][0]
-    fig = go.Figure()
+    fig = {}
     if 'btn_show_chart' in changed_id:
         con = sqlite3.connect(archivo)
         if file_name is not None:
             with open(os.path.join(QUERY_DIRECTORY, file_name)) as f:
                 contenido = f.readlines()
             if contenido is not None:
-                if fecha is not None:
+                if fecha_inicio is not None:
                     for linea in contenido:
-                        query =  linea + " WHERE date(FECHA)='"+fecha+"' ORDER BY FECHA"
+                        query =  linea + " WHERE date(FECHA)>='"+fecha_inicio+"' AND  date(FECHA)<='"+fecha_fin+"' ORDER BY FECHA"
                 else:
                     for linea in contenido:
                         query =  linea +" ORDER BY FECHA"
                 data_results =pd.read_sql(query, con)
                 if well_name is not None:
                     data_results= data_results[data_results['NOMBRE'].isin(well_name)]
-                for columna in columns_list:
-                    fig.add_trace(go.Bar(
-                        x=data_results['NOMBRE'],
-                        y=data_results[columna],
-                        name=columna
-                    ))
                 if staked_columns=='STC':
-                    fig.update_layout(barmode='stack', xaxis={'categoryorder':'category ascending'})
-                fig.update_layout(title_text=chart_title)
-                fig.update_layout(legend=dict(
-                    orientation="h",
-                    yanchor="bottom",
-                    y=1.02,
-                    xanchor="right",
-                    x=1
-                ))
+                    fig = px.bar(data_results, x="NOMBRE", y=columns_list, title=chart_title,animation_frame="FECHA", animation_group="NOMBRE")
+                else:
+                    fig = px.bar(data_results, x="NOMBRE", y=columns_list, title=chart_title,  barmode="group",animation_frame="FECHA", animation_group="NOMBRE")
     return fig
 
 @app.callback(
