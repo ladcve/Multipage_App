@@ -25,6 +25,8 @@ import os
 
 from app import app 
 
+#https://community.plotly.com/t/pattern-call-backs-regarding-adding-dynamic-graphs/40724/4
+
 #Variable con la ruta para salvar los querys
 QUERY_DIRECTORY = "./querys"
 
@@ -175,7 +177,7 @@ def create_figure(column_x, column_y, well, file_name, selected_color):
     [State("container", "children")],
 )
 def display_dropdowns(n_clicks, _,  well, file_name, children):
-
+    query = ''
     input_id = dash.callback_context.triggered[0]["prop_id"].split(".")[0]
     if "index" in input_id:
         delete_chart = json.loads(input_id)["index"]
@@ -192,10 +194,10 @@ def display_dropdowns(n_clicks, _,  well, file_name, children):
             with open(os.path.join(QUERY_DIRECTORY, file_name)) as f:
                 contenido = f.readlines()
                 for linea in contenido:
-                    query =  linea +" ORDER BY FECHA"
+                    query +=  linea 
                 df =pd.read_sql(query, con)
                 df = df.query("NOMBRE == '{}'".format(well))
-
+                df =df.sort_values("FECHA")
         column_name_list = df.columns.values.tolist()
         default_column_y = column_name_list[3]
         default_color = 'Azul'

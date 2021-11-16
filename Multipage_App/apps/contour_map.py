@@ -5,6 +5,7 @@ import dash_core_components as dcc
 import dash_html_components as html
 from dash.dependencies import Input, Output, State
 from dash_html_components.Br import Br
+from scipy.interpolate import griddata
 import plotly.graph_objects as go
 import plotly.express as px
 import dash_table
@@ -57,17 +58,17 @@ well_list = well_list.sort_values('NOMBRE')['NOMBRE'].unique()
 pathway = './querys'
 files = [f for f in listdir(pathway) if isfile(join(pathway, f))]
 
-#Lista de colores
-night_colors = ['rgb(56, 75, 126)', 'rgb(18, 36, 37)', 'rgb(34, 53, 101)',
-                'rgb(36, 55, 57)', 'rgb(6, 4, 4)']
-sunflowers_colors = ['rgb(177, 127, 38)', 'rgb(205, 152, 36)', 'rgb(99, 79, 37)',
-                     'rgb(129, 180, 179)', 'rgb(124, 103, 37)']
-irises_colors = ['rgb(33, 75, 99)', 'rgb(79, 129, 102)', 'rgb(151, 179, 100)',
-                 'rgb(175, 49, 35)', 'rgb(36, 73, 147)']
-cafe_colors =  ['rgb(146, 123, 21)', 'rgb(177, 180, 34)', 'rgb(206, 206, 40)',
-                'rgb(175, 51, 21)', 'rgb(35, 36, 21)']
-
 file_name = ''
+
+welldat = pd.read_csv('./datasets/survey_data.csv')
+x, y, z = welldat.x, welldat.y, welldat.depth
+#xi = np.linspace(min(x), max(x),200, retstep=False)
+#yi = np.linspace(min(y), max(y),200, retstep=False)
+
+xi = np.arange(x.min(),x.max(),(x.max()-x.min())/100)
+yi=np.arange(y.min(),y.max(),(y.max()-y.min())/100)
+
+xi, yi = np.meshgrid(xi, yi)
 
 layout = html.Div([
     dbc.Row([
@@ -81,15 +82,6 @@ layout = html.Div([
                 clearable=False
             ),
         ], width=2),
-        dbc.Col([
-            html.Label(['Pozo:'],style={'font-weight': 'bold', "text-align": "left"}),
-            dcc.Dropdown(
-                id='dpd-well-list',
-                options=[{'label': i, 'value': i} for i in well_list],
-                clearable=False,
-                multi=True
-            ),
-        ], width=4),
         dbc.Col([
             html.Label(['Fecha: '],style={'font-weight': 'bold', "text-align": "left"}),
             dcc.DatePickerSingle(
@@ -112,10 +104,10 @@ layout = html.Div([
     dbc.Row([
         dbc.Col([
             dbc.Card([
-                dbc.CardHeader(html.Label(['Gráfico de Torta'],style={'font-weight': 'bold', "text-align": "left"})),
+                dbc.CardHeader(html.Label(['Gráfico de Contorno'],style={'font-weight': 'bold', "text-align": "left"})),
                 dbc.CardBody([
                     dbc.Spinner(
-                        dcc.Graph(id='cht-pie-chart'),
+                        dcc.Graph(id='cht-contour-chart'),
                     ),
                 ])
             ]),
@@ -129,22 +121,9 @@ layout = html.Div([
                     html.Br(),
                     html.Label(['Datos:'],style={'font-weight': 'bold', "text-align": "left"}),
                     dcc.Dropdown(
-                        id='dpd-column-lists',
+                        id='dpd-data-lists',
                         clearable=False,
-                        multi=True
-                    ),
-                    html.Br(),
-                    html.Label(['Color:'],style={'font-weight': 'bold', "text-align": "left"}),
-                    dcc.Dropdown(
-                        id='dpd-color-lists',
-                        clearable=False,
-                        options=[
-                            {'label': 'Night Colors', 'value': 'night_colors'},
-                            {'label': 'Sunflowers Colors', 'value': 'sunflowers_colors'},
-                            {'label': 'Irises Colors', 'value': 'irises_colors'},
-                            {'label': 'Cafe colors', 'value': 'cafe_colors'},
-                        ],
-                        value='night_colors',
+                        multi=False,
                     ),
                 ])
             ]),
@@ -153,15 +132,13 @@ layout = html.Div([
 ])
 
 @app.callback(
-    Output('cht-pie-chart','figure'),
+    Output('cht-contour-chart','figure'),
     [Input("btn_show_chart", "n_clicks"),
      Input('dpd-query-list', 'value'), 
-     Input('dpd-well-list', 'value'),
-     Input('dpd-column-lists', 'value'),
+     Input('dpd-data-lists', 'value'),
      Input('dtp_fecha', 'date'),
-     Input('inp_chart_name', 'value'),
-     Input('dpd-color-lists', 'value')])
-def update_pie_chart(n_clicks, file_name, well_name, columns_list, dtp_fecha, chart_title, color_list):
+     Input('inp_chart_name', 'value')])
+def update_contour_map(n_clicks, file_name, columns_list, dtp_fecha, chart_title):
 
     data_results = pd.DataFrame()
     quer= ''
@@ -179,42 +156,115 @@ def update_pie_chart(n_clicks, file_name, well_name, columns_list, dtp_fecha, ch
                 if fecha is not None:
                     for linea in contenido:
                         query =  linea + " WHERE date(FECHA)='"+fecha+"' ORDER BY FECHA"
-                else:
-                    for linea in contenido:
-                        query =  linea +" ORDER BY FECHA"
+
                 data_results =pd.read_sql(query, con)
-                if well_name is not None:
-                    data_results= data_results[data_results['NOMBRE'].isin(well_name)]
 
-                for columna in columns_list:
-                    filtro = ['NOMBRE']
-                    filtro.append(columna)
-                    df2 = data_results[filtro]
-                    df2.rename(columns={columna: "VOLUMEN"}, inplace=True)
-                    df2['FLUIDO']=columna
-                    df = df.append(df2)
+                z = data_results[columns_list]
 
-                fig =px.sunburst(
-                        df,
-                        path=['NOMBRE', 'FLUIDO'],
-                        values='VOLUMEN',
-                        title=chart_title,
-                    )
-                if color_list=='night_colors':
-                    fig.update_traces( marker_colors=night_colors)
-                if color_list=='sunflowers_colors':
-                    fig.update_traces( marker_colors=sunflowers_colors)
-                if color_list=='irises_colors ':
-                    fig.update_traces( marker_colors=irises_colors )
-                if color_list=='cafe_colors ':
-                    fig.update_traces( marker_colors=cafe_colors )
+                # grid N data with cubic interpolation method
+                zi = griddata((x,y),z,(xi,yi),method='cubic')
 
-                fig.update_layout(margin=dict(t=0, b=0, l=0, r=0))
+                fig = go.Figure(data = go.Contour(z=zi, contours=dict(
+                            coloring ='heatmap',
+                            showlabels = True, # show labels on contours
+                            labelfont = dict( # label font properties
+                                size = 12,
+                                color = 'white',
+                            ))))
+                # Update plot sizing
+                fig.update_layout(
+                    width=1000,
+                    height=750,
+                    autosize=False,
+                    margin=dict(t=0, b=0, l=0, r=0),
+                )
+
+                # Update 3D scene options
+                fig.update_scenes(
+                    aspectratio=dict(x=1, y=1, z=0.7),
+                    aspectmode="manual"
+                )
+                # button_layer_1_height = 1.08
+                button_layer_1_height = 1.12
+                button_layer_2_height = 1.065
+
+                fig.update_layout(
+                    updatemenus=[
+                        dict(
+                            buttons=list([
+                                dict(
+                                    args=["colorscale", "Heatmap"],
+                                    label="heatmap",
+                                    method="restyle"
+                                ),
+                                dict(
+                                    args=["colorscale", "Viridis"],
+                                    label="Viridis",
+                                    method="restyle"
+                                ),
+                                dict(
+                                    args=["colorscale", "Cividis"],
+                                    label="Cividis",
+                                    method="restyle"
+                                ),
+                                dict(
+                                    args=["colorscale", "Blues"],
+                                    label="Blues",
+                                    method="restyle"
+                                ),
+                                dict(
+                                    args=["colorscale", "Greens"],
+                                    label="Greens",
+                                    method="restyle"
+                                ),
+                            ]),
+                            type = "buttons",
+                            direction="right",
+                            pad={"r": 10, "t": 10},
+                            showactive=True,
+                            x=0.1,
+                            xanchor="left",
+                            y=button_layer_1_height,
+                            yanchor="top"
+                        ),
+                        dict(
+                            buttons=list([
+                                dict(
+                                    args=["reversescale", False],
+                                    label="False",
+                                    method="restyle"
+                                ),
+                                dict(
+                                    args=["reversescale", True],
+                                    label="True",
+                                    method="restyle"
+                                )
+                            ]),
+                            type = "buttons",
+                            direction="right",
+                            pad={"r": 10, "t": 10},
+                            showactive=True,
+                            x=0.7,
+                            xanchor="left",
+                            y=button_layer_1_height,
+                            yanchor="top"
+                        ),
+                    ]
+                )
+
+                fig.update_layout(
+                    annotations=[
+                        dict(text="Escala<br>Colores", x=0, xref="paper", y=1.1, yref="paper",
+                                            align="left", showarrow=False),
+                        dict(text="Reversar<br>Escala Colores", x=0.6, xref="paper", y=1.1,
+                                            yref="paper", align="left", showarrow=False),
+                    ])
+                
     return fig
 
 @app.callback(
-    [Output('dpd-column-lists','options'),
-    Output('dpd-column-lists','value')],
+    [Output('dpd-data-lists','options'),
+    Output('dpd-data-lists','value')],
     [Input('dpd-query-list', 'value')])
 def update_column_list(file_name):
 

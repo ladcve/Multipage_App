@@ -49,7 +49,7 @@ well_list = well_list.sort_values('NOMBRE')['NOMBRE'].unique()
 layout = html.Div([
     dbc.Row([
         dbc.Col([
-            html.Label(['Nombre de Archivo:'],style={'font-weight': 'bold', "text-align": "left"}),
+            html.Label(['Nombre de Archivo Excel:'],style={'font-weight': 'bold', "text-align": "left"}),
             dbc.Input(id="inp-ruta-excel", placeholder="Type something...", type="text", style={'backgroundColor':'white'}),
             html.Div(id="loading-message")
         ], width=2),

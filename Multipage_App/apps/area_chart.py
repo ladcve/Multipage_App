@@ -78,7 +78,7 @@ layout = html.Div([
                 id='dpd-well-list',
                 options=[{'label': i, 'value': i} for i in well_list],
                 clearable=False,
-                multi=True
+                multi=False
             ),
         ], width=4),
         dbc.Col([
@@ -95,7 +95,7 @@ layout = html.Div([
         ], width=3),
         dbc.Col([
             html.Br(),
-            dbc.Button("Mostrar Gráfico", id="btn_show_chart", color="success", className="mr-3"),
+            dbc.Button("Mostrar Grafico", id="btn_show_chart", color="success", className="mr-3"),
         ], width=1.5),
         dbc.Col([
             html.Br(),
@@ -106,10 +106,10 @@ layout = html.Div([
     dbc.Row([
         dbc.Col([
             dbc.Card([
-                dbc.CardHeader(html.Label(['Gráfico de Barras'],style={'font-weight': 'bold', "text-align": "left"})),
+                dbc.CardHeader(html.Label(['Gráfico de Área'],style={'font-weight': 'bold', "text-align": "left"})),
                 dbc.CardBody([
                     dbc.Spinner(
-                        dcc.Graph(id='cht-bar-chart',style={"height": 600, "width":1000}),
+                        dcc.Graph(id='cht-area-chart',style={"height": 600, "width":1000}),
                     ),
                 ])
             ]),
@@ -121,18 +121,9 @@ layout = html.Div([
                     html.Label(['Nombre del Gráfico'],style={'font-weight': 'bold', "text-align": "left"}),
                     dbc.Input(id="inp_chart_name", placeholder="Type something...", type="text", style={'backgroundColor':'white'}),
                     html.Br(),
-                    dcc.RadioItems(
-                        id="rdi_staked_columns",
-                        options=[
-                            {'label': '  Columnas Apiladas', 'value': 'STC'},
-                            {'label': '  Sin Apilar', 'value': 'MTC'},
-                        ],
-                        value='STC'
-                    ),
-                    html.Br(),
-                    html.Label(['Datos:'],style={'font-weight': 'bold', "text-align": "left"}),
+                    html.Label(['Datos eje Y:'],style={'font-weight': 'bold', "text-align": "left"}),
                     dcc.Dropdown(
-                        id='dpd-column-list',
+                        id='dpd-column-list-ejey',
                         clearable=False,
                         multi=True
                     ),
@@ -143,16 +134,15 @@ layout = html.Div([
 ])
 
 @app.callback(
-    Output('cht-bar-chart','figure'),
+    Output('cht-area-chart','figure'),
     [Input("btn_show_chart", "n_clicks"),
      Input('dpd-query-list', 'value'), 
      Input('dpd-well-list', 'value'),
-     Input('dpd-column-list', 'value'),
+     Input('dpd-column-list-ejey', 'value'),
      Input('dtp_fecha', 'start_date'),
      Input('dtp_fecha', 'end_date'),
-     Input('inp_chart_name', 'date'),
-     Input('rdi_staked_columns', 'value')])
-def update_bar_chart(n_clicks, file_name, well_name, columns_list, dtp_start_date, dtp_end_date, chart_title, staked_columns):
+     Input('inp_chart_name', 'date')])
+def update_bar_chart(n_clicks, file_name, well_name, columns_list, dtp_start_date, dtp_end_date, chart_title):
 
     data_results = pd.DataFrame()
     query= ''
@@ -176,15 +166,12 @@ def update_bar_chart(n_clicks, file_name, well_name, columns_list, dtp_start_dat
                 data_results =data_results.sort_values("FECHA")
                 
                 if well_name is not None:
-                    data_results= data_results[data_results['NOMBRE'].isin(well_name)]
-                if staked_columns=='STC':
-                    fig = px.bar(data_results, x="NOMBRE", y=columns_list, title=chart_title,animation_frame="FECHA", animation_group="NOMBRE")
-                else:
-                    fig = px.bar(data_results, x="NOMBRE", y=columns_list, title=chart_title,  barmode="group",animation_frame="FECHA", animation_group="NOMBRE")
+                    data_results= data_results[data_results['NOMBRE']==well_name]
+                fig = px.area(data_results, x="FECHA", y=columns_list, title=chart_title)
     return fig
 
 @app.callback(
-    Output('dpd-column-list','options'),
+    Output('dpd-column-list-ejey','options'),
     [Input('dpd-query-list', 'value')])
 def update_column_list(file_name):
 

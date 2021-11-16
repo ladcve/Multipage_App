@@ -19,7 +19,7 @@ import base64
 import os
 
 
-app = dash.Dash(__name__)
+from app import app 
 
 #Lee el archivo de configuracion
 configuracion = configparser.ConfigParser()
@@ -49,7 +49,7 @@ query = 'SELECT * FROM WELLBORE'
 data_results =pd.read_sql(query, con)
 con.close()
 
-app.layout = html.Div([
+layout = html.Div([
      dbc.Row([
         dbc.Col([
             dbc.Button("Agregar Filas", id="btn_add_rows", color="primary", n_clicks=0, className="mr-1"),
@@ -78,7 +78,7 @@ app.layout = html.Div([
                             ],
 
                     editable=True,
-                    dropdown={
+                    dropdown = {
                         'NOMBRE': {
                             'options': [
                                 {'label': i, 'value': i}
@@ -138,13 +138,9 @@ def fupdate_table_wellbore(n_clicks, dataset):
     pg = pd.DataFrame(dataset)
 
     if n_clicks > 0:
-        print("entro")
         con = sqlite3.connect(archivo)
         pg.to_sql('WELLBORE', con, if_exists='replace', index=False)
         con.commit()
         con.close()
         mensaje='Datos guardados'
     return mensaje
-
-if __name__ == '__main__':
-    app.run_server(debug=False)
