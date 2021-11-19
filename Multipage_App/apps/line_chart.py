@@ -22,6 +22,7 @@ from collections import OrderedDict
 import base64
 import json
 import os
+import dash_daq as daq
 
 from app import app 
 
@@ -55,6 +56,10 @@ query = "SELECT NOMBRE FROM ITEMS WHERE ESTATUS=1 "
 well_list =pd.read_sql(query, con)
 well_list = well_list.sort_values('NOMBRE')['NOMBRE'].unique()
 
+#Listado de eventos
+query = "SELECT * FROM EVENTOS"
+event_list =pd.read_sql(query, con)
+
 con.close()
 
 #Listado de query
@@ -71,7 +76,7 @@ layout = html.Div([
                     dbc.Col([
                         html.Label(['Consulta:'],style={'font-weight': 'bold', "text-align": "left"}),
                         dcc.Dropdown(
-                            id='dpd-query-list',
+                            id='dpd-consulta-lista',
                             options=[
                                 {'label': i, 'value': i} for i in files
                             ],
@@ -81,7 +86,7 @@ layout = html.Div([
                     dbc.Col([
                         html.Label(['Pozo:'],style={'font-weight': 'bold', "text-align": "left"}),
                         dcc.Dropdown(
-                            id='dpd-well-list',
+                            id='dpd-pozo-lista',
                             options=[{'label': i, 'value': i} for i in well_list],
                             clearable=False,
                             multi=True
@@ -100,12 +105,12 @@ layout = html.Div([
                 dbc.Row([
                     dbc.Col([
                         html.Label(['Nombre Archivo:'],style={'font-weight': 'bold', "text-align": "left"}),
-                        dbc.Input(id="inp-ruta-template", placeholder="Type something...", type="text", style={'backgroundColor':'white'}),
+                        dbc.Input(id="inp-ruta-linechart", placeholder="Type something...", type="text", style={'backgroundColor':'white'}),
                     ], width={"size": 3, "offset": 1}),
                      dbc.Col([
                         html.Br(),
                         dcc.Upload(
-                            html.Button('Cargar Archivo'),
+                            dbc.Button("Cargar Template", n_clicks=0, color="warning", className="mr-3"),
                             id='btn_open_linechart',
                             multiple=False
                         ),
@@ -113,7 +118,7 @@ layout = html.Div([
                     dbc.Col([
                         html.Br(),
                         dbc.Button("Grabar Template", id="btn_save_linechart", n_clicks=0, color="warning", className="mr-3"),
-                        html.Div(id="save_message_report"),
+                        html.Div(id="save_message_linechart"),
                     ]),
                 ]),
                 html.Br(),
@@ -158,10 +163,32 @@ layout = html.Div([
                             ),
                         ]),
                     ]),
+                    html.Br(),
                     dbc.Card([
                         dbc.CardHeader(html.Label(['Eventos'],style={'font-weight': 'bold', "text-align": "left"})),
                         dbc.CardBody([
-                            html.Br(),
+                            daq.ToggleSwitch(
+                                id='ts-annotation',
+                                value=False,
+                                label='Mostrar Anotaciones',
+                                labelPosition='top'
+                            ),
+                            dash_table.DataTable(id="dt_table_event", 
+                                columns = [{'name': i, 'id': i, "deletable": True} for i in event_list.columns],
+                                data = event_list.to_dict('records'),
+                                style_as_list_view=True,
+                                style_cell={'padding': '5px'},
+                                style_table={
+                                    'overflowX': 'auto',
+                                    'whiteSpace': 'normal',
+                                    'height': 'auto',
+                                },
+                                style_header={
+                                    'backgroundColor': 'blue',
+                                    'fontWeight': 'bold',
+                                    'color': 'white',
+
+                                },),
                         ]),
                     ]),
                 ])
@@ -173,11 +200,13 @@ layout = html.Div([
 @app.callback(
     Output('cht-line-chart','figure'),
     [Input("btn_show_chart", "n_clicks"),
-     Input('dpd-query-list', 'value'), 
-     Input('dpd-well-list', 'value'),
+     Input('dpd-consulta-lista', 'value'), 
+     Input('dpd-pozo-lista', 'value'),
      Input('dpd-column-list-y1', 'value'),
-     Input('dpd-column-list-y2', 'value')])
-def update_line_chart(n_clicks, file_name, well_name, column_list_y1, column_list_y2):
+     Input('dpd-column-list-y2', 'value'),
+     Input('ts-annotation', 'value'), 
+     Input('dt_table_event', 'data')])
+def update_line_chart(n_clicks, file_name, well_name, column_list_y1, column_list_y2, show_annot, annot_data):
 
     data_results = pd.DataFrame()
     quer= ''
@@ -190,10 +219,6 @@ def update_line_chart(n_clicks, file_name, well_name, column_list_y1, column_lis
             with open(os.path.join(QUERY_DIRECTORY, file_name)) as f:
                 contenido = f.readlines()
             if contenido is not None:
-                # if well_name is not None:
-                #     for linea in contenido:
-                #         query =  linea + " WHERE NOMBRE='"+well_name+"' ORDER BY FECHA"
-                # else:
                 for linea in contenido:
                     query =  linea +" ORDER BY FECHA"
                 data_results =pd.read_sql(query, con)
@@ -233,8 +258,8 @@ def update_line_chart(n_clicks, file_name, well_name, column_list_y1, column_lis
                 fig.update_xaxes(title_text="Fecha")
                 fig.update_layout(
                     autosize=False,
-                    width=1000,
-                    height=600,
+                    width=1400,
+                    height=780,
                     margin=dict(
                         l=50,
                         r=50,
@@ -262,20 +287,28 @@ def update_line_chart(n_clicks, file_name, well_name, column_list_y1, column_lis
                     xanchor="right",
                     x=1
                 ))
+                if show_annot:
+                    dff = pd.DataFrame(annot_data)
+                    for ind in dff.index:
+                        fig.add_annotation(x=dff['FECHA'][ind], y=5,
+                            text=dff['EVENTO'][ind],
+                            showarrow=False,
+                            textangle=-90,
+                            arrowhead=1)
         con.close()
     return fig
 
 @app.callback(
     [Output('dpd-column-list-y1','options'),
      Output('dpd-column-list-y2','options')],
-    [Input('dpd-query-list', 'value')])
+    [Input('dpd-consulta-lista', 'value')])
 def update_column_list(file_name):
 
     data_results = pd.DataFrame()
     columns = [{'label': i, 'value': i} for i in []]
     quer= ''
     changed_id = [p['prop_id'] for p in dash.callback_context.triggered][0]
-    if 'dpd-query-list' in changed_id:
+    if 'dpd-consulta-lista' in changed_id:
         con = sqlite3.connect(archivo)
         if file_name:
             with open(os.path.join(QUERY_DIRECTORY, file_name)) as f:
@@ -289,13 +322,13 @@ def update_column_list(file_name):
     return columns, columns
 
 @app.callback(
-    Output('save_message_report','children'),
+    Output('save_message_linechart','children'),
     [Input('btn_save_linechart', 'n_clicks'),
-    Input('dpd-query-list', 'value'),
+    Input('dpd-consulta-lista', 'value'),
     Input('dpd-column-list-y1', 'value'),
     Input('dpd-column-list-y2', 'value'),
-    Input('inp-ruta-template', 'value')]) 
-def save_reporte(n_clicks, consulta, datos_y1, datos_y2, file_name ):
+    Input('inp-ruta-linechart', 'value')]) 
+def save_linechart(n_clicks, consulta, datos_y1, datos_y2, file_name ):
     mensaje=''
     changed_id = [p['prop_id'] for p in dash.callback_context.triggered][0]
     if 'btn_save_linechart' in changed_id:
@@ -310,8 +343,8 @@ def save_reporte(n_clicks, consulta, datos_y1, datos_y2, file_name ):
         mensaje = 'Archivo guardado'
     return mensaje
 
-@app.callback( [Output('inp-ruta-template', 'value'),
-                Output('dpd-query-list', 'value'),
+@app.callback( [Output('inp-ruta-linechart', 'value'),
+                Output('dpd-consulta-lista', 'value'),
                 Output('dpd-column-list-y1', 'value'),
                 Output('dpd-column-list-y2', 'value'),],
               [Input('btn_open_linechart', 'filename'),

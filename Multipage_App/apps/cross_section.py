@@ -123,21 +123,29 @@ def create_cross_section(well_name, curve_list):
             df.rename(columns={'DEPT':'DEPTH'}, inplace=True)
             cols = 1
 
-            fig = make_subplots(rows=1, cols=2, shared_yaxes=True, horizontal_spacing=0  )
+            fig = make_subplots(rows=1, cols=2, shared_yaxes=True )
 
             for curve in curve_list:
                 fig.add_trace(
                     go.Scatter(x=df[curve], y=df["DEPTH"]),
                     row=1, col=cols
                 )
-                fig.update_layout(showlegend=False, xaxis={'side': 'top'},xaxis_title=curve,)
+                fig.update_xaxes(title_text=curve,  side= 'top', row=1, col=cols)
+
                 cols = cols+1
 
-            fig.update_layout(height=800, width=350, title_text="Pozo: "+well_name)       
+            fig.update_layout(height=810, width=350,
+                title={
+                    'text': "Pozo: "+well_name,
+                    'y':0.99,
+                    'x':0.5,
+                    'xanchor': 'center',
+                    'yanchor': 'top'}
+                )       
             fig.layout.plot_bgcolor='rgba(0,0,0,0)'
             fig.update_xaxes(showline=True,showgrid=True, gridwidth=1, gridcolor='Black', linewidth=1, linecolor='black', mirror=True)
-            fig.update_yaxes(showline=True,showgrid=True, gridwidth=1, gridcolor='Black', linewidth=1, linecolor='black', mirror=True)
-            
+            fig.update_yaxes(showline=True,showgrid=True, gridwidth=1, gridcolor='Black', linewidth=1, linecolor='black', mirror=True, autorange="reversed")
+            fig.update_layout(showlegend=False)
     return fig
 
 @app.callback(

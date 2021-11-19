@@ -31,7 +31,11 @@ con = sqlite3.connect(archivo)
 #Listado de pozos activos
 query = "SELECT * FROM  CIERRE_DIARIO_POZO "
 df =pd.read_sql(query, con)
-#df['results'] = df.TASA_GAS - df.TASA_AGUA
-evalu = eval("df['TASA_CONDENSADO'].groupby(df['NOMBRE']).cumsum()")
-df['results'] = evalu
-print(df.results)
+query = "SELECT * FROM  VARIABLES "
+variables =pd.read_sql(query, con)
+selec_var=variables.loc[variables['NOMBRE']=='LIQ']
+ecuacion = selec_var.iloc[0]['ECUACION']
+titulo = selec_var.iloc[0]['TITULO']
+evalu = eval(ecuacion)
+df[titulo] = evalu
+print(df)

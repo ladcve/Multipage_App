@@ -72,7 +72,7 @@ layout = html.Div([
                     dbc.Col([
                         html.Label(['Consulta:'],style={'font-weight': 'bold', "text-align": "left"}),
                         dcc.Dropdown(
-                            id='dpd-query-list',
+                            id='dpd-query-list-scatter',
                             options=[
                                 {'label': i, 'value': i} for i in files
                             ],
@@ -82,7 +82,7 @@ layout = html.Div([
                     dbc.Col([
                         html.Label(['Pozo:'],style={'font-weight': 'bold', "text-align": "left"}),
                         dcc.Dropdown(
-                            id='dpd-well-list',
+                            id='dpd-well-list-scatter',
                             options=[{'label': i, 'value': i} for i in well_list],
                             clearable=False,
                             multi=False
@@ -90,7 +90,7 @@ layout = html.Div([
                     ], width={"size": 4, "offset": 0}),
                     dbc.Col([
                         html.Br(),
-                        dbc.Button("Mostrar Grafico", id="btn_show_chart", color="success", className="mr-3"),
+                        dbc.Button("Mostrar Grafico", id="btn_show_scatterchart", color="success", className="mr-3"),
                     ]),
                 ]),
                 html.Br(),
@@ -101,20 +101,20 @@ layout = html.Div([
                 dbc.Row([
                     dbc.Col([
                         html.Label(['Nombre Archivo:'],style={'font-weight': 'bold', "text-align": "left"}),
-                        dbc.Input(id="inp-ruta-template", placeholder="Type something...", type="text", style={'backgroundColor':'white'}),
+                        dbc.Input(id="inp-ruta-scatterchart", placeholder="Type something...", type="text", style={'backgroundColor':'white'}),
                     ], width={"size": 3, "offset": 1}),
                      dbc.Col([
                         html.Br(),
                         dcc.Upload(
-                            html.Button('Cargar Archivo'),
-                            id='btn_open_linechart',
+                            dbc.Button("Cargar Template",  n_clicks=0, color="warning", className="mr-3"),
+                            id='btn_open_scatterchart',
                             multiple=False
                         ),
                     ], width={"size": 3, "offset": 0}),
                     dbc.Col([
                         html.Br(),
-                        dbc.Button("Grabar Template", id="btn_save_linechart", n_clicks=0, color="warning", className="mr-3"),
-                        html.Div(id="save_message_report"),
+                        dbc.Button("Grabar Template", id="btn_save_scatterchart", n_clicks=0, color="warning", className="mr-3"),
+                        html.Div(id="save_message_scatter"),
                     ]),
                 ]),
                 html.Br(),
@@ -128,7 +128,7 @@ layout = html.Div([
                 dbc.CardHeader(html.Label(['Gráfico de Scatter'],style={'font-weight': 'bold', "text-align": "left"})),
                 dbc.CardBody([
                     dbc.Spinner(
-                        dcc.Graph(id='cht-line-chart'),
+                        dcc.Graph(id='cht-scatter-chart'),
                     ),
                 ])
             ]),
@@ -142,7 +142,7 @@ layout = html.Div([
                         dbc.CardBody([
                             html.Label(['Datos:'],style={'font-weight': 'bold', "text-align": "left"}),
                             dcc.Dropdown(
-                                id='dpd-column-list-x',
+                                id='dpd-column-list-x-scatter',
                                 clearable=False,
                                 multi=False
                             ),
@@ -153,7 +153,7 @@ layout = html.Div([
                         dbc.CardBody([
                             html.Label(['Datos:'],style={'font-weight': 'bold', "text-align": "left"}),
                             dcc.Dropdown(
-                                id='dpd-column-list-y',
+                                id='dpd-column-list-y-scatter',
                                 clearable=False,
                                 multi=False
                             ),
@@ -172,20 +172,20 @@ layout = html.Div([
 ])
 
 @app.callback(
-    Output('cht-line-chart','figure'),
-    [Input("btn_show_chart", "n_clicks"),
-     Input('dpd-query-list', 'value'), 
-     Input('dpd-well-list', 'value'),
-     Input('dpd-column-list-x', 'value'),
-     Input('dpd-column-list-y', 'value')])
-def update_line_chart(n_clicks, file_name, well_name, column_list_x, column_list_y):
+    Output('cht-scatter-chart','figure'),
+    [Input("btn_show_scatterchart", "n_clicks"),
+     Input('dpd-query-list-scatter', 'value'), 
+     Input('dpd-well-list-scatter', 'value'),
+     Input('dpd-column-list-x-scatter', 'value'),
+     Input('dpd-column-list-y-scatter', 'value')])
+def update_scatter_chart(n_clicks, file_name, well_name, column_list_x, column_list_y):
 
     data_results = pd.DataFrame()
     query= ''
     changed_id = [p['prop_id'] for p in dash.callback_context.triggered][0]
     fig = {}
     
-    if 'btn_show_chart' in changed_id:
+    if 'btn_show_scatterchart' in changed_id:
         con = sqlite3.connect(archivo)
         if file_name is not None:
             with open(os.path.join(QUERY_DIRECTORY, file_name)) as f:
@@ -201,8 +201,8 @@ def update_line_chart(n_clicks, file_name, well_name, column_list_x, column_list
                             y=data_results[column_list_y],)
                     fig.update_layout(
                         autosize=False,
-                        width=1000,
-                        height=600,
+                        width=1400,
+                        height=750,
                         margin=dict(
                             l=50,
                             r=50,
@@ -222,16 +222,16 @@ def update_line_chart(n_clicks, file_name, well_name, column_list_x, column_list
     return fig
 
 @app.callback(
-    [Output('dpd-column-list-x','options'),
-     Output('dpd-column-list-y','options')],
-    [Input('dpd-query-list', 'value')])
+    [Output('dpd-column-list-x-scatter','options'),
+     Output('dpd-column-list-y-scatter','options')],
+    [Input('dpd-query-list-scatter', 'value')])
 def update_column_list(file_name):
 
     data_results = pd.DataFrame()
     columns = [{'label': i, 'value': i} for i in []]
     query= ''
     changed_id = [p['prop_id'] for p in dash.callback_context.triggered][0]
-    if 'dpd-query-list' in changed_id:
+    if 'dpd-query-list-scatter' in changed_id:
         con = sqlite3.connect(archivo)
         if file_name:
             with open(os.path.join(QUERY_DIRECTORY, file_name)) as f:
@@ -245,16 +245,16 @@ def update_column_list(file_name):
     return columns, columns
 
 @app.callback(
-    Output('save_message_report','children'),
-    [Input('btn_save_linechart', 'n_clicks'),
-    Input('dpd-query-list', 'value'),
-    Input('dpd-column-list-x', 'value'),
-    Input('dpd-column-list-y', 'value'),
-    Input('inp-ruta-template', 'value')]) 
-def save_chart(n_clicks, consulta, datos_y1, datos_y2, file_name ):
+    Output('save_message_scatter','children'),
+    [Input('btn_save_scatterchart', 'n_clicks'),
+    Input('dpd-query-list-scatter', 'value'),
+    Input('dpd-column-list-x-scatter', 'value'),
+    Input('dpd-column-list-y-scatter', 'value'),
+    Input('inp-ruta-scatterchart', 'value')]) 
+def save_scatterchart(n_clicks, consulta, datos_y1, datos_y2, file_name ):
     mensaje=''
     changed_id = [p['prop_id'] for p in dash.callback_context.triggered][0]
-    if 'btn_save_linechart' in changed_id:
+    if 'btn_save_scatterchart' in changed_id:
         data = {}
         data['grafico'] = []
         data['grafico'].append({
@@ -266,14 +266,14 @@ def save_chart(n_clicks, consulta, datos_y1, datos_y2, file_name ):
         mensaje = 'Archivo guardado'
     return mensaje
 
-@app.callback( [Output('inp-ruta-template', 'value'),
+@app.callback( [Output('inp-ruta-scatterchart', 'value'),
                 Output('dpd-query-list', 'value'),
                 Output('dpd-column-list-x', 'value'),
                 Output('dpd-column-list-y', 'value'),],
               [Input('btn_open_linechart', 'filename'),
               Input('btn_open_linechart', 'contents')]
               )
-def open_linechart( list_of_names, list_of_contents):
+def open_scatterchart( list_of_names, list_of_contents):
     archivo = list_of_names
     consulta=[]
     datos_y1=[]

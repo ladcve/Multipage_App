@@ -15,7 +15,6 @@ import os.path
 import os
 from os import listdir
 from os.path import isfile, join
-import numpy as np
 import pandas as pd
 from datetime import date
 from collections import OrderedDict
@@ -102,30 +101,6 @@ layout = html.Div([
                     dbc.Col([
                         html.Br(),
                         dbc.Button("Agregar Grafico", id="btn_add_chart", color="success", className="mr-3"),
-                    ]),
-                ]),
-                html.Br(),
-            ]),
-        ], width={"size": 6, "offset": 0}),
-        dbc.Col([
-            dbc.Card([
-                dbc.Row([
-                    dbc.Col([
-                        html.Label(['Nombre Archivo:'],style={'font-weight': 'bold', "text-align": "left"}),
-                        dbc.Input(id="inp-ruta-template", placeholder="Type something...", type="text", style={'backgroundColor':'white'}),
-                    ], width={"size": 3, "offset": 1}),
-                     dbc.Col([
-                        html.Br(),
-                        dcc.Upload(
-                            html.Button('Cargar Archivo'),
-                            id='btn_open_linechart',
-                            multiple=False
-                        ),
-                    ], width={"size": 3, "offset": 0}),
-                    dbc.Col([
-                        html.Br(),
-                        dbc.Button("Grabar Template", id="btn_save_linechart", n_clicks=0, color="warning", className="mr-3"),
-                        html.Div(id="save_message_report"),
                     ]),
                 ]),
                 html.Br(),

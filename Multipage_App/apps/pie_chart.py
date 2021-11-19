@@ -10,6 +10,7 @@ import plotly.express as px
 import dash_table
 import sqlite3
 import configparser
+import json
 import sys
 import os.path
 import os
@@ -26,6 +27,7 @@ from app import app
 
 #Variable con la ruta para salvar los querys
 QUERY_DIRECTORY = "./querys"
+CHART_DIRECTORY = "./template/"
 
 #Lee el archivo de configuracion
 configuracion = configparser.ConfigParser()
@@ -72,41 +74,82 @@ file_name = ''
 layout = html.Div([
     dbc.Row([
         dbc.Col([
-            html.Label(['Consulta:'],style={'font-weight': 'bold', "text-align": "left"}),
-            dcc.Dropdown(
-                id='dpd-query-list',
-                options=[
-                     {'label': i, 'value': i} for i in files
-                 ],
-                clearable=False
-            ),
-        ], width=2),
+            dbc.Card([
+                dbc.Row([
+                    dbc.Col([
+                        html.Label(['Consulta:'],style={'font-weight': 'bold', "text-align": "left"}),
+                        dcc.Dropdown(
+                            id='dpd-query-list-pie',
+                            options=[
+                                {'label': i, 'value': i} for i in files
+                            ],
+                            clearable=False
+                        ),
+                    ], width={"size": 3, "offset": 1}),
+                    dbc.Col([
+                        html.Label(['Pozo:'],style={'font-weight': 'bold', "text-align": "left"}),
+                        dcc.Dropdown(
+                            id='dpd-well-list-pie',
+                            options=[{'label': i, 'value': i} for i in well_list],
+                            clearable=False,
+                            multi=True
+                        ),
+                    ], width={"size": 4, "offset": 1}),
+                    dbc.Col([
+                        html.Label(['Fecha: '],style={'font-weight': 'bold', "text-align": "left"}),
+                        dcc.DatePickerSingle(
+                            id='dtp_fecha',
+                            date=date.today(),
+                            display_format='YYYY-MM-DD',
+                            style={'backgroundColor':'white'},
+                        )
+                    ], width={"size": 2, "offset": 1}),
+                ]),
+                html.Br(),
+            ]),
+        ], width={"size": 8, "offset": 0}),
         dbc.Col([
-            html.Label(['Pozo:'],style={'font-weight': 'bold', "text-align": "left"}),
-            dcc.Dropdown(
-                id='dpd-well-list',
-                options=[{'label': i, 'value': i} for i in well_list],
-                clearable=False,
-                multi=True
-            ),
-        ], width=4),
-        dbc.Col([
-            html.Label(['Fecha: '],style={'font-weight': 'bold', "text-align": "left"}),
-            dcc.DatePickerSingle(
-                id='dtp_fecha',
-                date=date.today(),
-                display_format='YYYY-MM-DD',
-                style={'backgroundColor':'white'},
-            )
-        ], width=3),
-        dbc.Col([
-            html.Br(),
-            dbc.Button("Mostrar Grafico", id="btn_show_chart", color="success", className="mr-3"),
-        ], width=1.5),
-        dbc.Col([
-            html.Br(),
-            dbc.Button("Exportar Imagen", id="btn_export_img", color="warning", className="mr-3"),
+            dbc.Card([
+                dbc.Row([
+                    dbc.Col([
+                        html.Br(),
+                        dbc.Button("Mostrar Grafico", id="btn_show_piechart", color="success", className="mr-3"),
+                    ], width={"size": 2, "offset": 1}),
+                    dbc.Col([
+                        html.Br(),
+                        dbc.Button("Exportar Imagen", id="btn_export_pieimg", color="warning", className="mr-3"),
+                    ], width={"size": 2, "offset": 1}),
+                ]),
+                html.Br(),
+            ]),
         ]),
+    ]),
+    html.Br(),
+    dbc.Row([
+        dbc.Col([
+            dbc.Card([
+                dbc.Row([
+                    dbc.Col([
+                        html.Label(['Nombre Archivo:'],style={'font-weight': 'bold', "text-align": "left"}),
+                        dbc.Input(id="inp-ruta-piechart", placeholder="Type something...", type="text", style={'backgroundColor':'white'}),
+                    ], width={"size": 3, "offset": 1}),
+                     dbc.Col([
+                        html.Br(),
+                        dcc.Upload(
+                            dbc.Button("Cargar Template", n_clicks=0, color="warning", className="mr-3"),
+                            id='btn_open_piechart',
+                            multiple=False
+                        ),
+                    ], width={"size": 3, "offset": 0}),
+                    dbc.Col([
+                        html.Br(),
+                        dbc.Button("Grabar Template", id="btn_save_piechart", n_clicks=0, color="warning", className="mr-3"),
+                        html.Div(id="save_message_piechart"),
+                    ]),
+                ]),
+                html.Br(),
+            ]),
+        ], width={"size": 6, "offset": 0}),
     ]),
     html.Br(),
     dbc.Row([
@@ -125,18 +168,18 @@ layout = html.Div([
                 dbc.CardHeader(html.Label(['Opciones'],style={'font-weight': 'bold', "text-align": "left"})),
                 dbc.CardBody([
                     html.Label(['Nombre del Gráfico'],style={'font-weight': 'bold', "text-align": "left"}),
-                    dbc.Input(id="inp_chart_name", placeholder="Type something...", type="text", style={'backgroundColor':'white'}),
+                    dbc.Input(id="inp_piechart_name", placeholder="Type something...", type="text", style={'backgroundColor':'white'}),
                     html.Br(),
                     html.Label(['Datos:'],style={'font-weight': 'bold', "text-align": "left"}),
                     dcc.Dropdown(
-                        id='dpd-column-lists',
+                        id='dpd-column-lists-pie',
                         clearable=False,
                         multi=True
                     ),
                     html.Br(),
                     html.Label(['Color:'],style={'font-weight': 'bold', "text-align": "left"}),
                     dcc.Dropdown(
-                        id='dpd-color-lists',
+                        id='dpd-color-lists-pie',
                         clearable=False,
                         options=[
                             {'label': 'Night Colors', 'value': 'night_colors'},
@@ -154,13 +197,13 @@ layout = html.Div([
 
 @app.callback(
     Output('cht-pie-chart','figure'),
-    [Input("btn_show_chart", "n_clicks"),
-     Input('dpd-query-list', 'value'), 
-     Input('dpd-well-list', 'value'),
-     Input('dpd-column-lists', 'value'),
+    [Input("btn_show_piechart", "n_clicks"),
+     Input('dpd-query-list-pie', 'value'), 
+     Input('dpd-well-list-pie', 'value'),
+     Input('dpd-column-lists-pie', 'value'),
      Input('dtp_fecha', 'date'),
-     Input('inp_chart_name', 'value'),
-     Input('dpd-color-lists', 'value')])
+     Input('inp_piechart_name', 'value'),
+     Input('dpd-color-lists-pie', 'value')])
 def update_pie_chart(n_clicks, file_name, well_name, columns_list, dtp_fecha, chart_title, color_list):
 
     data_results = pd.DataFrame()
@@ -213,9 +256,9 @@ def update_pie_chart(n_clicks, file_name, well_name, columns_list, dtp_fecha, ch
     return fig
 
 @app.callback(
-    [Output('dpd-column-lists','options'),
-    Output('dpd-column-lists','value')],
-    [Input('dpd-query-list', 'value')])
+    [Output('dpd-column-lists-pie','options'),
+    Output('dpd-column-lists-pie','value')],
+    [Input('dpd-query-list-pie', 'value')])
 def update_column_list(file_name):
 
     data_results = pd.DataFrame()
@@ -235,3 +278,45 @@ def update_column_list(file_name):
                 columns = [{'label': i, 'value': i} for i in data_results.columns]
                 valor.append(data_results.columns[0])
     return columns, valor
+
+@app.callback(
+    Output('save_message_piechart','children'),
+    [Input('btn_save_piechart', 'n_clicks'),
+    Input('dpd-query-list-pie', 'value'),
+    Input('dpd-column-lists-pie', 'value'),
+    Input('inp-ruta-piechart', 'value')]) 
+def save_piechart(n_clicks, consulta, datos_y1, file_name ):
+    mensaje=''
+    changed_id = [p['prop_id'] for p in dash.callback_context.triggered][0]
+    if 'btn_save_linechart' in changed_id:
+        data = {}
+        data['grafico'] = []
+        data['grafico'].append({
+            'consulta': consulta,
+            'datos_y1': datos_y1})
+        if file_name:
+            with open(CHART_DIRECTORY+file_name, 'w') as file:
+                json.dump(data, file, indent=4)
+            mensaje = 'Archivo guardado'
+    return mensaje
+
+@app.callback( [Output('inp-ruta-piechart', 'value'),
+                Output('dpd-query-list-pie', 'value'),
+                Output('dpd-column-lists-pie', 'value'),],
+              [Input('btn_open_piechart', 'filename'),
+              Input('btn_open_piechart', 'contents')]
+              )
+def open_piechart( list_of_names, list_of_contents):
+    archivo = list_of_names
+    consulta=[]
+    datos_y1=[]
+
+    if list_of_names is not None:
+        print(list_of_names)
+        archivo = list_of_names
+        with open(CHART_DIRECTORY+archivo) as file:
+            data = json.load(file)
+            for drop_values   in data['grafico']:
+                consulta = str(drop_values['consulta'])
+                datos_y1 = drop_values['datos_y1']
+    return archivo, consulta, datos_y1
