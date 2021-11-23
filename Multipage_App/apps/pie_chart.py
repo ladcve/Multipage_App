@@ -256,8 +256,7 @@ def update_pie_chart(n_clicks, file_name, well_name, columns_list, dtp_fecha, ch
     return fig
 
 @app.callback(
-    [Output('dpd-column-lists-pie','options'),
-    Output('dpd-column-lists-pie','value')],
+    [Output('dpd-column-lists-pie','options')],
     [Input('dpd-query-list-pie', 'value')])
 def update_column_list(file_name):
 
@@ -276,8 +275,7 @@ def update_column_list(file_name):
                 data_results =pd.read_sql(query, con)
                 data_results =data_results.drop(['index', 'NOMBRE', 'FECHA'], axis=1)
                 columns = [{'label': i, 'value': i} for i in data_results.columns]
-                valor.append(data_results.columns[0])
-    return columns, valor
+    return columns
 
 @app.callback(
     Output('save_message_piechart','children'),

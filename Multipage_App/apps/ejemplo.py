@@ -9,6 +9,8 @@ from datetime import date
 from collections import OrderedDict
 import base64
 import os
+from io import StringIO
+import contextlib
 
 #Lee el archivo de configuracion
 configuracion = configparser.ConfigParser()
@@ -39,3 +41,17 @@ titulo = selec_var.iloc[0]['TITULO']
 evalu = eval(ecuacion)
 df[titulo] = evalu
 print(df)
+
+@contextlib.contextmanager
+def stdoutIO(stdout=None):
+    old = sys.stdout
+    if stdout is None:
+        stdout = StringIO()
+    sys.stdout = stdout
+    yield stdout
+    sys.stdout = old
+
+with stdoutIO() as s:
+    eval("print(10+10)")
+
+print("out:", s.getvalue())
