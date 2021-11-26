@@ -56,6 +56,11 @@ query = "SELECT NOMBRE FROM ITEMS WHERE ESTATUS=1 "
 well_list =pd.read_sql(query, con)
 well_list = well_list.sort_values('NOMBRE')['NOMBRE'].unique()
 
+#Listado de variables calculadas
+query = "SELECT NOMBRE FROM VARIABLES"
+var_list =pd.read_sql(query, con)
+var_list = var_list.sort_values('NOMBRE')['NOMBRE'].unique()
+
 con.close()
 
 #Listado de query
@@ -160,6 +165,17 @@ layout = html.Div([
                         ]),
                     ]),
                     dbc.Card([
+                        dbc.CardBody([
+                            html.Label(['Variable Calculadas:'],style={'font-weight': 'bold', "text-align": "left"}),
+                            dcc.Dropdown(
+                                id='dpd-var-list-scatterchart',
+                                options=[{'label': i, 'value': i} for i in var_list],
+                                clearable=False,
+                                multi=True,
+                            ),
+                        ])
+                    ]),
+                    dbc.Card([
                         dbc.CardHeader(html.Label(['Eventos'],style={'font-weight': 'bold', "text-align": "left"})),
                         dbc.CardBody([
                             html.Br(),
@@ -177,16 +193,19 @@ layout = html.Div([
      Input('dpd-query-list-scatter', 'value'), 
      Input('dpd-well-list-scatter', 'value'),
      Input('dpd-column-list-x-scatter', 'value'),
-     Input('dpd-column-list-y-scatter', 'value')])
-def update_scatter_chart(n_clicks, file_name, well_name, column_list_x, column_list_y):
+     Input('dpd-column-list-y-scatter', 'value'),
+     Input('dpd-var-list-scatterchart', 'value')])
+def update_scatter_chart(n_clicks, file_name, well_name, column_list_x, column_list_y, var_list):
 
-    data_results = pd.DataFrame()
+    df = pd.DataFrame()
     query= ''
     changed_id = [p['prop_id'] for p in dash.callback_context.triggered][0]
     fig = {}
     
     if 'btn_show_scatterchart' in changed_id:
         con = sqlite3.connect(archivo)
+        query = "SELECT * FROM VARIABLES"
+        variables =pd.read_sql(query, con)
         if file_name is not None:
             with open(os.path.join(QUERY_DIRECTORY, file_name)) as f:
                 contenido = f.readlines()
@@ -194,21 +213,33 @@ def update_scatter_chart(n_clicks, file_name, well_name, column_list_x, column_l
                 if well_name is not None:
                     for linea in contenido:
                         query +=  linea 
-                    data_results =pd.read_sql(query, con)
-                    data_results =data_results.sort_values("FECHA")
-                    data_results = data_results[data_results['NOMBRE']==well_name]
-                    fig = px.scatter(x=data_results[column_list_x],
-                            y=data_results[column_list_y],)
+                    df =pd.read_sql(query, con)
+                    df =df.sort_values("FECHA")
+                    df = df[df['NOMBRE']==well_name]
+                    if var_list is not None:
+                        for var in var_list:
+                            selec_var=variables.loc[variables['NOMBRE']==var]
+                            ecuacion = selec_var.iloc[0]['ECUACION']
+                            titulo = selec_var.iloc[0]['TITULO']
+                            evalu = eval(ecuacion)
+                            df[titulo] = evalu
+
+                    fig = px.scatter(x=df[column_list_x],
+                            y=df[column_list_y],)
+                    fig.update_xaxes(title_text="Fecha",showline=True, linewidth=2, linecolor='black', showgrid=False,)
+                    fig.update_yaxes(showline=True, linewidth=2, linecolor='black', showgrid=False,)
                     fig.update_layout(
                         autosize=False,
                         width=1400,
                         height=750,
+                        paper_bgcolor='rgba(0,0,0,0)',
+                        plot_bgcolor='rgb(240, 240, 240)',
                         margin=dict(
                             l=50,
                             r=50,
                             b=100,
                             t=100,
-                            pad=4
+                            pad=4,
                         ),
                     )
                     fig.update_layout(legend=dict(
@@ -224,22 +255,33 @@ def update_scatter_chart(n_clicks, file_name, well_name, column_list_x, column_l
 @app.callback(
     [Output('dpd-column-list-x-scatter','options'),
      Output('dpd-column-list-y-scatter','options')],
-    [Input('dpd-query-list-scatter', 'value')])
-def update_column_list(file_name):
+    [Input('dpd-query-list-scatter', 'value'),
+    Input('dpd-var-list-scatterchart', 'value')])
+def update_column_list(file_name, var_list):
 
-    data_results = pd.DataFrame()
+    df = pd.DataFrame()
     columns = [{'label': i, 'value': i} for i in []]
     query= ''
     changed_id = [p['prop_id'] for p in dash.callback_context.triggered][0]
     if 'dpd-query-list-scatter' in changed_id:
         con = sqlite3.connect(archivo)
+        query = "SELECT * FROM VARIABLES"
+        variables =pd.read_sql(query, con)
         if file_name:
             with open(os.path.join(QUERY_DIRECTORY, file_name)) as f:
                 contenido = f.readlines()
                 for linea in contenido:
                     query +=  linea
-                data_results =pd.read_sql(query, con)
-                columns = [{'label': i, 'value': i} for i in data_results.columns]
+                df =pd.read_sql(query, con)
+                if var_list is not None:
+                    for var in var_list:
+                        selec_var=variables.loc[variables['NOMBRE']==var]
+                        ecuacion = selec_var.iloc[0]['ECUACION']
+                        titulo = selec_var.iloc[0]['TITULO']
+                        evalu = eval(ecuacion)
+                        df[titulo] = evalu
+                columns = [{'label': i, 'value': i} for i in df.columns]
+
         con.close()
 
     return columns, columns
@@ -250,8 +292,9 @@ def update_column_list(file_name):
     Input('dpd-query-list-scatter', 'value'),
     Input('dpd-column-list-x-scatter', 'value'),
     Input('dpd-column-list-y-scatter', 'value'),
-    Input('inp-ruta-scatterchart', 'value')]) 
-def save_scatterchart(n_clicks, consulta, datos_y1, datos_y2, file_name ):
+    Input('inp-ruta-scatterchart', 'value'),
+    Input('dpd-var-list-scatterchart', 'value')]) 
+def save_scatterchart(n_clicks, consulta, datos_y1, datos_y2, file_name, var_list ):
     mensaje=''
     changed_id = [p['prop_id'] for p in dash.callback_context.triggered][0]
     if 'btn_save_scatterchart' in changed_id:
@@ -260,7 +303,8 @@ def save_scatterchart(n_clicks, consulta, datos_y1, datos_y2, file_name ):
         data['grafico'].append({
             'consulta': consulta,
             'datos_y1': datos_y1,
-            'datos_y2': datos_y2})
+            'datos_y2': datos_y2,
+            'var_list': var_list,})
         with open(CHART_DIRECTORY+file_name, 'w') as file:
             json.dump(data, file, indent=4)
         mensaje = 'Archivo guardado'
@@ -269,7 +313,8 @@ def save_scatterchart(n_clicks, consulta, datos_y1, datos_y2, file_name ):
 @app.callback( [Output('inp-ruta-scatterchart', 'value'),
                 Output('dpd-query-list', 'value'),
                 Output('dpd-column-list-x', 'value'),
-                Output('dpd-column-list-y', 'value'),],
+                Output('dpd-column-list-y', 'value'),
+                Output('dpd-var-list-scatterchart', 'value')],
               [Input('btn_open_linechart', 'filename'),
               Input('btn_open_linechart', 'contents')]
               )
@@ -288,4 +333,5 @@ def open_scatterchart( list_of_names, list_of_contents):
                 consulta = str(drop_values['consulta'])
                 datos_y1 = drop_values['datos_y1']
                 datos_y2 = drop_values['datos_y2']
+                var_list = drop_values['var_list']
     return archivo, consulta, datos_y1, datos_y2

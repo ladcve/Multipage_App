@@ -131,14 +131,18 @@ def create_figure(column_x, column_y, well, file_name, selected_color):
         fig = px.line(df, x=column_x, y=column_y)
         fig.update_layout(
                 title="{} {} vs {}".format(well, column_x, column_y),
-                margin_l=5,
+                margin_l=0,
                 margin_r=0,
                 margin_b=30,
                 hovermode='x unified',
+                width=1200,
+                height=440,
+                paper_bgcolor='rgba(0,0,0,0)',
+                plot_bgcolor='rgb(240, 240, 240)',
             )
         fig.update_traces(line_color=color["hex"]) 
-        fig.update_xaxes(title_text="")
-        fig.update_yaxes(title_text="")
+        fig.update_xaxes(title_text="",showline=True, linewidth=2, linecolor='black', showgrid=False,)
+        fig.update_yaxes(title_text="",showline=True, linewidth=2, linecolor='black', showgrid=False,)
     return fig
 
 @app.callback(
@@ -182,7 +186,7 @@ def display_dropdowns(n_clicks, _,  well, file_name, children):
                     dbc.Col([
                         dcc.Graph(
                             id={"type": "dynamic-output", "index": n_clicks},
-                            style={"height": 400, "width":800},
+                            style={"height": 440, "width":800},
                             #figure=create_figure(default_column_x, default_column_y, well, file_name, default_color),
                             figure={}
                         ),

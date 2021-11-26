@@ -6,6 +6,7 @@ import dash_html_components as html
 from dash.dependencies import Input, Output, State
 from dash_html_components.Br import Br
 import plotly.graph_objects as go
+import plotly.express as px
 from plotly.subplots import make_subplots
 import dash_table
 import sqlite3
@@ -26,8 +27,9 @@ import dash_daq as daq
 
 from app import app 
 
-#Variable con la ruta para salvar los querys
-QUERY_DIRECTORY = "./querys"
+#Definir imagenes
+open_chart = '.\pictures\open_chart.png'
+open_chart_base64 = base64.b64encode(open(open_chart, 'rb').read()).decode('ascii')
 
 #Lee el archivo de configuracion
 configuracion = configparser.ConfigParser()
@@ -55,6 +57,10 @@ con = sqlite3.connect(archivo)
 query = "SELECT NOMBRE FROM ITEMS WHERE ESTATUS=1 "
 well_list =pd.read_sql(query, con)
 well_list = well_list.sort_values('NOMBRE')['NOMBRE'].unique()
+
+query = "SELECT NOMBRE FROM VARIABLES"
+var_list =pd.read_sql(query, con)
+var_list = var_list.sort_values('NOMBRE')['NOMBRE'].unique()
 
 #Listado de eventos
 query = "SELECT * FROM EVENTOS"
@@ -163,6 +169,17 @@ layout = html.Div([
                             ),
                         ]),
                     ]),
+                    dbc.Card([
+                        dbc.CardBody([
+                            html.Label(['Variable Calculadas:'],style={'font-weight': 'bold', "text-align": "left"}),
+                            dcc.Dropdown(
+                                id='dpd-var-list-chart',
+                                options=[{'label': i, 'value': i} for i in var_list],
+                                clearable=False,
+                                multi=True,
+                            ),
+                        ])
+                    ]),
                     html.Br(),
                     dbc.Card([
                         dbc.CardHeader(html.Label(['Eventos'],style={'font-weight': 'bold', "text-align": "left"})),
@@ -177,7 +194,7 @@ layout = html.Div([
                                 columns = [{'name': i, 'id': i, "deletable": True} for i in event_list.columns],
                                 data = event_list.to_dict('records'),
                                 style_as_list_view=True,
-                                style_cell={'padding': '5px'},
+                                style_cell={'padding': '5px', 'textAlign':'left','fontSize':10, 'font-family':'arial'},
                                 style_table={
                                     'overflowX': 'auto',
                                     'whiteSpace': 'normal',
@@ -187,7 +204,9 @@ layout = html.Div([
                                     'backgroundColor': 'blue',
                                     'fontWeight': 'bold',
                                     'color': 'white',
-
+                                    'textAlign':'center',
+                                    'fontSize':10,
+                                    'font-family':'arial'
                                 },),
                         ]),
                     ]),
@@ -205,29 +224,39 @@ layout = html.Div([
      Input('dpd-column-list-y1', 'value'),
      Input('dpd-column-list-y2', 'value'),
      Input('ts-annotation', 'value'), 
-     Input('dt_table_event', 'data')])
-def update_line_chart(n_clicks, file_name, well_name, column_list_y1, column_list_y2, show_annot, annot_data):
+     Input('dt_table_event', 'data'),
+     Input('dpd-var-list-chart', 'value')])
+def update_line_chart(n_clicks, file_name, well_name, column_list_y1, column_list_y2, show_annot, annot_data, var_list):
 
-    data_results = pd.DataFrame()
+    df = pd.DataFrame()
     quer= ''
     changed_id = [p['prop_id'] for p in dash.callback_context.triggered][0]
     fig = make_subplots(specs=[[{"secondary_y": True}]])
     
     if 'btn_show_chart' in changed_id:
         con = sqlite3.connect(archivo)
+        query = "SELECT * FROM VARIABLES"
+        variables =pd.read_sql(query, con)
         if file_name is not None:
             with open(os.path.join(QUERY_DIRECTORY, file_name)) as f:
                 contenido = f.readlines()
             if contenido is not None:
                 for linea in contenido:
                     query =  linea +" ORDER BY FECHA"
-                data_results =pd.read_sql(query, con)
-                data_results = data_results[data_results['NOMBRE'].isin(well_name)]
+                df =pd.read_sql(query, con)
+                df = df[df['NOMBRE'].isin(well_name)]
+                if var_list is not None:
+                    for var in var_list:
+                        selec_var=variables.loc[variables['NOMBRE']==var]
+                        ecuacion = selec_var.iloc[0]['ECUACION']
+                        titulo = selec_var.iloc[0]['TITULO']
+                        evalu = eval(ecuacion)
+                        df[titulo] = evalu
                 i=1
                 for columnas_y1 in column_list_y1:
                     fig.add_trace(
-                        go.Scatter(x=data_results['FECHA'],
-                            y=data_results[columnas_y1],
+                        go.Scatter(x=df['FECHA'],
+                            y=df[columnas_y1],
                             name=columnas_y1,
                             yaxis= 'y'+ str(i)),
                         secondary_y=False,
@@ -248,24 +277,27 @@ def update_line_chart(n_clicks, file_name, well_name, column_list_y1, column_lis
                     )
                 for columnas_y2 in column_list_y2:
                     fig.add_trace(
-                        go.Scatter(x=data_results['FECHA'],
-                            y=data_results[columnas_y2],
+                        go.Scatter(x=df['FECHA'],
+                            y=df[columnas_y2],
                             name=columnas_y2,
                             yaxis= 'y'+ str(i)),
                         secondary_y=True,
                     )
                     i=+1
-                fig.update_xaxes(title_text="Fecha")
+                fig.update_xaxes(title_text="Fecha",showline=True, linewidth=2, linecolor='black', showgrid=False,)
+                fig.update_yaxes(showline=True, linewidth=2, linecolor='black', showgrid=False,)
                 fig.update_layout(
                     autosize=False,
                     width=1400,
                     height=780,
+                    paper_bgcolor='rgba(0,0,0,0)',
+                    plot_bgcolor='rgb(240, 240, 240)',
                     margin=dict(
                         l=50,
                         r=50,
                         b=100,
                         t=100,
-                        pad=4
+                        pad=4,
                     ),
                    )
                 fig.update_xaxes(
@@ -301,22 +333,34 @@ def update_line_chart(n_clicks, file_name, well_name, column_list_y1, column_lis
 @app.callback(
     [Output('dpd-column-list-y1','options'),
      Output('dpd-column-list-y2','options')],
-    [Input('dpd-consulta-lista', 'value')])
-def update_column_list(file_name):
+    [Input('dpd-consulta-lista', 'value'),
+     Input('dpd-var-list-chart', 'value')])
+def update_column_list(file_name, var_list):
 
-    data_results = pd.DataFrame()
+    df = pd.DataFrame()
     columns = [{'label': i, 'value': i} for i in []]
     quer= ''
     changed_id = [p['prop_id'] for p in dash.callback_context.triggered][0]
-    if 'dpd-consulta-lista' in changed_id:
+    if 'dpd-consulta-lista' in changed_id or 'dpd-var-list-chart' in changed_id:
         con = sqlite3.connect(archivo)
+        query = "SELECT * FROM VARIABLES"
+        variables =pd.read_sql(query, con)
         if file_name:
             with open(os.path.join(QUERY_DIRECTORY, file_name)) as f:
                 contenido = f.readlines()
                 for linea in contenido:
                     query =  linea
-                data_results =pd.read_sql(query, con)
-                columns = [{'label': i, 'value': i} for i in data_results.columns]
+                df =pd.read_sql(query, con)
+
+            if var_list is not None:
+                for var in var_list:
+                    selec_var=variables.loc[variables['NOMBRE']==var]
+                    ecuacion = selec_var.iloc[0]['ECUACION']
+                    titulo = selec_var.iloc[0]['TITULO']
+                    evalu = eval(ecuacion)
+                    df[titulo] = evalu
+
+            columns = [{'label': i, 'value': i} for i in df.columns]
         con.close()
 
     return columns, columns
@@ -327,8 +371,9 @@ def update_column_list(file_name):
     Input('dpd-consulta-lista', 'value'),
     Input('dpd-column-list-y1', 'value'),
     Input('dpd-column-list-y2', 'value'),
-    Input('inp-ruta-linechart', 'value')]) 
-def save_linechart(n_clicks, consulta, datos_y1, datos_y2, file_name ):
+    Input('inp-ruta-linechart', 'value'),
+    Input('dpd-var-list-chart', 'value')]) 
+def save_linechart(n_clicks, consulta, datos_y1, datos_y2, file_name, var_list ):
     mensaje=''
     changed_id = [p['prop_id'] for p in dash.callback_context.triggered][0]
     if 'btn_save_linechart' in changed_id:
@@ -337,7 +382,8 @@ def save_linechart(n_clicks, consulta, datos_y1, datos_y2, file_name ):
         data['grafico'].append({
             'consulta': consulta,
             'datos_y1': datos_y1,
-            'datos_y2': datos_y2})
+            'datos_y2': datos_y2,
+            'var_list': var_list,})
         with open(CHART_DIRECTORY+file_name, 'w') as file:
             json.dump(data, file, indent=4)
         mensaje = 'Archivo guardado'
@@ -346,7 +392,8 @@ def save_linechart(n_clicks, consulta, datos_y1, datos_y2, file_name ):
 @app.callback( [Output('inp-ruta-linechart', 'value'),
                 Output('dpd-consulta-lista', 'value'),
                 Output('dpd-column-list-y1', 'value'),
-                Output('dpd-column-list-y2', 'value'),],
+                Output('dpd-column-list-y2', 'value'),
+                Output('dpd-var-list-chart', 'value'),],
               [Input('btn_open_linechart', 'filename'),
               Input('btn_open_linechart', 'contents')]
               )
@@ -355,6 +402,7 @@ def open_linechart( list_of_names, list_of_contents):
     consulta=[]
     datos_y1=[]
     datos_y2=[]
+    var_list=[]
 
     if list_of_names is not None:
         print(list_of_names)
@@ -365,4 +413,5 @@ def open_linechart( list_of_names, list_of_contents):
                 consulta = str(drop_values['consulta'])
                 datos_y1 = drop_values['datos_y1']
                 datos_y2 = drop_values['datos_y2']
-    return archivo, consulta, datos_y1, datos_y2
+                var_list = drop_values['var_list']
+    return archivo, consulta, datos_y1, datos_y2, var_list
