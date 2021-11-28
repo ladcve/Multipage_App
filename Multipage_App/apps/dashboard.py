@@ -22,14 +22,14 @@ import dash_table
 from app import app 
 
 #Define el nombre de las imagenes que mostraran en el dashboard
-gas_png = 'D:\Proyectos\Ejemplos\pictures\gas.png'
-cond_png = 'D:\Proyectos\Multipage_App\pictures\condensado.png'
-wat_png = 'D:\Proyectos\Multipage_App\pictures\water.png'
-perd_png = 'D:\Proyectos\Multipage_App\pictures\perdidas.png'
-pot_png = 'D:\Proyectos\Multipage_App\pictures\potencial.png'
-press_png = 'D:\Proyectos\Multipage_App\pictures\pressure.png'
-temp_png = 'D:\Proyectos\Multipage_App\pictures\ptermometro.png'
-choke_png = 'D:\Proyectos\Multipage_App\pictures\choke.png'
+gas_png = 'D:\Proyectos\Prod_Analysis\pictures\gas.png'
+cond_png = 'D:\Proyectos\Prod_Analysis\pictures\condensado.png'
+wat_png = 'D:\Proyectos\Prod_Analysis\pictures\water.png'
+perd_png = 'D:\Proyectos\Prod_Analysis\pictures\perdidas.png'
+pot_png = 'D:\Proyectos\Prod_Analysis\pictures\potencial.png'
+press_png = 'D:\Proyectos\Prod_Analysis\pictures\pressure.png'
+temp_png = 'D:\Proyectos\Prod_Analysis\pictures\ptermometro.png'
+choke_png = 'D:\Proyectos\Prod_Analysis\pictures\choke.png'
 
 gas_base64 = base64.b64encode(open(gas_png, 'rb').read()).decode('ascii')
 cond_base64 = base64.b64encode(open(cond_png, 'rb').read()).decode('ascii')
@@ -127,7 +127,7 @@ cabecera = html.Div(
                         [
                             dbc.Row([
                                 dbc.Col(html.Img(src='data:image/png;base64,{}'.format(perd_base64), style={"width":"2.4rem"}), width=1),
-                                dbc.Col(html.H4("Perdidas", className="card-title"), width=6),
+                                dbc.Col(html.H4("Perdidas (diferida alta)", className="card-title"), width=10),
                             ]),
                             html.H5(id='ind-perdidas',style={'font-weight': 'bold', "text-align": "center", "color":"green"},
                                          children='Seleccione un pozo para actualizar')
@@ -179,7 +179,8 @@ layout = html.Div([
                     ], width={"size": 4, "offset": 0}),
                     dbc.Col([
                         html.Br(),
-                        dbc.Button("Agregar Grafico", id="btn_add_chart", n_clicks=0, color="success", className="mr-3"),
+                        dbc.Button(html.Span(["Agregar ", html.I(className="fas fa-chart-bar ml-1")],style={'font-size':'1.5em','text-align':'center'}),
+                         id="btn_add_chart", n_clicks=0, color="success", className="mr-3"),
                     ]),
                     dbc.Col([
                         html.Br(),
@@ -231,7 +232,13 @@ layout = html.Div([
     ]),
 ])
 
-def create_figure(well, column_y, clear_data, file_name):
+def create_figure(well, column_y, color_selected, clear_data, file_name):
+
+    color = dict(hex='#0000ff')
+    if color_selected=='rojo':
+        color = dict(hex='#FF0000')
+    if color_selected=='verde':
+        color = dict(hex='#008f39')
 
     con = sqlite3.connect(archivo)
     fig = {}
@@ -244,19 +251,21 @@ def create_figure(well, column_y, clear_data, file_name):
             df =pd.read_sql(query, con)
         if clear_data:
             df = df.loc[df[column_y] >0]
-
-        fig = px.line(df.query("NOMBRE == '{}'".format(well)), x='FECHA', y=column_y,)
+        df = df.set_index('NOMBRE')
+        fig = px.line(df.query("NOMBRE == '{}'".format(well)), x='FECHA', y=column_y)
         fig.update_layout(
             title="{} {}".format(well, column_y),
+            hovermode='x unified',
             margin_l=10,
             margin_r=0,
             margin_b=30,
         )
+        fig.update_traces(line_color=color["hex"])
         fig.update_xaxes(title_text="")
         fig.update_yaxes(title_text="")
         fig.update_layout(
             paper_bgcolor='rgba(0,0,0,0)',
-            plot_bgcolor='rgba(0,0,0,0)'
+            plot_bgcolor='rgba(0,0,0,0)',
         )
         fig.update_xaxes(
             rangeslider_visible=True,
@@ -285,6 +294,7 @@ def create_figure(well, column_y, clear_data, file_name):
 )
 def display_dropdowns(n_clicks, _, clear_data, file_name,  children):
 
+    color = dict(hex='#0000ff')
     input_id = dash.callback_context.triggered[0]["prop_id"].split(".")[0]
     if "index" in input_id:
         delete_chart = json.loads(input_id)["index"]
@@ -315,16 +325,23 @@ def display_dropdowns(n_clicks, _, clear_data, file_name,  children):
                     "padding": 10,
                 },
                 children=[
-                    html.Button(
-                        "X",
-                        id={"type": "dynamic-delete-chart", "index": n_clicks},
-                        n_clicks=0,
-                        style={"display": "block"},
-                    ),
+                    html.Div([
+                        dbc.Button(html.Span([ html.I(className="fas fa-trash-alt ml-1")],style={'font-size':'1.5em','text-align':'center'}),
+                            id={"type": "dynamic-delete-chart", "index": n_clicks},
+                            n_clicks=0,
+                            style={"display": "block"},
+                            color="danger", className="mr-1"),
+                    ], className="d-grid gap-2 d-md-flex justify-content-md-end",),
+                    #html.Button(
+                    #    "X",
+                    #    id={"type": "dynamic-delete-chart", "index": n_clicks},
+                    #    n_clicks=0,
+                    #    style={"display": "block"},
+                    #),
                     dcc.Graph(
                         id={"type": "dynamic-chart-output", "index": n_clicks},
                         style={"height": 300},
-                        figure=create_figure(default_well, default_column_y, clear_data, file_name),
+                        figure=create_figure(default_well, default_column_y, color, clear_data, file_name),
                     ),
                     dcc.Dropdown(
                         id={"type": "dynamic-well", "index": n_clicks},
@@ -335,6 +352,15 @@ def display_dropdowns(n_clicks, _, clear_data, file_name,  children):
                         id={"type": "dynamic-dropdown-y", "index": n_clicks},
                         options=[{"label": i, "value": i} for i in df.columns],
                         value=default_column_y,
+                    ),
+                    dcc.Dropdown(
+                        id={"type": "dynamic-color", "index": n_clicks},
+                        options=[
+                                {'label': 'Azul', 'value': 'azul'},
+                                {'label': 'Rojo', 'value': 'rojo'},
+                                {'label': 'Verde', 'value': 'verde'}
+                            ],
+                        value='azul',
                     ),
                 ],
             )
@@ -347,12 +373,13 @@ def display_dropdowns(n_clicks, _, clear_data, file_name,  children):
     [
         Input({"type": "dynamic-well", "index": MATCH}, "value"),
         Input({"type": "dynamic-dropdown-y", "index": MATCH}, "value"),
+        Input({"type": "dynamic-color", "index": MATCH}, "value"),
         Input("cb_clear_data", "value"),
         Input("dpd-consulta-lista", "value"),
     ],
 )
-def display_output(well, column_y, clear_data, file_name):
-    return create_figure(well, column_y, clear_data, file_name)
+def display_output(well, column_y, color_selected, clear_data, file_name):
+    return create_figure(well, column_y, color_selected, clear_data, file_name)
 
 @app.callback(
     [Output('ind-prodgas', 'children'),
@@ -365,7 +392,7 @@ def display_output(well, column_y, clear_data, file_name):
 def update_head_output(fecha):
     con = sqlite3.connect(archivo)
     
-    cursor = con.execute("SELECT SUM(TASA_GAS) FROM CIERRE_DIARIO_POZO WHERE FECHA='"+fecha+" 00:00:00'")
+    cursor = con.execute("SELECT ROUND(SUM(TASA_GAS),6) FROM CIERRE_DIARIO_POZO WHERE FECHA='"+fecha+" 00:00:00'")
     valor= cursor.fetchall()
     if valor:
         for data in valor:
@@ -373,7 +400,7 @@ def update_head_output(fecha):
     else:
         valor_prodgas = ""
     
-    cursor = con.execute("SELECT SUM(TASA_CONDENSADO) FROM CIERRE_DIARIO_POZO WHERE FECHA='"+fecha+" 00:00:00'")
+    cursor = con.execute("SELECT ROUND(SUM(TASA_CONDENSADO),2) FROM CIERRE_DIARIO_POZO WHERE FECHA='"+fecha+" 00:00:00'")
     valor= cursor.fetchall()
     if valor:
         for data in valor:
@@ -381,12 +408,12 @@ def update_head_output(fecha):
     else:
         valor_prodcond = ""
     
-    cursor = con.execute("SELECT SUM(TASA_AGUA) FROM CIERRE_DIARIO_POZO WHERE FECHA='"+fecha+" 00:00:00'")
+    cursor = con.execute("SELECT ROUND(SUM(TASA_AGUA),2) FROM CIERRE_DIARIO_POZO WHERE FECHA='"+fecha+" 00:00:00'")
     valor= cursor.fetchall()
     for data in valor:
         valor_prodwat = ' {} BLS'.format(data[0])
 
-    cursor = con.execute("SELECT SUM(TASA_AGUA) FROM CIERRE_DIARIO_POZO WHERE FECHA='"+fecha+" 00:00:00'")
+    cursor = con.execute("SELECT ROUND(SUM(DIFERIDA_ALTA_GAS),6) FROM PERDIDAS_POZO WHERE FECHA='"+fecha+" 00:00:00'")
     valor= cursor.fetchall()
     if valor:
         for data in valor:
@@ -394,7 +421,7 @@ def update_head_output(fecha):
     else:
         valor_perdidas = ""
     
-    cursor = con.execute("SELECT SUM(VOLUMEN_GAS) FROM POTENCIAL_POZO WHERE FECHA = (SELECT MAX(FECHA) FROM POTENCIAL_POZO)")
+    cursor = con.execute("SELECT ROUND(SUM(VOLUMEN_GAS),6) FROM POTENCIAL_POZO WHERE FECHA = (SELECT MAX(FECHA) FROM POTENCIAL_POZO)")
     valor= cursor.fetchall()
 
     if valor:

@@ -4,7 +4,6 @@ from dash_bootstrap_components._components.Row import Row
 import dash_core_components as dcc
 import dash_html_components as html
 from dash.dependencies import Input, Output, State, ALL, MATCH
-from dash_html_components.Br import Br
 import plotly.express as px
 from plotly.subplots import make_subplots
 import dash_table
@@ -100,14 +99,23 @@ layout = html.Div([
                     ], width={"size": 4, "offset": 0}),
                     dbc.Col([
                         html.Br(),
-                        dbc.Button("Agregar Grafico", id="btn_add_chart", color="success", className="mr-3"),
+                        dbc.Button(html.Span(["Agregar ", html.I(className="fas fa-chart-bar ml-1")],style={'font-size':'1.5em','text-align':'center'}),
+                        id="btn_add_chart", color="success", className="mr-3"),
                     ]),
                 ]),
                 html.Br(),
             ]),
         ], width={"size": 6, "offset": 0}),
     ]),
-    html.Div(content),
+    html.Br(),
+    dbc.Card([
+        dbc.CardHeader(html.Label(['Gráficos de Líneas'],style={'font-weight': 'bold', "text-align": "left"})),
+        dbc.CardBody([
+            dbc.Col([
+                html.Div(content),
+            ], width=12),
+        ]),
+    ]),
 ])
 
 def create_figure(column_x, column_y, well, file_name, selected_color):
@@ -177,55 +185,64 @@ def display_dropdowns(n_clicks, _,  well, file_name, children):
                 df =pd.read_sql(query, con)
                 df = df.query("NOMBRE == '{}'".format(well))
                 df =df.sort_values("FECHA")
-        column_name_list = df.columns.values.tolist()
-        default_column_y = column_name_list[3]
-        default_color = 'Azul'
-        
-        new_element = html.Div([
-                dbc.Row([
-                    dbc.Col([
-                        dcc.Graph(
-                            id={"type": "dynamic-output", "index": n_clicks},
-                            style={"height": 440, "width":800},
-                            #figure=create_figure(default_column_x, default_column_y, well, file_name, default_color),
-                            figure={}
-                        ),
-                    ], width={"size": 5, "offset": 0}),
-                    
-                    dbc.Col([
-                        html.Div(
-                            dbc.Button("Borrar", id={"type": "dynamic-delete", "index": n_clicks}, n_clicks=0, color="warning", className="mr-3"),
-                            className="d-grid gap-2 d-md-flex justify-content-md-end"
-                        ),
-                        html.Label(['Eje X:'],style={'font-weight': 'bold', "text-align": "left"}),
-                        dcc.Dropdown(
-                            id={"type": "dynamic-dropdown-x", "index": n_clicks},
-                            options=[{"label": i, "value": i} for i in df.columns],
-                            value=default_column_x,
-                            clearable=False,
-                        ), 
-                        html.Label(['Eje Y:'],style={'font-weight': 'bold', "text-align": "left"}),
-                        dcc.Dropdown(
-                            id={"type": "dynamic-dropdown-y", "index": n_clicks},
-                            options=[{"label": i, "value": i} for i in df.columns],
-                            value=default_column_y,
-                            clearable=False,
-                        ),
-                        html.Label(['Color Linea:'],style={'font-weight': 'bold', "text-align": "left"}),
-                        dcc.Dropdown(
-                            id={"type": "dynamic-color-picker", "index": n_clicks},
-                            options=[
-                                {'label': 'Azul', 'value': 'azul'},
-                                {'label': 'Rojo', 'value': 'rojo'},
-                                {'label': 'Verde', 'value': 'verde'}
-                            ],
-                            value='azul',
-                        ),
-                    ], width={"size": 3, "offset": 3}),
-                ]),
-            ],
-        )
-        children.append(new_element)
+            column_name_list = df.columns.values.tolist()
+            default_column_y = column_name_list[3]
+            default_color = 'Azul'
+            
+            new_element = html.Div([
+                    dbc.Row([
+                        dbc.Col([
+                            dcc.Graph(
+                                id={"type": "dynamic-output", "index": n_clicks},
+                                style={"height": 440, "width":780},
+                                #figure=create_figure(default_column_x, default_column_y, well, file_name, default_color),
+                                figure={}
+                            ),
+                        ], width={"size": 5, "offset": 0}),
+                        
+                        dbc.Col([
+                            html.Div(
+                                dbc.Button(html.Span(["Borrar ", html.I(className="fas fa-trash-alt ml-1")],style={'font-size':'1.5em','text-align':'center'}),
+                                id={"type": "dynamic-delete", "index": n_clicks}, n_clicks=0, color="danger", className="mr-3"),
+                                className="d-grid gap-2 d-md-flex justify-content-md-end"
+                            ),
+                            dbc.Card([
+                                dbc.CardHeader(html.Label(['Opciones: '],style={'font-weight': 'bold', "text-align": "left"})),
+                                dbc.CardBody([
+                                    dbc.Col([
+                                        html.Br(),
+                                        html.Label(['Eje X:'],style={'font-weight': 'bold', "text-align": "left"}),
+                                        dcc.Dropdown(
+                                            id={"type": "dynamic-dropdown-x", "index": n_clicks},
+                                            options=[{"label": i, "value": i} for i in df.columns],
+                                            value=default_column_x,
+                                            clearable=False,
+                                        ), 
+                                        html.Label(['Eje Y:'],style={'font-weight': 'bold', "text-align": "left"}),
+                                        dcc.Dropdown(
+                                            id={"type": "dynamic-dropdown-y", "index": n_clicks},
+                                            options=[{"label": i, "value": i} for i in df.columns],
+                                            value=default_column_y,
+                                            clearable=False,
+                                        ),
+                                        html.Label(['Color Linea:'],style={'font-weight': 'bold', "text-align": "left"}),
+                                        dcc.Dropdown(
+                                            id={"type": "dynamic-color-picker", "index": n_clicks},
+                                            options=[
+                                                {'label': 'Azul', 'value': 'azul'},
+                                                {'label': 'Rojo', 'value': 'rojo'},
+                                                {'label': 'Verde', 'value': 'verde'}
+                                            ],
+                                            value='azul',
+                                        ),
+                                    ]),
+                                ]),
+                            ]),
+                        ], width={"size": 3, "offset": 3}),
+                    ]),
+                ],
+            )
+            children.append(new_element)
     return children
 
 @app.callback(

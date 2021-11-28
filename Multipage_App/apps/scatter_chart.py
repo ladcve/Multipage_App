@@ -4,7 +4,6 @@ from dash_bootstrap_components._components.Row import Row
 import dash_core_components as dcc
 import dash_html_components as html
 from dash.dependencies import Input, Output, State
-from dash_html_components.Br import Br
 import plotly.graph_objects as go
 import plotly.express as px
 from plotly.subplots import make_subplots
@@ -95,7 +94,8 @@ layout = html.Div([
                     ], width={"size": 4, "offset": 0}),
                     dbc.Col([
                         html.Br(),
-                        dbc.Button("Mostrar Grafico", id="btn_show_scatterchart", color="success", className="mr-3"),
+                        dbc.Button(html.Span(["Mostrar ", html.I(className="fas fa-chart-bar ml-1")],style={'font-size':'1.5em','text-align':'center'}),
+                         id="btn_show_scatterchart", color="success", className="mr-3"),
                     ]),
                 ]),
                 html.Br(),
@@ -111,14 +111,16 @@ layout = html.Div([
                      dbc.Col([
                         html.Br(),
                         dcc.Upload(
-                            dbc.Button("Cargar Template",  n_clicks=0, color="warning", className="mr-3"),
+                            dbc.Button(html.Span(["Abrir Grafico ", html.I(className="fas fa-upload ml-1")],style={'font-size':'1.5em','text-align':'center'}),
+                              n_clicks=0, color="primary", className="mr-3"),
                             id='btn_open_scatterchart',
                             multiple=False
                         ),
                     ], width={"size": 3, "offset": 0}),
                     dbc.Col([
                         html.Br(),
-                        dbc.Button("Grabar Template", id="btn_save_scatterchart", n_clicks=0, color="warning", className="mr-3"),
+                        dbc.Button(html.Span(["Grabar Grafico ", html.I(className="fas fa-save ml-1")],style={'font-size':'1.5em','text-align':'center'}),
+                         id="btn_save_scatterchart", n_clicks=0, color="primary", className="mr-3"),
                         html.Div(id="save_message_scatter"),
                     ]),
                 ]),

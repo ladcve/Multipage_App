@@ -100,7 +100,12 @@ layout = html.Div([
                     ], width={"size": 4, "offset": 0}),
                     dbc.Col([
                         html.Br(),
-                        dbc.Button("Mostrar Grafico", id="btn_show_chart", color="success", className="mr-3"),
+                        dbc.Button(
+                            html.Span(["Mostrar ", html.I(className="fas fa-chart-bar ml-1")],style={'font-size':'1.5em','text-align':'center'}),
+                            id="btn_show_chart",
+                            color="success",
+                            className="me-1"
+                        )
                     ]),
                 ]),
                 html.Br(),
@@ -116,14 +121,22 @@ layout = html.Div([
                      dbc.Col([
                         html.Br(),
                         dcc.Upload(
-                            dbc.Button("Cargar Template", n_clicks=0, color="warning", className="mr-3"),
+                            dbc.Button(
+                                html.Span(["Abrir Grafico ", html.I(className="fas fa-upload ml-1")],style={'font-size':'1.5em','text-align':'center'}),
+                                n_clicks=0, color="primary", className="mr-3"
+                            ),
                             id='btn_open_linechart',
                             multiple=False
                         ),
                     ], width={"size": 3, "offset": 0}),
                     dbc.Col([
                         html.Br(),
-                        dbc.Button("Grabar Template", id="btn_save_linechart", n_clicks=0, color="warning", className="mr-3"),
+                        dbc.Button(html.Span(["Grabar Grafico ", html.I(className="fas fa-save ml-1")],style={'font-size':'1.5em','text-align':'center'}),
+                            id="btn_save_linechart", 
+                            n_clicks=0, 
+                            color="primary", 
+                            className="mr-3"
+                        ),
                         html.Div(id="save_message_linechart"),
                     ]),
                 ]),
@@ -144,9 +157,17 @@ layout = html.Div([
             ]),
         ], width=9),
         dbc.Col([
+            
             dbc.Card([
                 dbc.CardHeader(html.Label(['Opciones'],style={'font-weight': 'bold', "text-align": "left"})),
                 dbc.CardBody([
+                    dcc.Checklist(
+                        id="cb_clear_data_line",
+                        options=[{"label": "  Limpiar valores Ceros", "value": "YES"}],
+                        value=[],
+                        labelStyle={"display": "inline-block"},
+                    ),
+                    html.Br(),
                     dbc.Card([
                         dbc.CardHeader(html.Label(['Eje Primario'],style={'font-weight': 'bold', "text-align": "left"})),
                         dbc.CardBody([
@@ -155,6 +176,16 @@ layout = html.Div([
                                 id='dpd-column-list-y1',
                                 clearable=False,
                                 multi=True
+                            ),
+                            html.Label(['color:'],style={'font-weight': 'bold', "text-align": "left"}),
+                            dcc.Dropdown(
+                                id='dpd-color-list-y1',
+                                options=[
+                                    {'label': 'Azul', 'value': 'azul'},
+                                    {'label': 'Rojo', 'value': 'rojo'},
+                                    {'label': 'Verde', 'value': 'verde'}
+                                ],
+                                value='azul',
                             ),
                         ]),
                     ]),
@@ -166,6 +197,16 @@ layout = html.Div([
                                 id='dpd-column-list-y2',
                                 clearable=False,
                                 multi=True
+                            ),
+                            html.Label(['color:'],style={'font-weight': 'bold', "text-align": "left"}),
+                            dcc.Dropdown(
+                                id='dpd-color-list-y2',
+                                options=[
+                                    {'label': 'Azul', 'value': 'azul'},
+                                    {'label': 'Rojo', 'value': 'rojo'},
+                                    {'label': 'Verde', 'value': 'verde'}
+                                ],
+                                value='azul',
                             ),
                         ]),
                     ]),
@@ -225,8 +266,24 @@ layout = html.Div([
      Input('dpd-column-list-y2', 'value'),
      Input('ts-annotation', 'value'), 
      Input('dt_table_event', 'data'),
-     Input('dpd-var-list-chart', 'value')])
-def update_line_chart(n_clicks, file_name, well_name, column_list_y1, column_list_y2, show_annot, annot_data, var_list):
+     Input('dpd-var-list-chart', 'data'),
+     Input('dpd-color-list-y1', 'value'),
+     Input('dpd-color-list-y2', 'value'),
+     Input('cb_clear_data_line', 'value'),
+     ])
+def update_line_chart(n_clicks, file_name, well_name, column_list_y1, column_list_y2, show_annot, annot_data, var_list, color_y1, color_y2, clear_data):
+
+    color_axis_y1 = dict(hex='#0000ff')
+    if color_y1=='rojo':
+        color_axis_y1 = dict(hex='#FF0000')
+    if color_y1=='verde':
+        color_axis_y1 = dict(hex='#008f39')
+
+    color_axis_y2 = dict(hex='#0000ff')
+    if color_y2=='rojo':
+        color_axis_y2 = dict(hex='#FF0000')
+    if color_y2=='verde':
+        color_axis_y2 = dict(hex='#008f39')
 
     df = pd.DataFrame()
     quer= ''
@@ -245,7 +302,11 @@ def update_line_chart(n_clicks, file_name, well_name, column_list_y1, column_lis
                     query =  linea +" ORDER BY FECHA"
                 df =pd.read_sql(query, con)
                 df = df[df['NOMBRE'].isin(well_name)]
-                if var_list is not None:
+
+                if clear_data:
+                    df = df[(df!=0)]
+
+                if var_list:
                     for var in var_list:
                         selec_var=variables.loc[variables['NOMBRE']==var]
                         ecuacion = selec_var.iloc[0]['ECUACION']
@@ -258,28 +319,17 @@ def update_line_chart(n_clicks, file_name, well_name, column_list_y1, column_lis
                         go.Scatter(x=df['FECHA'],
                             y=df[columnas_y1],
                             name=columnas_y1,
+                            line_color=color_axis_y1["hex"],
                             yaxis= 'y'+ str(i)),
                         secondary_y=False,
                     )
                     i=+1
-                    yaxis4=dict(
-                        title="yaxis4 title",
-                        titlefont=dict(
-                            color="#9467bd"
-                        ),
-                        tickfont=dict(
-                            color="#9467bd"
-                        ),
-                        anchor="free",
-                        overlaying="y",
-                        side="right",
-                        position=0.85
-                    )
                 for columnas_y2 in column_list_y2:
                     fig.add_trace(
                         go.Scatter(x=df['FECHA'],
                             y=df[columnas_y2],
                             name=columnas_y2,
+                            line_color=color_axis_y2["hex"],
                             yaxis= 'y'+ str(i)),
                         secondary_y=True,
                     )
@@ -290,6 +340,7 @@ def update_line_chart(n_clicks, file_name, well_name, column_list_y1, column_lis
                     autosize=False,
                     width=1400,
                     height=780,
+                    hovermode='x unified',
                     paper_bgcolor='rgba(0,0,0,0)',
                     plot_bgcolor='rgb(240, 240, 240)',
                     margin=dict(

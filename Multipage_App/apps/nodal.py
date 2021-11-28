@@ -4,18 +4,25 @@ from dash_bootstrap_components._components.Row import Row
 import dash_core_components as dcc
 import dash_html_components as html
 from dash.dependencies import Input, Output, State
+import plotly.graph_objects as go
+import plotly.express as px
+from plotly.subplots import make_subplots
 import dash_table
 import sqlite3
 import configparser
 import sys
 import os.path
 import os
+from os import listdir
+from os.path import isfile, join
 import numpy as np
 import pandas as pd
 from datetime import date
 from collections import OrderedDict
 import base64
+import json
 import os
+import dash_daq as daq
 
 from app import app 
 
@@ -46,17 +53,19 @@ well_list =pd.read_sql(query, con)
 well_list = well_list.sort_values('NOMBRE')['NOMBRE'].unique()
 
 layout = html.Div([
+    html.Label(['Análisis Nodal'],style={'font-weight': 'bold', "text-align": "left"}),
+    html.Br(),
     dbc.Row([
         dbc.Col([
             html.Label(['Nombre de Archivo Excel:'],style={'font-weight': 'bold', "text-align": "left"}),
-            dbc.Input(id="inp-ruta-excel", placeholder="Type something...", type="text", style={'backgroundColor':'white'}),
+            dbc.Input(id="inp-ruta-excel-nodal", placeholder="Type something...", type="text", style={'backgroundColor':'white'}),
             html.Div(id="loading-message")
         ], width=2),
         dbc.Col([
             html.Br(),
             dcc.Upload(
                 html.Button('Cargar Archivo'),
-                id='upload_excel_data',
+                id='upload_excel_data_nodal',
                 # Allow multiple files to be uploaded
                 multiple=False
             ),
@@ -64,26 +73,26 @@ layout = html.Div([
         dbc.Col([
             html.Label(['Pozo:'],style={'font-weight': 'bold', "text-align": "left"}),
             dcc.Dropdown(
-                id='dpd-well-lists',
+                id='dpd-well-lists-nodal',
                 options=[{'label': i, 'value': i} for i in well_list],
                 clearable=False
             ),
         ], width=1),
         dbc.Col([
             html.Br(),
-            dbc.Button("Grabar Datos", id="btn_save_excel_data", color="success", className="mr-3"),
+            dbc.Button("Grabar Datos", id="btn_save_excel_data_nodal", color="success", className="mr-3"),
         ], width=2),
     ]),
     html.Br(),
     dbc.Row([
         dbc.Col([
             html.Label(['Nombre de la hoja:'],style={'font-weight': 'bold', "text-align": "left"}),
-            dbc.Input(id="inp_sheet_name", placeholder="Type something...", type="text", style={'backgroundColor':'white'}),
+            dbc.Input(id="inp_sheet_name_nodal", placeholder="Type something...", type="text", style={'backgroundColor':'white'}),
             html.Div(id="save_message_excel")
         ], width=2),
         dbc.Col([
             html.Br(),
-            dbc.Button("Ver Datos", id="btn_show_excel_data", color="primary", className="mr-3"),
+            dbc.Button("Ver Datos", id="btn_show_excel_data_nodal", color="primary", className="mr-3"),
         ], width=2),
     ]),
     html.Br(),
@@ -92,7 +101,7 @@ layout = html.Div([
             dbc.CardHeader(html.Label(['Datos Archivo Excel'],style={'font-weight': 'bold', "text-align": "left"})),
             dbc.CardBody([
                 dbc.Spinner(
-                    dash_table.DataTable(id="query_results_excel", 
+                    dash_table.DataTable(id="query_results_excel_nodal", 
                     style_as_list_view=True,
                     editable=True,
                     row_deletable=True,
@@ -109,12 +118,20 @@ layout = html.Div([
                 ),
             ]),
         ]),
+        dbc.Card([
+            dbc.CardHeader(html.Label(['Datos Archivo Excel'],style={'font-weight': 'bold', "text-align": "left"})),
+            dbc.CardBody([
+                dbc.Spinner(
+                    dcc.Graph(id='cht-nodal-chart'),
+                ),
+            ]),
+        ]),
     ])
 ])
 
-@app.callback(Output('inp-ruta-excel', 'value'),
-              [Input('upload_excel_data', 'filename'),
-              Input('upload_excel_data', 'contents')]
+@app.callback(Output('inp-ruta-excel-nodal', 'value'),
+              [Input('upload_excel_data_nodal', 'filename'),
+              Input('upload_excel_data_nodal', 'contents')]
               )
 def update_output( list_of_names, list_of_contents):
     archivo = list_of_names
@@ -126,14 +143,41 @@ def update_output( list_of_names, list_of_contents):
     return archivo
 
 @app.callback(
-    [Output("query_results_excel", "data"), Output("query_results_excel", "columns")],
-    [Input("btn_show_excel_data", "n_clicks"),
-     Input('inp-ruta-excel', 'value'), 
-     Input('inp_sheet_name', 'value'),
-     Input('dpd-well-lists', 'value')], 
-    [State('query_results_excel', 'data'), State('query_results_excel', 'columns')]
+    Output('cht-nodal-chart','figure'),
+    [Input("query_results_excel_nodal", "data"),
+    Input("btn_show_excel_data_nodal", "value"),
+    ]
 )
-def update_table_excel(n_clicks, excel_name, sheet_excel_name, well_name, data, columns):
+def update_nodal_chart(rows, well_name):
+    df = pd.DataFrame(rows)
+    numbers = [0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19]
+    fig = {}
+    if (len(df.columns)>1 and well_name):
+        df= df.loc[df['NOMBRE']==well_name]
+        se = pd.Series(numbers)
+        df['Point'] = se.values
+        fig = px.line(df, x='Point', y=['VLP', 'IPR'])
+        fig.update_xaxes(showline=True, linewidth=2, linecolor='black', showgrid=False,)
+        fig.update_yaxes(showline=True, linewidth=2, linecolor='black', showgrid=False,)
+        fig.update_layout(
+                    autosize=False,
+                    width=800,
+                    height=780,
+                    paper_bgcolor='rgba(0,0,0,0)',
+                    plot_bgcolor='rgb(240, 240, 240)',
+                   )
+
+    return fig
+
+@app.callback(
+    [Output("query_results_excel_nodal", "data"), Output("query_results_excel_nodal", "columns")],
+    [Input("btn_show_excel_data_nodal", "n_clicks"),
+     Input('inp-ruta-excel-nodal', 'value'), 
+     Input('inp_sheet_name_nodal', 'value'),
+     Input('dpd-well-lists-nodal', 'value')], 
+    [State('query_results_excel_nodal', 'data'), State('query_results_excel_nodal', 'columns')]
+)
+def update_table_excel_nodal(n_clicks, excel_name, sheet_excel_name, well_name, data, columns):
     data_results = pd.DataFrame()
     changed_id = [p['prop_id'] for p in dash.callback_context.triggered][0]
 
@@ -146,18 +190,19 @@ def update_table_excel(n_clicks, excel_name, sheet_excel_name, well_name, data, 
     return data, columns
 
 @app.callback(
-    Output("save_message_excel", "children"),
-    Input("btn_save_excel_data", "n_clicks"),
-    [State('query_results_excel', 'data')]
+    Output("save_message_excel_nodal", "children"),
+    Input("btn_save_excel_data_nodal", "n_clicks"),
+    [State('query_results_excel_nodal', 'data')]
 )
-def fupdate_table(n_clicks, dataset):
+def update_table_nodal(n_clicks, dataset):
     changed_id = [p['prop_id'] for p in dash.callback_context.triggered][0]
     mensaje = ''
     pg = pd.DataFrame(dataset)
     if 'btn_save_excel_data' in changed_id:
         con = sqlite3.connect(archivo)
-        pg.to_sql('SURVEY', con, if_exists='append', index=False)
+        pg.to_sql('NODAL', con, if_exists='append', index=False)
         con.commit()
         con.close()
         mensaje='Datos guardados'
     return mensaje
+

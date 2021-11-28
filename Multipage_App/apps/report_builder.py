@@ -4,7 +4,6 @@ from dash_bootstrap_components._components.Row import Row
 import dash_core_components as dcc
 import dash_html_components as html
 from dash.dependencies import Input, Output, State
-from dash_html_components.Br import Br
 import dash_table
 import sqlite3
 import configparser
@@ -32,6 +31,7 @@ configuracion = configparser.ConfigParser()
 #Variable con la ruta para salvar los querys
 QUERY_DIRECTORY = "./querys"
 TEMPLATE_DIRECTORY = "./template/"
+EXPORT_DIRECTORY = "./export/"
 
 if os.path.isfile('config.ini'):
 
@@ -65,49 +65,63 @@ file_name = ''
 
 layout = html.Div([
     dbc.Row([
-            dbc.Col([
-                html.Label(['Consulta:'],style={'font-weight': 'bold', "text-align": "left"}),
-                dcc.Dropdown(
-                    id='dpd-query-lista',
-                    options=[
-                        {'label': i, 'value': i} for i in files
-                    ],
-                    clearable=False
-                ),
-            ], width=2),
-            dbc.Col([
-                html.Label(['Pozo:'],style={'font-weight': 'bold', "text-align": "left"}),
-                dcc.Dropdown(
-                    id='dpd-well-lista',
-                    options=[{'label': i, 'value': i} for i in well_list],
-                    clearable=False
-                ),
-            ], width=1),
-            dbc.Col([
-                html.Br(),
-                dbc.Button("Ejecutar Reporte", id="btn_execute_report", color="success", className="mr-3"),
+        dbc.Col([
+            dbc.Card([
+                dbc.Row([
+                    dbc.Col([
+                        html.Label(['Consulta:'],style={'font-weight': 'bold', "text-align": "left"}),
+                        dcc.Dropdown(
+                            id='dpd-query-lista',
+                            options=[
+                                {'label': i, 'value': i} for i in files
+                            ],
+                            clearable=False
+                        ),
+                    ], width={"size": 3, "offset": 0}),
+                    dbc.Col([
+                        html.Label(['Pozo:'],style={'font-weight': 'bold', "text-align": "left"}),
+                        dcc.Dropdown(
+                            id='dpd-well-lista',
+                            options=[{'label': i, 'value': i} for i in well_list],
+                            clearable=False
+                        ),
+                    ], width={"size": 3, "offset": 0}),
+                    dbc.Col([
+                        html.Br(),
+                        dbc.Button("Ejecutar Reporte", id="btn_execute_report", color="success", className="mr-3"),
+                    ], width={"size": 1, "offset": 1}),
+                    dbc.Col([
+                        html.Br(),
+                        dbc.Button("Exportar Excel", id="btn_export_excel", color="warning", className="mr-3"),
+                    ], width={"size": 1, "offset": 1}),
+                    html.Br(),
+                ]),
             ]),
-            dbc.Col([
-                html.Br(),
-                dbc.Button("Exportar Excel", id="btn_export_excel", color="warning", className="mr-3"),
+        ], width={"size": 7, "offset": 0}),
+        dbc.Col([
+            dbc.Card([
+                dbc.Row([
+                    dbc.Col([
+                        html.Label(['Nombre Archivo:'],style={'font-weight': 'bold', "text-align": "left"}),
+                        dbc.Input(id="inp-ruta-report", placeholder="Type something...", type="text", style={'backgroundColor':'white'}),
+                    ], width=4),
+                    dbc.Col([
+                        html.Br(),
+                        dbc.Button("Salvar Reporte", id="btn_save_report", color="warning", className="mr-3"),
+                        html.Div(id="save_message_reporte"),
+                    ], width={"size": 1, "offset": 1}),
+                    dbc.Col([
+                        html.Br(),
+                        dcc.Upload(
+                            dbc.Button("Abrir Reporte",  color="warning", className="mr-3"),
+                            id="btn_open_report",
+                            multiple=False
+                        ),
+                    ], width={"size": 1, "offset": 1}),
+                    html.Br(),
+                ]),
             ]),
-            dbc.Col([
-                html.Label(['Nombre Archivo:'],style={'font-weight': 'bold', "text-align": "left"}),
-                dbc.Input(id="inp-ruta-report", placeholder="Type something...", type="text", style={'backgroundColor':'white'}),
-            ], width={"size": 3, "offset": 1}),
-            dbc.Col([
-                html.Br(),
-                dbc.Button("Salvar Reporte", id="btn_save_report", color="warning", className="mr-3"),
-                html.Div(id="save_message_reporte"),
-            ]),
-            dbc.Col([
-                html.Br(),
-                dcc.Upload(
-                    dbc.Button("Abrir Reporte",  color="warning", className="mr-3"),
-                    id="btn_open_report",
-                    multiple=False
-                ),
-            ]),
+        ], width={"size": 5, "offset": 0}),
     ]),
     html.Br(),
     dbc.Row([
@@ -141,7 +155,7 @@ layout = html.Div([
             dbc.Card([
                 dbc.CardHeader(html.Label(['Opciones'],style={'font-weight': 'bold', "text-align": "left"})),
                 dbc.CardBody([
-                html.Label(['Variable Calculadas:'],style={'font-weight': 'bold', "text-align": "left"}),
+                    html.Label(['Variable Calculadas:'],style={'font-weight': 'bold', "text-align": "left"}),
                     dcc.Dropdown(
                         id='dpd-var-list',
                         options=[{'label': i, 'value': i} for i in var_list],

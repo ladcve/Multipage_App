@@ -4,7 +4,6 @@ from dash_bootstrap_components._components.Row import Row
 import dash_core_components as dcc
 import dash_html_components as html
 from dash.dependencies import Input, Output, State
-from dash_html_components.Br import Br
 import dash_table
 import sqlite3
 import configparser
@@ -92,7 +91,8 @@ layout = html.Div([
                                 style_header={
                                     'backgroundColor': 'blue',
                                     'fontWeight': 'bold',
-                                    'color': 'white'
+                                    'color': 'white',
+                                    'font-family':'arial'
                                 },
                                 sort_action="native",
                                 sort_mode="multi",
@@ -103,7 +103,7 @@ layout = html.Div([
                                 page_current= 0,
                                 page_size= 13,
                                 style_table={'height': '500px', 'overflowY': 'auto'},
-                                style_cell={'textAlign': 'left', 'minWidth': '100px', 'width': '200px', 'maxWidth': '300px'},
+                                style_cell={'textAlign': 'left', 'minWidth': '100px', 'width': '200px', 'maxWidth': '300px', 'font-family':'arial'},
                         ),
                     ),
                 ]),
