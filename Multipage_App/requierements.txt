@@ -7,3 +7,15 @@
  os
  pandas
  pyodbc
+ pydantic
+ numpy
+ configparser
+ collections
+ scipy
+ well_profile
+ dash-ace
+ dash-dual-listbox
+python -m pip install -U scikit-image
+dash_daq
+lasio
+sqlalchemy

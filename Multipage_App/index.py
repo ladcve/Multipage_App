@@ -1,15 +1,26 @@
+"""
+Modulo: Index
+------------------------------
+"""
+
 import dash_bootstrap_components as dbc
 import dash_core_components as dcc
 import dash_html_components as html
 from dash.dependencies import Input, Output, State
 import base64
 import datetime
+import webbrowser
+
 
 # Connect to main app.py file
 from app import app
 
 # Connect to your app pages
-from apps import report_builder, line_chart, bar_chart, pie_chart, events_loader, survey_loader, dashboard, sql_builder, decline_analysis
+from apps import report_builder, multi_line_chart, line_chart, bar_chart, sunburst_chart, events_loader, survey_loader, dashboard, sql_builder, decline_analysis, contour_map, scatter_chart, area_chart, wellbore_diagram, wellbore_loader, LAS_chart, cross_section, items_loader, db_creation_update, variable_loader, python_interprete, export_data, nodal
+
+app.css.config.serve_locally = True
+app.scripts.config.serve_locally = True
+
 
 logo_filename = '.\pictures\LogoProdAnalysis.png'
 home_filename = '.\pictures\home.png'
@@ -24,6 +35,7 @@ navbar = dbc.Navbar(
                 [
                     dbc.Col(html.Img(src='data:image/png;base64,{}'.format(logo_base64))),
                     dbc.Col(dbc.NavbarBrand(html.H5(['  Production Analysis'],style={'font-weight': 'bold', "text-align": "left"}), className="ml-2")),
+                    dbc.Col(dbc.NavbarBrand(html.Div(id="screen_name"), className="ml-2", style={'font-weight': 'bold', "text-align": "left"})),
                 ],
                 align="center",
                 no_gutters=True,
@@ -42,48 +54,138 @@ SIDEBAR_STYLE = {
     "width": "16rem",
     "padding": "2rem 1rem",
     "background-color": "#133c65",
-}
-
-
-SIDEBAR_HIDEN = {
-    "position": "fixed",
-    "top": 52,
-    "left": "-16rem",
-    "bottom": 0,
-    "width": "16rem",
-    "height": "100%",
-    "z-index": 1,
-    "overflow-x": "hidden",
-    "transition": "all 0.5s",
-    "padding": "0rem 0rem",
-    "background-color": "#f8f9fa",
+    "overflow": "scroll",
 }
 
 # padding for the page content
 CONTENT_STYLE = {
     "margin-left": "18rem",
     "margin-right": "2rem",
-    "padding": "2rem 1rem",
+    "padding": "1rem 1rem",
 }
+
+submenu_graficos = [
+    html.Li(
+        "Gráficos",
+        style={"cursor": "pointer"},
+        id="submenu-1",
+    ),
+    # we use the Collapse component to hide and reveal the navigation links
+    dbc.Collapse(
+        [
+            dbc.NavLink("Dashboard", href="/", active="exact"),
+            dbc.NavLink("Línea", href="/apps/line_chart", active="exact"),
+            dbc.NavLink("Multi Gráfico Línea", href="/apps/multi_line_chart", active="exact"),
+            dbc.NavLink("Barras", href="/apps/bar_chart", active="exact"),
+            dbc.NavLink("Scatter", href="/apps/scatter_chart", active="exact"),
+            dbc.NavLink("Sunburst", href="/apps/sunburst_chart", active="exact"),
+            dbc.NavLink("Area", href="/apps/area_chart", active="exact"),
+        ],
+        id="submenu-1-collapse",
+    ),
+]
+
+submenu_reportes = [
+    html.Li(
+        "Reportes",
+        style={"cursor": "pointer"},
+        id="submenu-2",
+    ),
+    # we use the Collapse component to hide and reveal the navigation links
+    dbc.Collapse(
+        [
+            dbc.NavLink("Generador Reportes", href="/apps/report_builder", active="exact"),
+        ],
+        id="submenu-2-collapse",
+    ),
+]
+
+
+submenu_mapas = [
+    html.Li(
+        "Mapas",
+        style={"cursor": "pointer"},
+        id="submenu-3",
+    ),
+    # we use the Collapse component to hide and reveal the navigation links
+    dbc.Collapse(
+        [
+            dbc.NavLink("Contorno", href="/apps/contour_map", active="exact"),
+            
+        ],
+        id="submenu-3-collapse",
+    ),
+]
+
+submenu_datos = [
+    html.Li(
+        "Carga de Datos",
+        style={"cursor": "pointer"},
+        id="submenu-4",
+    ),
+    # we use the Collapse component to hide and reveal the navigation links
+    dbc.Collapse(
+        [
+            dbc.NavLink("Eventos", href="/apps/events_loader", active="exact"),
+            dbc.NavLink("Wellbore Diagram", href="/apps/wellbore_loader", active="exact"),
+            dbc.NavLink("Survey", href="/apps/survey_loader", active="exact"),
+            dbc.NavLink("Items", href="/apps/items_loader", active="exact"),
+            dbc.NavLink("Puntos de Presión", href="/apps/survey_loader", active="exact"),
+            dbc.NavLink("Analisis Nodal", href="/apps/nodal", active="exact"),
+        ],
+        id="submenu-4-collapse",
+    ),
+]
+
+submenu_ingenieria = [
+    html.Li(
+        "Ingeniería",
+        style={"cursor": "pointer"},
+        id="submenu-5",
+    ),
+    # we use the Collapse component to hide and reveal the navigation links
+    dbc.Collapse(
+        [
+            dbc.NavLink("Curva de Declinacion", href="/apps/decline_analysis", active="exact"),
+            dbc.NavLink("Prueba Build-Up", href="/apps/decline_analysis", active="exact"),
+            dbc.NavLink("Cross Section", href="/apps/cross_section", active="exact"),
+            dbc.NavLink("Esquematico del Pozo", href="/apps/wellbore_diagram", active="exact"),
+            dbc.NavLink("LAS", href="/apps/LAS_chart", active="exact"),
+            dbc.NavLink("Python Interprete", href="/apps/python_interprete", active="exact"),
+        ],
+        id="submenu-5-collapse",
+    ),
+]
+
+submenu_admin = [
+    html.Li(
+        # use Row and Col components to position the chevrons
+        "Administración",
+        style={"cursor": "pointer"},
+        id="submenu-6",
+    ),
+    # we use the Collapse component to hide and reveal the navigation links
+    dbc.Collapse(
+        [
+            dbc.NavLink("Variables Calculadas", href="/apps/variable_loader", active="exact"),    
+            dbc.NavLink("SQL Builder", href="/apps/sql_builder", active="exact"),
+            dbc.NavLink("Crear BD", href="/apps/db_creation_update", active="exact"),
+            dbc.NavLink("Exportar Datos", href="/apps/export_data", active="exact"),
+           
+        ],
+        id="submenu-6-collapse",
+    ),
+]
+
 
 sidebar = html.Div(
     [
-        dbc.Nav(
-            [
-                dbc.NavLink("Home", href="/", active="exact"),
-                dbc.NavLink("Generador Reportes", href="/apps/report_builder", active="exact"),
-                dbc.NavLink("Gráfico Línea", href="/apps/line_chart", active="exact"),
-                dbc.NavLink("Gráfico Barras", href="/apps/bar_chart", active="exact"),
-                dbc.NavLink("Gráfico Torta", href="/apps/pie_chart", active="exact"),
-                dbc.NavLink("Datos de Eventos", href="/apps/events_loader", active="exact"),
-                dbc.NavLink("Datos de Survey", href="/apps/survey_loader", active="exact"),
-                dbc.NavLink("Curva de Declinacion", href="/apps/decline_analysis", active="exact"),
-                dbc.NavLink("Variables Calculadas", href="/apps/live_bootstrap", active="exact"),    
-                dbc.NavLink("SQL Builder", href="/apps/sql_builder", active="exact"),          
-            ],
-            vertical=True,
-            pills=True,
-        ),
+        dbc.Nav(submenu_graficos, vertical=True),
+        dbc.Nav(submenu_reportes, vertical=True),
+        dbc.Nav(submenu_mapas, vertical=True),
+        dbc.Nav(submenu_datos, vertical=True),
+        dbc.Nav(submenu_ingenieria, vertical=True),
+        dbc.Nav(submenu_admin, vertical=True),
     ],
     id="sidebar",
     style=SIDEBAR_STYLE,
@@ -96,62 +198,90 @@ app.layout = html.Div([
     dcc.Store(id='side_click'),
     navbar,
     sidebar,
-    html.Div(content, style=dict(maxHeight=720, overflowX='scroll')),
+    html.Div(content, style=dict(maxHeight=1000, overflowX='scroll')),
 ])
 
-@app.callback(
-    [
-        Output("sidebar", "style"),
-        Output("page-content", "style"),
-        Output("side_click", "data"),
-    ],
-
-    [Input("btn_sidebar", "n_clicks")],
-    [
-        State("side_click", "data"),
-    ]
-)
-def toggle_sidebar(n, nclick):
+# this function is used to toggle the is_open property of each Collapse
+def toggle_collapse(n, is_open):
     if n:
-        if nclick == "SHOW":
-            sidebar_style = SIDEBAR_HIDEN
-            content_style = CONTENT_STYLE
-            cur_nclick = "HIDDEN"
-        else:
-            sidebar_style = SIDEBAR_STYLE
-            content_style = CONTENT_STYLE
-            cur_nclick = "SHOW"
-    else:
-        sidebar_style = SIDEBAR_STYLE
-        content_style = CONTENT_STYLE
-        cur_nclick = 'SHOW'
+        return not is_open
+    return is_open
 
-    return sidebar_style, content_style, cur_nclick
+
+# this function applies the "open" class to rotate the chevron
+def set_navitem_class(is_open):
+    if is_open:
+        return "open"
+    return ""
+
+
+for i in [1, 2, 3, 4, 5, 6]:
+    app.callback(
+        Output(f"submenu-{i}-collapse", "is_open"),
+        [Input(f"submenu-{i}", "n_clicks")],
+        [State(f"submenu-{i}-collapse", "is_open")],
+    )(toggle_collapse)
+
+    app.callback(
+        Output(f"submenu-{i}", "className"),
+        [Input(f"submenu-{i}-collapse", "is_open")],
+    )(set_navitem_class)
 
 @app.callback(Output('page-content', 'children'),
+              Output('screen_name', 'children'),
               [Input('url', 'pathname')])
 def display_page(pathname):
     if pathname == '/apps/report_builder':
-        return report_builder.layout
+        return report_builder.layout, 'Generador de Reportes'
+    if pathname == '/apps/multi_line_chart':
+        return multi_line_chart.layout, 'Multi Grafico Línea'
     if pathname == '/apps/line_chart':
-        return line_chart.layout
+        return line_chart.layout, 'Gráfico de Línea'
     if pathname == '/apps/bar_chart':
-        return bar_chart.layout
-    if pathname == '/apps/pie_chart':
-        return pie_chart.layout
+        return bar_chart.layout, 'Gráfico de Barras'
+    if pathname == '/apps/sunburst_chart':
+        return sunburst_chart.layout, 'Graficos Sunburst'
     if pathname == '/apps/survey_loader':
-        return survey_loader.layout
+        return survey_loader.layout, 'Cargador de Surveys'
     if pathname == '/apps/events_loader':
-        return events_loader.layout
+        return events_loader.layout, 'Cargador de eventos'
     if pathname == '/':
-        return dashboard.layout
+        return dashboard.layout, 'Dashboard'
     if pathname == '/apps/sql_builder':
-        return sql_builder.layout
+        return sql_builder.layout, 'SQL Builder'
     if pathname == '/apps/decline_analysis':
-        return decline_analysis.layout
+        return decline_analysis.layout, 'Análisis de Declinación'
+    if pathname == '/apps/contour_map': 
+        return contour_map.layout, 'Mapas de Contorno'
+    if pathname == '/apps/scatter_chart': 
+        return scatter_chart.layout, 'Gráfico Scatter'
+    if pathname == '/apps/area_chart': 
+        return area_chart.layout, 'Gráfico de Área'
+    if pathname == '/apps/wellbore_diagram': 
+        return wellbore_diagram.layout, 'Diagrama Mecanico'
+    if pathname == '/apps/wellbore_loader': 
+        return wellbore_loader.layout, 'Cargador de Drigrama Mecanico'
+    if pathname == '/apps/LAS_chart': 
+        return LAS_chart.layout, 'Visualziador de Archivos LAS'
+    if pathname == '/apps/cross_section': 
+        return cross_section.layout, 'Generador de Cross Section'
+    if pathname == '/apps/items_loader': 
+        return items_loader.layout, 'Generador de Reportes'
+    if pathname == '/apps/db_creation_update': 
+        return db_creation_update.layout, 'Creación y Actualizacion de la BD'
+    if pathname == '/apps/variable_loader': 
+        return variable_loader.layout, 'Cargador de Variables Calculadas'
+    if pathname == '/apps/python_interprete': 
+        return python_interprete.layout, 'Interprete de Python'
+    if pathname == '/apps/export_data': 
+        return export_data.layout, 'Exportar Datos'
+    if pathname == '/apps/nodal': 
+        return nodal.layout, 'Análisis Nodal'
     else:
-        return "404 Page Error! Please choose a link"
+        return "404 Page Error! Please choose a link" , ""
 
+#webbrowser.open('http://127.0.0.1:8050/', new=2)
 
 if __name__ == '__main__':
     app.run_server(debug=True)
+   
