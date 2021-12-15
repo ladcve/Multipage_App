@@ -4,12 +4,14 @@ from dash_bootstrap_components._components.Row import Row
 import dash_core_components as dcc
 import dash_html_components as html
 from dash.dependencies import Input, Output, State
+import dash_admin_components as dac
 from scipy.interpolate import griddata
 import plotly.graph_objects as go
 import plotly.express as px
 import dash_table
 import sqlite3
 import configparser
+import json
 import sys
 import os.path
 import os
@@ -26,12 +28,10 @@ from app import app
 
 #Variable con la ruta para salvar los querys
 QUERY_DIRECTORY = "./querys"
+CHART_DIRECTORY = "./template/"
 
 #Lee el archivo de configuracion
 configuracion = configparser.ConfigParser()
-
-#Variable con la ruta para salvar los querys
-QUERY_DIRECTORY = "./querys"
 
 if os.path.isfile('config.ini'):
 
@@ -53,6 +53,10 @@ query = "SELECT NOMBRE FROM ITEMS WHERE ESTATUS=1 "
 well_list =pd.read_sql(query, con)
 well_list = well_list.sort_values('NOMBRE')['NOMBRE'].unique()
 
+query = "SELECT NOMBRE FROM VARIABLES"
+var_list =pd.read_sql(query, con)
+var_list = var_list.sort_values('NOMBRE')['NOMBRE'].unique()
+
 #Listado de query
 pathway = './querys'
 files = [f for f in listdir(pathway) if isfile(join(pathway, f))]
@@ -72,60 +76,127 @@ xi, yi = np.meshgrid(xi, yi)
 layout = html.Div([
     dbc.Row([
         dbc.Col([
-            html.Label(['Consulta:'],style={'font-weight': 'bold', "text-align": "left"}),
-            dcc.Dropdown(
-                id='dpd-query-list',
-                options=[
-                     {'label': i, 'value': i} for i in files
-                 ],
-                clearable=False
-            ),
-        ], width=2),
+            dbc.Card([
+                dbc.Row([
+                    dbc.Col([
+                        html.Label(['Consulta:'],style={'font-weight': 'bold', "text-align": "left"}),
+                        dcc.Dropdown(
+                            id='dpd-query-list-contour',
+                            options=[
+                                {'label': i, 'value': i} for i in files
+                            ],
+                            clearable=False
+                        ),
+                    ], width={"size": 4, "offset": 1}),
+                    dbc.Col([
+                        html.Label(['Fecha: '],style={'font-weight': 'bold', "text-align": "left"}),
+                        dcc.DatePickerSingle(
+                            id='dtp_fecha',
+                            date=date.today(),
+                            display_format='YYYY-MM-DD',
+                            style={'backgroundColor':'white'},
+                        )
+                    ], width={"size": 2, "offset": 0}),
+                    dbc.Col([
+                        html.Br(),
+                        dbc.Button(html.Span(["Mostrar ", html.I(className="fas fa-map ml-1")],style={'font-size':'1.5em','text-align':'center'}), 
+                        id="btn_show_chart", color="success", className="mr-3"),
+                    ], width={"size": 1, "offset": 1}),
+                    dbc.Col([
+                        html.Br(),
+                        dbc.Button(html.Span(["Imagen ", html.I(className="fas fa-file-export ml-1")],style={'font-size':'1.5em','text-align':'center'}),
+                         id="btn_export_img", color="warning", className="mr-3"),
+                    ], width={"size": 1, "offset": 1}),
+                ]),
+                html.Br(),
+            ]),
+        ], width={"size": 7, "offset": 0}),
         dbc.Col([
-            html.Label(['Fecha: '],style={'font-weight': 'bold', "text-align": "left"}),
-            dcc.DatePickerSingle(
-                id='dtp_fecha',
-                date=date.today(),
-                display_format='YYYY-MM-DD',
-                style={'backgroundColor':'white'},
-            )
-        ], width=3),
-        dbc.Col([
-            html.Br(),
-            dbc.Button("Mostrar Grafico", id="btn_show_chart", color="success", className="mr-3"),
-        ], width=1.5),
-        dbc.Col([
-            html.Br(),
-            dbc.Button("Exportar Imagen", id="btn_export_img", color="warning", className="mr-3"),
-        ]),
+            dbc.Card([
+                dbc.Row([
+                    dbc.Col([
+                        html.Label(['Nombre Archivo:'],style={'font-weight': 'bold', "text-align": "left"}),
+                        dbc.Input(id="inp-ruta-contour", placeholder="Type something...", type="text", style={'backgroundColor':'white'}),
+                    ], width={"size": 3, "offset": 1}),
+                     dbc.Col([
+                        html.Br(),
+                        dcc.Upload(
+                            dbc.Button(
+                                html.Span(["Abrir ", html.I(className="fas fa-upload ml-1")],style={'font-size':'1.5em','text-align':'center'}),
+                                n_clicks=0, color="primary", className="mr-3"
+                            ),
+                            id='btn_open_contour',
+                            multiple=False
+                        ),
+                    ], width={"size": 1, "offset": 0}),
+                    dbc.Col([
+                        html.Br(),
+                        dbc.Button(html.Span(["Grabar ", html.I(className="fas fa-save ml-1")],style={'font-size':'1.5em','text-align':'center'}),
+                            id="btn_save_contour", 
+                            n_clicks=0, 
+                            color="primary", 
+                            className="mr-3"
+                        ),
+                        html.Div(id="save_message_contour"),
+                    ], width={"size": 1, "offset": 1}),
+                ]),
+                html.Br(),
+            ]),
+        ], width={"size": 4, "offset": 0}),
     ]),
     html.Br(),
     dbc.Row([
         dbc.Col([
-            dbc.Card([
-                dbc.CardHeader(html.Label(['Gráfico de Contorno'],style={'font-weight': 'bold', "text-align": "left"})),
-                dbc.CardBody([
-                    dbc.Spinner(
-                        dcc.Graph(id='cht-contour-chart'),
+            dac.Box([
+                    dac.BoxHeader(
+                        collapsible = False,
+                        closable = False,
+                        title="Mapa de Contorno"
                     ),
-                ])
-            ]),
+                    dac.BoxBody([
+                        dbc.Spinner(
+                            dcc.Graph(id='cht-contour-chart'),
+                        ),
+                    ]),	
+                ],
+                color='primary',
+                solid_header=True,
+                elevation=4,
+                width=12
+            ),
         ], width=9),
         dbc.Col([
-            dbc.Card([
-                dbc.CardHeader(html.Label(['Opciones'],style={'font-weight': 'bold', "text-align": "left"})),
-                dbc.CardBody([
-                    html.Label(['Nombre del Gráfico'],style={'font-weight': 'bold', "text-align": "left"}),
-                    dbc.Input(id="inp_chart_name", placeholder="Type something...", type="text", style={'backgroundColor':'white'}),
-                    html.Br(),
-                    html.Label(['Datos:'],style={'font-weight': 'bold', "text-align": "left"}),
-                    dcc.Dropdown(
-                        id='dpd-data-lists',
-                        clearable=False,
-                        multi=False,
+            dac.Box([
+                    dac.BoxHeader(
+                        collapsible = False,
+                        closable = False,
+                        title="Marcadores Estratgráficos"
                     ),
-                ])
-            ]),
+                    dac.BoxBody([
+                        html.Label(['Nombre del Gráfico'],style={'font-weight': 'bold', "text-align": "left"}),
+                        dbc.Input(id="inp_contour_name", placeholder="Type something...", type="text", style={'backgroundColor':'white'}),
+                        html.Br(),
+                        html.Label(['Datos:'],style={'font-weight': 'bold', "text-align": "left"}),
+                        dcc.Dropdown(
+                            id='dpd-data-lists',
+                            clearable=False,
+                            multi=False,
+                        ),
+                        html.Br(),
+                        html.Label(['Variable Calculadas:'],style={'font-weight': 'bold', "text-align": "left"}),
+                        dcc.Dropdown(
+                            id='dpd-var-list-contour',
+                            options=[{'label': i, 'value': i} for i in var_list],
+                            clearable=False,
+                            multi=True,
+                        ),
+                    ]),	
+                ],
+                color='primary',
+                solid_header=True,
+                elevation=4,
+                width=12
+            ),
         ], width=3),
     ]),
 ])
@@ -133,14 +204,15 @@ layout = html.Div([
 @app.callback(
     Output('cht-contour-chart','figure'),
     [Input("btn_show_chart", "n_clicks"),
-     Input('dpd-query-list', 'value'), 
+     Input('dpd-query-list-contour', 'value'), 
      Input('dpd-data-lists', 'value'),
      Input('dtp_fecha', 'date'),
-     Input('inp_chart_name', 'value')])
-def update_contour_map(n_clicks, file_name, columns_list, dtp_fecha, chart_title):
+     Input('inp_contour_name', 'value'),
+     Input('dpd-var-list-contour', 'value')])
+def update_contour_map(n_clicks, file_name, columns_list, dtp_fecha, chart_title, var_list):
 
-    data_results = pd.DataFrame()
-    quer= ''
+    df = pd.DataFrame()
+    query= ''
     fecha = str(dtp_fecha)
     df = pd.DataFrame()
 
@@ -148,17 +220,28 @@ def update_contour_map(n_clicks, file_name, columns_list, dtp_fecha, chart_title
     fig = go.Figure()
     if 'btn_show_chart' in changed_id:
         con = sqlite3.connect(archivo)
+        query = "SELECT * FROM VARIABLES"
+        variables =pd.read_sql(query, con)
+        query= ''
         if file_name is not None:
             with open(os.path.join(QUERY_DIRECTORY, file_name)) as f:
                 contenido = f.readlines()
             if contenido is not None:
                 if fecha is not None:
                     for linea in contenido:
-                        query =  linea + " WHERE date(FECHA)='"+fecha+"' ORDER BY FECHA"
+                        query +=  linea 
 
-                data_results =pd.read_sql(query, con)
+                query += " WHERE date(FECHA)='"+fecha+"' ORDER BY FECHA"
+                df =pd.read_sql(query, con)
+                if var_list:
+                    for var in var_list:
+                        selec_var=variables.loc[variables['NOMBRE']==var]
+                        ecuacion = selec_var.iloc[0]['ECUACION']
+                        titulo = selec_var.iloc[0]['TITULO']
+                        evalu = eval(ecuacion)
+                        df[titulo] = evalu
 
-                z = data_results[columns_list]
+                z = df[columns_list]
 
                 # grid N data with cubic interpolation method
                 zi = griddata((x,y),z,(xi,yi),method='cubic')
@@ -262,25 +345,87 @@ def update_contour_map(n_clicks, file_name, columns_list, dtp_fecha, chart_title
     return fig
 
 @app.callback(
-    [Output('dpd-data-lists','options'),
-    Output('dpd-data-lists','value')],
-    [Input('dpd-query-list', 'value')])
-def update_column_list(file_name):
+    Output('dpd-data-lists','options'),
+    [Input('dpd-query-list-contour', 'value'),
+     Input('dpd-var-list-contour', 'value')])
+def update_column_list(file_name, var_list):
 
-    data_results = pd.DataFrame()
+    df = pd.DataFrame()
     columns = [{'label': i, 'value': i} for i in []]
-    quer= ''
+    query= ''
     valor=[]
     changed_id = [p['prop_id'] for p in dash.callback_context.triggered][0]
-    if 'dpd-query-list' in changed_id:
+    if 'dpd-query-list-contour' in changed_id or 'dpd-var-list-contour' in changed_id:
         con = sqlite3.connect(archivo)
-        if file_name is not None:
+        query = "SELECT * FROM VARIABLES"
+        variables =pd.read_sql(query, con)
+        query=''
+        if file_name:
             with open(os.path.join(QUERY_DIRECTORY, file_name)) as f:
                 contenido = f.readlines()
                 for linea in contenido:
-                    query =  linea
-                data_results =pd.read_sql(query, con)
-                data_results =data_results.drop(['index', 'NOMBRE', 'FECHA'], axis=1)
-                columns = [{'label': i, 'value': i} for i in data_results.columns]
-                valor.append(data_results.columns[0])
-    return columns, valor
+                    query +=  linea
+                df =pd.read_sql(query, con)
+
+            if var_list:
+                for var in var_list:
+                    selec_var=variables.loc[variables['NOMBRE']==var]
+                    ecuacion = selec_var.iloc[0]['ECUACION']
+                    titulo = selec_var.iloc[0]['TITULO']
+                    evalu = eval(ecuacion)
+                    df[titulo] = evalu
+
+            df =df.drop(['index', 'NOMBRE', 'FECHA'], axis=1)
+            columns = [{'label': i, 'value': i} for i in df.columns]
+
+        con.close()
+
+    return columns
+
+@app.callback(
+    Output('save_message_contour','children'),
+    [Input('btn_save_contour', 'n_clicks'),
+    Input('dpd-query-list-contour', 'value'),
+    Input('dpd-data-lists', 'value'),
+    Input('inp_contour_name', 'value'),
+    Input('dpd-var-list-contour', 'value')]) 
+def save_contour(n_clicks, consulta, datos_y1, file_name, var_list ):
+    mensaje=''
+    changed_id = [p['prop_id'] for p in dash.callback_context.triggered][0]
+    if 'btn_save_contourmap' in changed_id:
+        data = {}
+        data['grafico'] = []
+        data['grafico'].append({
+            'consulta': consulta,
+            'datos_y1': datos_y1,
+            'var_list': var_list,})
+        if file_name:
+            with open(CHART_DIRECTORY+file_name, 'w') as file:
+                json.dump(data, file, indent=4)
+            mensaje = 'Archivo guardado'
+    return mensaje
+
+@app.callback( [Output('inp_contour_name', 'value'),
+                Output('dpd-query-list-contour', 'value'),
+                Output('dpd-data-lists', 'value'),
+                Output('dpd-var-list-contour', 'value')],
+              [Input('btn_open_contour', 'filename'),
+              Input('btn_open_contour', 'contents')]
+              )
+def open_bar_chart( list_of_names, list_of_contents):
+    archivo = list_of_names
+    consulta=[]
+    datos_y1=[]
+    var_list=[]
+    changed_id = [p['prop_id'] for p in dash.callback_context.triggered][0]
+    if 'btn_open_contourmap' in changed_id:
+        if list_of_names is not None:
+            print(list_of_names)
+            archivo = list_of_names
+            with open(CHART_DIRECTORY+archivo) as file:
+                data = json.load(file)
+                for drop_values   in data['grafico']:
+                    consulta = str(drop_values['consulta'])
+                    datos_y1 = drop_values['datos_y1']
+                    var_list = drop_values['var_list']
+    return archivo, consulta, datos_y1, var_list

@@ -4,6 +4,8 @@ from dash_bootstrap_components._components.Row import Row
 import dash_core_components as dcc
 import dash_html_components as html
 from dash.dependencies import Input, Output, State
+from dash_table.Format import Format, Symbol
+import dash_admin_components as dac
 import plotly.graph_objects as go
 import plotly.express as px
 import plotly.express as px
@@ -78,30 +80,19 @@ layout = html.Div([
                             options=[
                                 {'label': i, 'value': i} for i in files
                             ],
-                            clearable=False
+                            clearable=False,
+                            multi=False
                         ),
-                    ], width={"size": 2, "offset": 1}),
+                    ], width={"size": 3, "offset": 1}),
                     dbc.Col([
                         html.Label(['Pozo:'],style={'font-weight': 'bold', "text-align": "left"}),
                         dcc.Dropdown(
                             id='dpd-well-list-area',
                             options=[{'label': i, 'value': i} for i in well_list],
                             clearable=False,
-                            multi=False
+                            multi=True
                         ),
                     ], width={"size": 3, "offset": 0}),
-                    dbc.Col([
-                        html.Label(['Fecha: '],style={'font-weight': 'bold', "text-align": "left"}),
-                        dcc.DatePickerRange(
-                            id='dtp_fecha_area',
-                            min_date_allowed= date(1995, 8, 5),
-                            max_date_allowed=date.today(),
-                            start_date = date.today()- timedelta(days=-7),
-                            end_date=date.today(),
-                            display_format='YYYY-MM-DD',
-                            style={'backgroundColor':'white'},
-                        )
-                    ], width={"size": 2, "offset": 0}),
                     dbc.Col([
                         html.Br(),
                         dbc.Button(html.Span(["Mostrar ", html.I(className="fas fa-chart-bar ml-1")],style={'font-size':'1.5em','text-align':'center'}),
@@ -109,81 +100,93 @@ layout = html.Div([
                     ], width={"size": 1, "offset": 0}),
                     dbc.Col([
                         html.Br(),
-                        dbc.Button(html.Span(["Exportar Imagen ", html.I(className="fas fa-file-export ml-1")],style={'font-size':'1.5em','text-align':'center'}),
+                        dbc.Button(html.Span(["Imagen ", html.I(className="fas fa-file-export ml-1")],style={'font-size':'1.5em','text-align':'center'}),
                          id="btn_export_areaimg", color="warning", className="mr-3"),
-                    ], width={"size": 1, "offset": 0}),
+                    ], width={"size": 1, "offset": 1}),
                 ]),
                 html.Br(),
             ]),
-        ], width={"size": 11, "offset": 0}),
-    ]),
-    html.Br(),
-    dbc.Row([
+        ], width={"size": 8, "offset": 0}),
         dbc.Col([
             dbc.Card([
                 dbc.Row([
                     dbc.Col([
                         html.Label(['Nombre Archivo:'],style={'font-weight': 'bold', "text-align": "left"}),
                         dbc.Input(id="inp-ruta-areachart", placeholder="Type something...", type="text", style={'backgroundColor':'white'}),
-                    ], width={"size": 3, "offset": 1}),
+                    ], width={"size": 4, "offset": 1}),
                      dbc.Col([
                         html.Br(),
                         dcc.Upload(
-                            dbc.Button(html.Span(["Abrir Grafico ", html.I(className="fas fa-upload ml-1")],style={'font-size':'1.5em','text-align':'center'}),
+                            dbc.Button(html.Span(["Abrir ", html.I(className="fas fa-upload ml-1")],style={'font-size':'1.5em','text-align':'center'}),
                              n_clicks=0, color="primary", className="mr-3"),
                             id='btn_open_areachart',
                             multiple=False
                         ),
-                    ], width={"size": 3, "offset": 0}),
+                    ], width={"size": 1, "offset": 0}),
                     dbc.Col([
                         html.Br(),
-                        dbc.Button(html.Span(["Grabar Grafico ", html.I(className="fas fa-save ml-1")],style={'font-size':'1.5em','text-align':'center'}),
-                         id="btn_save_barchart", n_clicks=0, color="primary", className="mr-3"),
+                        dbc.Button(html.Span(["Grabar ", html.I(className="fas fa-save ml-1")],style={'font-size':'1.5em','text-align':'center'}),
+                         id="btn_save_areachart", n_clicks=0, color="primary", className="mr-3"),
                         html.Div(id="save_message_areachart"),
-                    ]),
+                    ], width={"size": 1, "offset": 1}),
                 ]),
                 html.Br(),
             ]),
-        ], width={"size": 6, "offset": 0}),
+        ], width={"size": 4, "offset": 0}),
     ]),
     html.Br(),
     dbc.Row([
         dbc.Col([
-            dbc.Card([
-                dbc.CardHeader(html.Label(['Gráfico de Área'],style={'font-weight': 'bold', "text-align": "left"})),
-                dbc.CardBody([
-                    dbc.Spinner(
-                        dcc.Graph(id='cht-area-chart',style={"height": 600, "width":1000}),
+            dac.Box([
+                    dac.BoxHeader(
+                        collapsible = False,
+                        closable = False,
+                        title="Marcadores Estratgráficos"
                     ),
-                ])
-            ]),
+                    dac.BoxBody(
+                        dbc.Spinner(
+                            dcc.Graph(id='cht-area-chart',style={"height": 600, "width":1100}),
+                        ),
+                    ),	
+                ],
+                color='primary',
+                solid_header=True,
+                elevation=4,
+                width=12
+            ),
         ], width=9),
         dbc.Col([
-            dbc.Card([
-                dbc.CardHeader(html.Label(['Opciones'],style={'font-weight': 'bold', "text-align": "left"})),
-                dbc.CardBody([
-                    html.Label(['Nombre del Gráfico'],style={'font-weight': 'bold', "text-align": "left"}),
-                    dbc.Input(id="inp_areachart_name", placeholder="Type something...", type="text", style={'backgroundColor':'white'}),
-                    html.Br(),
-                    html.Label(['Datos eje Y:'],style={'font-weight': 'bold', "text-align": "left"}),
-                    dcc.Dropdown(
-                        id='dpd-column-list-ejey',
-                        clearable=False,
-                        multi=True
+            dac.Box([
+                    dac.BoxHeader(
+                        collapsible = False,
+                        closable = False,
+                        title="Marcadores Estratgráficos"
                     ),
-                ])
-            ]),
-            dbc.Card([
-                dbc.CardBody([
-                    html.Label(['Variable Calculadas:'],style={'font-weight': 'bold', "text-align": "left"}),
-                    dcc.Dropdown(
-                        id='dpd-var-list-areachart',
-                        options=[{'label': i, 'value': i} for i in var_list],
-                        clearable=False,
-                        multi=True,
-                    ),
-                ])
-            ]),
+                    dac.BoxBody([
+                        html.Label(['Nombre del Gráfico'],style={'font-weight': 'bold', "text-align": "left"}),
+                        dbc.Input(id="inp_areachart_name", placeholder="Type something...", type="text", style={'backgroundColor':'white'}),
+                        html.Br(),
+                        html.Label(['Datos eje Y:'],style={'font-weight': 'bold', "text-align": "left"}),
+                        dcc.Dropdown(
+                            id='dpd-column-list-ejey-area',
+                            clearable=False,
+                            multi=True
+                        ),
+                        html.Br(),
+                        html.Label(['Variable Calculadas:'],style={'font-weight': 'bold', "text-align": "left"}),
+                        dcc.Dropdown(
+                            id='dpd-var-list-areachart',
+                            options=[{'label': i, 'value': i} for i in var_list],
+                            clearable=False,
+                            multi=True,
+                        ),
+                    ]),	
+                ],
+                color='primary',
+                solid_header=True,
+                elevation=4,
+                width=12
+            ),
         ], width=3),
     ]),
 ])
@@ -193,33 +196,26 @@ layout = html.Div([
     [Input("btn_show_areachart", "n_clicks"),
      Input('dpd-query-list-area', 'value'), 
      Input('dpd-well-list-area', 'value'),
-     Input('dpd-column-list-ejey', 'value'),
-     Input('dtp_fecha_area', 'start_date'),
-     Input('dtp_fecha_area', 'end_date'),
+     Input('dpd-column-list-ejey-area', 'value'),
      Input('inp_areachart_name', 'date'),
      Input('dpd-var-list-areachart', 'value')])
-def update_bar_chart(n_clicks, file_name, well_name, columns_list, dtp_start_date, dtp_end_date, chart_title, var_list):
+def update_bar_chart(n_clicks, file_name, well_name, columns_list, chart_title, var_list):
 
     df = pd.DataFrame()
-    query= ''
-    fecha_inicio = str(dtp_start_date)
-    fecha_fin = str(dtp_end_date)
     changed_id = [p['prop_id'] for p in dash.callback_context.triggered][0]
     fig = {}
-    if 'btn_show_chart' in changed_id:
+    if 'btn_show_areachart' in changed_id:
         con = sqlite3.connect(archivo)
         query = "SELECT * FROM VARIABLES"
         variables =pd.read_sql(query, con)
+        query=''
         if file_name is not None:
             with open(os.path.join(QUERY_DIRECTORY, file_name)) as f:
                 contenido = f.readlines()
             if contenido is not None:
-                if fecha_inicio is not None:
-                    for linea in contenido:
-                        query =  linea + " WHERE date(FECHA)>='"+fecha_inicio+"' AND  date(FECHA)<='"+fecha_fin+"' ORDER BY FECHA"
-                else:
-                    for linea in contenido:
-                        query +=  linea 
+                for linea in contenido:
+                    query +=  linea 
+
                 df =pd.read_sql(query, con)
                 df =df.sort_values("FECHA")
 
@@ -232,30 +228,64 @@ def update_bar_chart(n_clicks, file_name, well_name, columns_list, dtp_start_dat
                         df[titulo] = evalu
                 
                 if well_name is not None:
-                    df= df[df['NOMBRE']==well_name]
-                fig = px.area(df, x="FECHA", y=columns_list, title=chart_title)
+                    df= df[df['NOMBRE'].isin(well_name)]
+
+                if columns_list:
+                    fig = px.area(df, x="FECHA", y=columns_list, title=chart_title)
+                    fig.update_layout(
+                        autosize=False,
+                        hovermode='x unified',
+                        paper_bgcolor='rgba(0,0,0,0)',
+                        plot_bgcolor='rgb(240, 240, 240)',
+                        margin=dict(
+                            l=50,
+                            r=50,
+                            b=100,
+                            t=100,
+                            pad=4,
+                        ),
+                    )
+                    fig.update_xaxes(
+                        rangeslider_visible=True,
+                            rangeselector=dict(
+                                buttons=list([
+                                dict(count=1, label="1m", step="month", stepmode="backward"),
+                                dict(count=6, label="6m", step="month", stepmode="backward"),
+                                dict(count=1, label="YTD", step="year", stepmode="todate"),
+                                dict(count=1, label="1y", step="year", stepmode="backward"),
+                                dict(step="all")
+                                ])
+                            )
+                        )
+                    fig.update_layout(legend=dict(
+                        orientation="h",
+                        yanchor="bottom",
+                        y=1.02,
+                        xanchor="right",
+                        x=1
+                    ))
     return fig
 
 @app.callback(
-    Output('dpd-column-list-ejey','options'),
+    Output('dpd-column-list-ejey-area','options'),
     [Input('dpd-query-list-area', 'value'),
     Input('dpd-var-list-areachart', 'value')])
 def update_column_list(file_name, var_list):
 
     df = pd.DataFrame()
     columns = [{'label': i, 'value': i} for i in []]
-    quer= ''
+    query= ''
     changed_id = [p['prop_id'] for p in dash.callback_context.triggered][0]
     if 'dpd-query-list' in changed_id:
         con = sqlite3.connect(archivo)
         query = "SELECT * FROM VARIABLES"
         variables =pd.read_sql(query, con)
-
-        if file_name is not None:
+        query= ''
+        if file_name:
             with open(os.path.join(QUERY_DIRECTORY, file_name)) as f:
                 contenido = f.readlines()
                 for linea in contenido:
-                    query =  linea
+                    query +=  linea
                 df =pd.read_sql(query, con)
                 df =df.drop(['index', 'NOMBRE', 'FECHA'], axis=1)
 
@@ -277,7 +307,7 @@ def update_column_list(file_name, var_list):
     Output('save_message_areachart','children'),
     [Input('btn_save_areachart', 'n_clicks'),
     Input('dpd-query-list-area', 'value'),
-    Input('pd-column-list-ejey', 'value'),
+    Input('dpd-column-list-ejey-area', 'value'),
     Input('inp-ruta-areachart', 'value'),
     Input('dpd-var-list-areachart', 'value')]) 
 def save_area_chart(n_clicks, consulta, datos_y1, file_name, var_list ):
@@ -298,7 +328,7 @@ def save_area_chart(n_clicks, consulta, datos_y1, file_name, var_list ):
 
 @app.callback( [Output('inp-ruta-areachart', 'value'),
                 Output('dpd-query-list-area', 'value'),
-                Output('pd-column-list-ejey', 'value'),
+                Output('dpd-column-list-ejey-area', 'value'),
                 Output('dpd-var-list-areachart', 'value')],
               [Input('btn_open_areachart', 'filename'),
               Input('btn_open_areachart', 'contents')]

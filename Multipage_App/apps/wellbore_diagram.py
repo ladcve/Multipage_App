@@ -4,6 +4,8 @@ from dash_bootstrap_components._components.Row import Row
 import dash_core_components as dcc
 import dash_html_components as html
 from dash.dependencies import Input, Output, State
+from dash_table.Format import Format, Symbol
+import dash_admin_components as dac
 import plotly.express as px
 import plotly.graph_objects as go
 import well_profile as wp
@@ -63,23 +65,32 @@ wellbore_detail =pd.read_sql(query, con)
 #Cargando imagen del wellbore diagram
 img = io.imread('./pictures/wellbore.png')
 
-
+#Define las columans de la tabla y su formato
 
 layout = html.Div([
     dbc.Row([
         dbc.Col([
-            html.Label(['Pozo:'],style={'font-weight': 'bold', "text-align": "left"}),
-            dcc.Dropdown(
-                id='dpd-well-list',
-                options=[{'label': i, 'value': i} for i in well_list],
-                clearable=False,
-                multi=False
-            ),
-        ], width=4),
-        dbc.Col([
-            html.Br(),
-            dbc.Button("Mostrar Gráficos", id="btn_show_chart", color="success", className="mr-3"),
-        ], width=1.5),
+            dbc.Card([
+                html.Br(),
+                dbc.Row([
+                    dbc.Col([
+                        html.Label(['Pozo:'],style={'font-weight': 'bold', "text-align": "left"}),
+                        dcc.Dropdown(
+                            id='dpd-well-list',
+                            options=[{'label': i, 'value': i} for i in well_list],
+                            clearable=False,
+                            multi=False
+                        ),
+                    ], width={"size": 4, "offset": 1}),
+                    dbc.Col([
+                        html.Br(),
+                        dbc.Button(html.Span(["mostrar ", html.I(className="fas fa-chart-bar ml-1")],style={'font-size':'1.5em','text-align':'center'}),
+                        id="btn_show_chart", color="success", className="mr-3"),
+                    ], width={"size": 2, "offset": 0}),
+                ]),
+                html.Br(),
+            ]),
+        ], width={"size": 4, "offset": 0}),
     ]),
     html.Br(),
     dbc.Row([
@@ -107,11 +118,31 @@ layout = html.Div([
                             'color': 'white'
                         },
                         columns=[
-                                {'id': 'DESCRIPCION', 'name': 'DESCRIPCION'},
-                                {'id': 'ID', 'name': 'ID'},
-                                {'id': 'OD', 'name': 'OD'},
-                                {'id': 'MD', 'name': 'MD'},
-                                {'id': 'LONGITUD', 'name': 'LONGITUD'},
+                                dict(id='DESCRIPCION', name= 'DESCRIPCION'),
+                                dict(id= 'ID', name=u'ID (in)', type='numeric', 
+                                format= Format(
+                                            precision=6,
+                                            symbol=Symbol.yes,
+                                            symbol_suffix=u'in'
+                                        )),
+                                dict(id= 'OD', name=u'OD (ft)', type='numeric', 
+                                format= Format(
+                                            precision=6,
+                                            symbol=Symbol.yes,
+                                            symbol_suffix=u'ft'
+                                        )),
+                                dict(id= 'MD', name=u'MD (ft)', type='numeric', 
+                                format= Format(
+                                            precision=6,
+                                            symbol=Symbol.yes,
+                                            symbol_suffix=u'ft'
+                                        )),
+                                dict(id= 'LONGITUD', name=  'LONGITUD (ft)', type='numeric', 
+                                format= Format(
+                                            precision=6,
+                                            symbol=Symbol.yes,
+                                            symbol_suffix=u'ft'
+                                        )),
                             ],
                         dropdown = {
                             'NOMBRE': {
@@ -132,6 +163,12 @@ layout = html.Div([
                                 ],
                             }
                         },
+                        style_cell_conditional=[
+                            {
+                                'if': {'column_id': c},
+                                'textAlign': 'right'
+                            } for c in ['MD', 'ID', 'OD', 'LONGITUD']
+                        ],
                         page_action="native",
                         page_current= 0,
                         page_size= 10,),

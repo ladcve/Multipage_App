@@ -4,6 +4,8 @@ from dash_bootstrap_components._components.Row import Row
 import dash_core_components as dcc
 import dash_html_components as html
 from dash.dependencies import Input, Output, State
+from dash_table.Format import Format, Symbol
+import dash_admin_components as dac
 import plotly.graph_objects as go
 import plotly.express as px
 import dash_table
@@ -113,12 +115,7 @@ layout = html.Div([
                         html.Br(),
                         dbc.Button(html.Span(["Mostrar ", html.I(className="fas fa-chart-bar ml-1")],style={'font-size':'1.5em','text-align':'center'}),
                          id="btn_show_piechart", color="primary", className="mr-3"),
-                    ], width={"size": 1, "offset": 0}),
-                    dbc.Col([
-                        html.Br(),
-                        dbc.Button(html.Span(["Exportar Imagen ", html.I(className="fas fa-file-export ml-1")],style={'font-size':'1.5em','text-align':'center'}),
-                         id="btn_export_pieimg", color="warning", className="mr-3"),
-                    ], width={"size": 1, "offset": 0}),
+                    ], width={"size": 1, "offset": 1}),
                 ]),
                 html.Br(),
             ]),
@@ -136,74 +133,89 @@ layout = html.Div([
                      dbc.Col([
                         html.Br(),
                         dcc.Upload(
-                            dbc.Button(html.Span(["Abrir Grafico ", html.I(className="fas fa-upload ml-1")],style={'font-size':'1.5em','text-align':'center'}),
+                            dbc.Button(html.Span(["Abrir ", html.I(className="fas fa-upload ml-1")],style={'font-size':'1.5em','text-align':'center'}),
                              n_clicks=0, color="warning", className="mr-3"),
                             id='btn_open_piechart',
                             multiple=False
                         ),
-                    ], width={"size": 3, "offset": 0}),
+                    ], width={"size": 1, "offset": 0}),
                     dbc.Col([
                         html.Br(),
-                        dbc.Button(html.Span(["Grabar Grafico ", html.I(className="fas fa-save ml-1")],style={'font-size':'1.5em','text-align':'center'}),
+                        dbc.Button(html.Span(["Grabar  ", html.I(className="fas fa-save ml-1")],style={'font-size':'1.5em','text-align':'center'}),
                          id="btn_save_piechart", n_clicks=0, color="warning", className="mr-3"),
                         html.Div(id="save_message_piechart"),
-                    ]),
+                    ], width={"size": 1, "offset": 1}),
                 ]),
                 html.Br(),
             ]),
-        ], width={"size": 6, "offset": 0}),
+        ], width={"size": 5, "offset": 0}),
     ]),
     html.Br(),
     dbc.Row([
         dbc.Col([
-            dbc.Card([
-                dbc.CardHeader(html.Label(['Gráfico de Torta'],style={'font-weight': 'bold', "text-align": "left"})),
-                dbc.CardBody([
-                    dbc.Spinner(
-                        dcc.Graph(id='cht-pie-chart'),
+            dac.Box([
+                    dac.BoxHeader(
+                        collapsible = False,
+                        closable = False,
+                        title="Gráfico de Sunburst"
                     ),
-                ])
-            ]),
+                    dac.BoxBody(
+                        dbc.Spinner(
+                            dcc.Graph(id='cht-pie-chart'),
+                        ),
+                    ),	
+                ],
+                color='primary',
+                solid_header=True,
+                elevation=4,
+                width=12
+            ),
         ], width=9),
         dbc.Col([
-            dbc.Card([
-                dbc.CardHeader(html.Label(['Opciones'],style={'font-weight': 'bold', "text-align": "left"})),
-                dbc.CardBody([
-                    html.Label(['Nombre del Gráfico'],style={'font-weight': 'bold', "text-align": "left"}),
-                    dbc.Input(id="inp_piechart_name", placeholder="Type something...", type="text", style={'backgroundColor':'white'}),
-                    html.Br(),
-                    html.Label(['Datos:'],style={'font-weight': 'bold', "text-align": "left"}),
-                    dcc.Dropdown(
-                        id='dpd-column-lists-pie',
-                        clearable=False,
-                        multi=True
+            dac.Box([
+                    dac.BoxHeader(
+                        collapsible = False,
+                        closable = False,
+                        title="Opciones"
                     ),
-                    html.Br(),
-                    html.Label(['Color:'],style={'font-weight': 'bold', "text-align": "left"}),
-                    dcc.Dropdown(
-                        id='dpd-color-lists-pie',
-                        clearable=False,
-                        options=[
-                            {'label': 'Night Colors', 'value': 'night_colors'},
-                            {'label': 'Sunflowers Colors', 'value': 'sunflowers_colors'},
-                            {'label': 'Irises Colors', 'value': 'irises_colors'},
-                            {'label': 'Cafe colors', 'value': 'cafe_colors'},
-                        ],
-                        value='night_colors',
-                    ),
-                ])
-            ]),
-            dbc.Card([
-                dbc.CardBody([
-                    html.Label(['Variable Calculadas:'],style={'font-weight': 'bold', "text-align": "left"}),
-                    dcc.Dropdown(
-                        id='dpd-var-list-piechart',
-                        options=[{'label': i, 'value': i} for i in var_list],
-                        clearable=False,
-                        multi=True,
-                    ),
-                ])
-            ]),
+                    dac.BoxBody([
+                        html.Label(['Nombre del Gráfico'],style={'font-weight': 'bold', "text-align": "left"}),
+                        dbc.Input(id="inp_piechart_name", placeholder="Type something...", type="text", style={'backgroundColor':'white'}),
+                        html.Br(),
+                        html.Label(['Datos:'],style={'font-weight': 'bold', "text-align": "left"}),
+                        dcc.Dropdown(
+                            id='dpd-column-lists-pie',
+                            clearable=False,
+                            multi=True
+                        ),
+                        html.Br(),
+                        html.Label(['Color:'],style={'font-weight': 'bold', "text-align": "left"}),
+                        dcc.Dropdown(
+                            id='dpd-color-lists-pie',
+                            clearable=False,
+                            options=[
+                                {'label': 'Night Colors', 'value': 'night_colors'},
+                                {'label': 'Sunflowers Colors', 'value': 'sunflowers_colors'},
+                                {'label': 'Irises Colors', 'value': 'irises_colors'},
+                                {'label': 'Cafe colors', 'value': 'cafe_colors'},
+                            ],
+                            value='night_colors',
+                        ),
+                        html.Br(),
+                        html.Label(['Variable Calculadas:'],style={'font-weight': 'bold', "text-align": "left"}),
+                        dcc.Dropdown(
+                            id='dpd-var-list-piechart',
+                            options=[{'label': i, 'value': i} for i in var_list],
+                            clearable=False,
+                            multi=True,
+                        ),
+                    ]),	
+                ],
+                color='primary',
+                solid_header=True,
+                elevation=4,
+                width=12
+            ),
         ], width=3),
     ]),
 ])
@@ -214,16 +226,14 @@ layout = html.Div([
      Input('dpd-query-list-pie', 'value'), 
      Input('dpd-well-list-pie', 'value'),
      Input('dpd-column-lists-pie', 'value'),
-     Input('dtp_fecha', 'date'),
+     Input('dtp_fecha', 'date'),    
      Input('inp_piechart_name', 'value'),
      Input('dpd-color-lists-pie', 'value'),
      Input('dpd-var-list-piechart', 'value')])
 def update_pie_chart(n_clicks, file_name, well_name, columns_list, dtp_fecha, chart_title, color_list, var_list):
 
-    data_results = pd.DataFrame()
-    quer= ''
-    fecha = str(dtp_fecha)
     df = pd.DataFrame()
+    fecha = str(dtp_fecha)
 
     changed_id = [p['prop_id'] for p in dash.callback_context.triggered][0]
     fig = go.Figure()
@@ -231,19 +241,22 @@ def update_pie_chart(n_clicks, file_name, well_name, columns_list, dtp_fecha, ch
         con = sqlite3.connect(archivo)
         query = "SELECT * FROM VARIABLES"
         variables =pd.read_sql(query, con)
+        query=''
         if file_name is not None:
             with open(os.path.join(QUERY_DIRECTORY, file_name)) as f:
                 contenido = f.readlines()
             if contenido is not None:
                 if fecha is not None:
                     for linea in contenido:
-                        query =  linea + " WHERE date(FECHA)='"+fecha+"' ORDER BY FECHA"
+                        query +=  linea 
+                    query += " WHERE date(FECHA)='"+fecha+"'"
                 else:
                     for linea in contenido:
-                        query =  linea +" ORDER BY FECHA"
-                data_results =pd.read_sql(query, con)
+                        query +=  linea
+                df =pd.read_sql(query, con)
+                df =df.sort_values("FECHA")
                 if well_name is not None:
-                    data_results= data_results[data_results['NOMBRE'].isin(well_name)]
+                    df= df[df['NOMBRE'].isin(well_name)]
                 if var_list is not None:
                     for var in var_list:
                         selec_var=variables.loc[variables['NOMBRE']==var]
@@ -252,16 +265,17 @@ def update_pie_chart(n_clicks, file_name, well_name, columns_list, dtp_fecha, ch
                         evalu = eval(ecuacion)
                         df[titulo] = evalu
 
+                df3 = pd.DataFrame()
                 for columna in columns_list:
                     filtro = ['NOMBRE']
                     filtro.append(columna)
                     df2 = df[filtro]
                     df2.rename(columns={columna: "VOLUMEN"}, inplace=True)
                     df2['FLUIDO']=columna
-                    df = df.append(df2)
+                    df3 = df3.append(df2)
                 if len(df)>0:
                     fig =px.sunburst(
-                            df,
+                            df3,
                             path=['NOMBRE', 'FLUIDO'],
                             values='VOLUMEN',
                             title=chart_title,
@@ -294,11 +308,12 @@ def update_column_list_pie(file_name, var_list):
         con = sqlite3.connect(archivo)
         query = "SELECT * FROM VARIABLES"
         variables =pd.read_sql(query, con)
+        query= ''
         if file_name:
             with open(os.path.join(QUERY_DIRECTORY, file_name)) as f:
                 contenido = f.readlines()
                 for linea in contenido:
-                    query =  linea
+                    query +=  linea
 
             if var_list is not None:
                 for var in var_list:

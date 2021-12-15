@@ -4,6 +4,7 @@ from dash_bootstrap_components._components.Row import Row
 import dash_core_components as dcc
 import dash_html_components as html
 from dash.dependencies import Input, Output, State, ALL, MATCH
+import dash_admin_components as dac
 import base64
 import plotly.express as px
 import plotly.graph_objects as go
@@ -21,15 +22,21 @@ import dash_table
 
 from app import app 
 
+#Variable con la ruta para salvar los querys
+QUERY_DIRECTORY = "./querys"
+CHART_DIRECTORY = "./template/"
+PICTURE_DIRECTORY = "./pictures/"
+
+
 #Define el nombre de las imagenes que mostraran en el dashboard
-gas_png = 'D:\Proyectos\Prod_Analysis\pictures\gas.png'
-cond_png = 'D:\Proyectos\Prod_Analysis\pictures\condensado.png'
-wat_png = 'D:\Proyectos\Prod_Analysis\pictures\water.png'
-perd_png = 'D:\Proyectos\Prod_Analysis\pictures\perdidas.png'
-pot_png = 'D:\Proyectos\Prod_Analysis\pictures\potencial.png'
-press_png = 'D:\Proyectos\Prod_Analysis\pictures\pressure.png'
-temp_png = 'D:\Proyectos\Prod_Analysis\pictures\ptermometro.png'
-choke_png = 'D:\Proyectos\Prod_Analysis\pictures\choke.png'
+gas_png = PICTURE_DIRECTORY+'gas.png'
+cond_png = PICTURE_DIRECTORY+'condensado.png'
+wat_png = PICTURE_DIRECTORY+'water.png'
+perd_png = PICTURE_DIRECTORY+'perdidas.png'
+pot_png = PICTURE_DIRECTORY+'potencial.png'
+press_png = PICTURE_DIRECTORY+'pressure.png'
+temp_png = PICTURE_DIRECTORY+'ptermometro.png'
+choke_png = PICTURE_DIRECTORY+'choke.png'
 
 gas_base64 = base64.b64encode(open(gas_png, 'rb').read()).decode('ascii')
 cond_base64 = base64.b64encode(open(cond_png, 'rb').read()).decode('ascii')
@@ -39,10 +46,6 @@ pot_base64 = base64.b64encode(open(pot_png, 'rb').read()).decode('ascii')
 press_base64 = base64.b64encode(open(press_png, 'rb').read()).decode('ascii')
 temp_base64 = base64.b64encode(open(temp_png, 'rb').read()).decode('ascii')
 choke_base64 = base64.b64encode(open(choke_png, 'rb').read()).decode('ascii')
-
-#Variable con la ruta para salvar los querys
-QUERY_DIRECTORY = "./querys"
-CHART_DIRECTORY = "./template/"
 
 #Lee el archivo de configuracion
 configuracion = configparser.ConfigParser()
@@ -82,73 +85,60 @@ file_name = ''
 df = pd.DataFrame()
 
 #**** Cabecera de la pagina
-cabecera = html.Div(
-    [
-        dbc.Row(
-            [
-                dbc.Col(dbc.Card([
-                    dbc.CardBody(
-                        [
-                            dbc.Row([
-                                dbc.Col(html.Img(src='data:image/png;base64,{}'.format(gas_base64), style={"width":"2.2rem"}), width=1),
-                                dbc.Col(html.H4("Gas Producido", className="card-title"), width=6),
-                            ]),
-                            html.H5(id='ind-prodgas',style={'font-weight': 'bold', "text-align": "center", "color":"green"},
-                                         children='Seleccione fecha para actualizar')
-                        ]
+cabecera = dac.TabItem(id='content_value_boxes',             
+    children=[
+        dbc.Row([
+            dbc.Col([
+                dac.InfoBox(
+                    id='ind-prodgas',
+                    title = "Gas Producido",
+                    color = "info",
+                    icon = "burn",
+                    width = 13,
+                    gradient_color = "info",
                     ),
-                ], )
-                ),
-                dbc.Col(dbc.Card([  
-                    dbc.CardBody(
-                        [
-                            dbc.Row([
-                                dbc.Col(html.Img(src='data:image/png;base64,{}'.format(cond_base64), style={"width":"2.2rem"}), width=1),
-                                dbc.Col(html.H4("Condensado Producido", className="card-title"), width=10),
-                            ]),
-                            html.H5(id='ind-prodcond',style={'font-weight': 'bold', "text-align": "center", "color":"green"},children=[])
-                        ]
+            ], width={"size": 2, "offset": 0}),
+            dbc.Col([
+                dac.InfoBox(
+                    id='ind-prodcond',
+                    title = "Condensado Producido",
+                    color = "info",
+                    icon = "oil-can",
+                    gradient_color = "info",
+                    width = 12
                     ),
-                ], )),
-                dbc.Col(dbc.Card([  
-                    dbc.CardBody(
-                        [
-                            dbc.Row([
-                                dbc.Col(html.Img(src='data:image/png;base64,{}'.format(wat_base64), style={"width":"2.2rem"}), width=1),
-                                dbc.Col(html.H4("Agua Producida", className="card-title"), width=8),
-                            ]),
-                            html.H5(id='ind-prodwat',style={'font-weight': 'bold', "text-align": "center", "color":"green"},
-                                         children='Seleccione un pozo para actualizar')
-                        ]
+            ], width={"size": 2, "offset": 0}),
+            dbc.Col([
+                dac.InfoBox(
+                    id='ind-prodwat',
+                    title = "Agua Producida",
+                    color = "info",
+                    icon = "water",
+                    gradient_color = "info",
+                    width = 12
                     ),
-                ], )),
-                dbc.Col(dbc.Card([  
-                    dbc.CardBody(
-                        [
-                            dbc.Row([
-                                dbc.Col(html.Img(src='data:image/png;base64,{}'.format(perd_base64), style={"width":"2.4rem"}), width=1),
-                                dbc.Col(html.H4("Perdidas (diferida alta)", className="card-title"), width=10),
-                            ]),
-                            html.H5(id='ind-perdidas',style={'font-weight': 'bold', "text-align": "center", "color":"green"},
-                                         children='Seleccione un pozo para actualizar')
-                        ]
+            ], width={"size": 2, "offset": 0}),
+            dbc.Col([
+                dac.InfoBox(
+                    id='ind-perdidas',
+                    title = "Perdidas (diferida alta)",
+                    color = "info",
+                    icon = "level-down-alt",
+                    gradient_color = "info",
+                    width = 12
                     ),
-                ], )),
-                dbc.Col(dbc.Card([  
-                    dbc.CardBody(
-                        [
-                            dbc.Row([
-                                dbc.Col(html.Img(src='data:image/png;base64,{}'.format(pot_base64), style={"width":"2.4rem"}), width=1),
-                                dbc.Col(html.H4("Potencial", className="card-title"), width=6),
-                            ]),
-                            html.H5(id='ind-potencial',style={'font-weight': 'bold', "text-align": "center", "color":"green"},
-                                         children='Seleccione un pozo para actualizar')
-                        ]
+            ], width={"size": 2, "offset": 0}),
+            dbc.Col([
+                dac.InfoBox(
+                    id='ind-potencial',
+                    title = "Potencial",
+                    color = "info",
+                    icon = "chart-line",
+                    gradient_color = "info",
+                    width = 12
                     ),
-                ], )),
-            ],
-            className="mb-4",
-        ),
+            ], width={"size": 2, "offset": 0}),
+        ]),
     ]
 )
 
@@ -179,6 +169,11 @@ layout = html.Div([
                     ], width={"size": 4, "offset": 0}),
                     dbc.Col([
                         html.Br(),
+                        dbc.Button(html.Span(["Mostrar ", html.I(className="fas fa-tv ml-1")],style={'font-size':'1.5em','text-align':'center'}),
+                         id="btn_show_data", n_clicks=0, color="success", className="mr-3"),
+                    ]),
+                    dbc.Col([
+                        html.Br(),
                         dbc.Button(html.Span(["Agregar ", html.I(className="fas fa-chart-bar ml-1")],style={'font-size':'1.5em','text-align':'center'}),
                          id="btn_add_chart", n_clicks=0, color="success", className="mr-3"),
                     ]),
@@ -194,16 +189,21 @@ layout = html.Div([
                 ]),
                 html.Br(),
             ]),
-        ], width={"size": 8, "offset": 0}),
+        ], width={"size": 11, "offset": 0}),
     ]),
     html.Br(),
     cabecera,
     html.Br(),
     dbc.Row([
         dbc.Col([
-            dbc.Card([
-                dbc.CardHeader(html.Label(['Comparativa'],style={'font-weight': 'bold', "text-align": "left"})),
-                dbc.CardBody([
+            dac.Box(
+                [
+                    dac.BoxHeader(
+                        collapsible = False,
+                        closable = False,
+                        title="Comparativa"
+                    ),
+                	dac.BoxBody(
                     dash_table.DataTable(id="dt_compare_results",        
                         style_as_list_view=True,
                         style_cell={'padding': '5px', 'fontSize':15, 'font-family':'arial'},
@@ -215,19 +215,36 @@ layout = html.Div([
                         },
                         style_table={'overflowX': 'auto'},
                         editable=False,),
-                ])
-            ]),
+                    )		
+                ],
+                color='primary',
+                solid_header=True,
+                elevation=4,
+                width=12
+            ),
         ], width=12),
     ]),
     html.Br(),
     dbc.Row([
         dbc.Col([
-            dbc.Card([
-                dbc.CardHeader(html.Label(['Gráfico de Tendencias'],style={'font-weight': 'bold', "text-align": "left"})),
-                dbc.CardBody([
-                    html.Div(id="chart_container", children=[]),
-                ])
-            ]),
+            dac.Box(
+                [
+                    dac.BoxHeader(
+                        collapsible = True,
+                        closable = True,
+                        title="Graficos de Tendencia"
+                    ),
+                	dac.BoxBody(
+                        dbc.Spinner(
+                            html.Div(id="chart_container", children=[]),
+                        ),
+                    )		
+                ],
+                color='primary',
+                solid_header=True,
+                elevation=4,
+                width=12
+            ),
         ], width=12),
     ]),
 ])
@@ -242,12 +259,15 @@ def create_figure(well, column_y, color_selected, clear_data, file_name):
 
     con = sqlite3.connect(archivo)
     fig = {}
+    query=''
     if file_name:
         with open(os.path.join(QUERY_DIRECTORY, file_name)) as f:
             contenido = f.readlines()
         if contenido is not None:
             for linea in contenido:
-                query =  linea +" ORDER BY FECHA"
+                query +=  linea 
+
+            query +=" ORDER BY FECHA"
             df =pd.read_sql(query, con)
         if clear_data:
             df = df.loc[df[column_y] >0]
@@ -287,10 +307,8 @@ def create_figure(well, column_y, color_selected, clear_data, file_name):
     [
         Input("btn_add_chart", "n_clicks"),
         Input({"type": "dynamic-delete-chart", "index": ALL}, "n_clicks"),
-        Input("cb_clear_data", "value"),
-        Input("dpd-consulta-lista", "value"),
     ],
-    [State("chart_container", "children")],
+    [State("cb_clear_data", "value"), State("dpd-consulta-lista", "value"), State("chart_container", "children")],
 )
 def display_dropdowns(n_clicks, _, clear_data, file_name,  children):
 
@@ -303,18 +321,22 @@ def display_dropdowns(n_clicks, _, clear_data, file_name,  children):
             for chart in children
             if "'index': " + str(delete_chart) not in str(chart)
         ]
-    if 'btn_add_chart' in input_id:
+    else:
         con = sqlite3.connect(archivo)
         default_column_y = ''
-
+        query=''
         if file_name:
             with open(os.path.join(QUERY_DIRECTORY, file_name)) as f:
                 contenido = f.readlines()
             if contenido is not None:
                 for linea in contenido:
-                    query =  linea +" ORDER BY FECHA"
+                    query +=  linea 
+
+                query += " ORDER BY FECHA"
                 df =pd.read_sql(query, con)
+                
                 default_column_y = df.columns[3]
+                
 
             default_well = well_list[0]
             new_element = html.Div(
@@ -332,12 +354,7 @@ def display_dropdowns(n_clicks, _, clear_data, file_name,  children):
                             style={"display": "block"},
                             color="danger", className="mr-1"),
                     ], className="d-grid gap-2 d-md-flex justify-content-md-end",),
-                    #html.Button(
-                    #    "X",
-                    #    id={"type": "dynamic-delete-chart", "index": n_clicks},
-                    #    n_clicks=0,
-                    #    style={"display": "block"},
-                    #),
+
                     dcc.Graph(
                         id={"type": "dynamic-chart-output", "index": n_clicks},
                         style={"height": 300},
@@ -369,30 +386,53 @@ def display_dropdowns(n_clicks, _, clear_data, file_name,  children):
 
 
 @app.callback(
-    Output({"type": "dynamic-chart-output", "index": MATCH}, "figure"),
+    [Output({"type": "dynamic-chart-output", "index": MATCH}, "figure"),
+    Output({"type": "dynamic-dropdown-y", "index": MATCH}, "options")],
     [
         Input({"type": "dynamic-well", "index": MATCH}, "value"),
         Input({"type": "dynamic-dropdown-y", "index": MATCH}, "value"),
+        Input({"type": "dynamic-dropdown-y", "index": MATCH}, "options"),
         Input({"type": "dynamic-color", "index": MATCH}, "value"),
         Input("cb_clear_data", "value"),
         Input("dpd-consulta-lista", "value"),
     ],
 )
-def display_output(well, column_y, color_selected, clear_data, file_name):
-    return create_figure(well, column_y, color_selected, clear_data, file_name)
+def display_output(well, column_y, y_options, color_selected, clear_data, file_name):
+    con = sqlite3.connect(archivo)
+    query=''
+    options = y_options
+    if file_name is not None:
+        with open(os.path.join(QUERY_DIRECTORY, file_name)) as f:
+            contenido = f.readlines()
+        if contenido is not None:
+            for linea in contenido:
+                query +=  linea 
+
+            df =pd.read_sql(query, con)
+            options=[{'label': i, 'value': i} for i in df.columns]
+
+        if column_y not in df.columns:
+            column_y = df.columns[3]
+         
+    return create_figure(well, column_y, color_selected, clear_data, file_name), options
 
 @app.callback(
-    [Output('ind-prodgas', 'children'),
-    Output('ind-prodcond', 'children'),
-    Output('ind-prodwat', 'children'),
-    Output('ind-perdidas', 'children'),
-    Output('ind-potencial', 'children')],
-    [Input('dtp_fecha_dashboard', 'date')]
+    [Output("dt_compare_results", "data"), Output("dt_compare_results", "columns"),
+    Output('ind-prodgas', 'value'),
+    Output('ind-prodcond', 'value'),
+    Output('ind-prodwat', 'value'),
+    Output('ind-perdidas', 'value'),
+    Output('ind-potencial', 'value')],
+    [Input("btn_show_data", "n_clicks"),
+    Input("dtp_fecha_dashboard", "date"),
+    Input("dpd-consulta-lista", "value")]
 )
-def update_head_output(fecha):
+def update_table_compare(n_clicks, report_date, file_name):
+    df = pd.DataFrame()
+    query= ''
     con = sqlite3.connect(archivo)
     
-    cursor = con.execute("SELECT ROUND(SUM(TASA_GAS),6) FROM CIERRE_DIARIO_POZO WHERE FECHA='"+fecha+" 00:00:00'")
+    cursor = con.execute("SELECT ROUND(SUM(TASA_GAS),6) FROM CIERRE_DIARIO_POZO WHERE FECHA='"+report_date+" 00:00:00'")
     valor= cursor.fetchall()
     if valor:
         for data in valor:
@@ -400,7 +440,7 @@ def update_head_output(fecha):
     else:
         valor_prodgas = ""
     
-    cursor = con.execute("SELECT ROUND(SUM(TASA_CONDENSADO),2) FROM CIERRE_DIARIO_POZO WHERE FECHA='"+fecha+" 00:00:00'")
+    cursor = con.execute("SELECT ROUND(SUM(TASA_CONDENSADO),2) FROM CIERRE_DIARIO_POZO WHERE FECHA='"+report_date+" 00:00:00'")
     valor= cursor.fetchall()
     if valor:
         for data in valor:
@@ -408,12 +448,12 @@ def update_head_output(fecha):
     else:
         valor_prodcond = ""
     
-    cursor = con.execute("SELECT ROUND(SUM(TASA_AGUA),2) FROM CIERRE_DIARIO_POZO WHERE FECHA='"+fecha+" 00:00:00'")
+    cursor = con.execute("SELECT ROUND(SUM(TASA_AGUA),2) FROM CIERRE_DIARIO_POZO WHERE FECHA='"+report_date+" 00:00:00'")
     valor= cursor.fetchall()
     for data in valor:
         valor_prodwat = ' {} BLS'.format(data[0])
 
-    cursor = con.execute("SELECT ROUND(SUM(DIFERIDA_ALTA_GAS),6) FROM PERDIDAS_POZO WHERE FECHA='"+fecha+" 00:00:00'")
+    cursor = con.execute("SELECT ROUND(SUM(DIFERIDA_ALTA_GAS),6) FROM PERDIDAS_POZO WHERE FECHA='"+report_date+" 00:00:00'")
     valor= cursor.fetchall()
     if valor:
         for data in valor:
@@ -430,28 +470,21 @@ def update_head_output(fecha):
     else:
         valor_potencial = ""
 
-    return valor_prodgas, valor_prodcond, valor_prodwat, valor_perdidas, valor_potencial
+    changed_id = [p['prop_id'] for p in dash.callback_context.triggered][0]
+    
+    if 'btn_show_data' in changed_id:
+        if file_name is not None:
+            with open(os.path.join(QUERY_DIRECTORY, file_name)) as f:
+                contenido = f.readlines()
+            if contenido is not None:
+                for linea in contenido:
+                    query +=  linea
 
-@app.callback(
-    [Output("dt_compare_results", "data"), Output("dt_compare_results", "columns")],
-    [Input("dtp_fecha_dashboard", "date"),
-    Input("dpd-consulta-lista", "value")]
-)
-def update_table_compare(report_date, file_name):
-    df = pd.DataFrame()
-    query= ''
-    con = sqlite3.connect(archivo)
-    if file_name is not None:
-        with open(os.path.join(QUERY_DIRECTORY, file_name)) as f:
-            contenido = f.readlines()
-        if contenido is not None:
-            for linea in contenido:
-                query +=  linea
-
-            df =pd.read_sql(query, con)
-            df = df.loc[df['FECHA'] == report_date+" 00:00:00"]
+                df =pd.read_sql(query, con)
+                df =df.drop(['index'], axis=1)
+                df = df.loc[df['FECHA'] == report_date+" 00:00:00"]
 
     columns = [{'name': i, 'id': i, "deletable": True} for i in df.columns]
     data = df.to_dict('records')
     
-    return data, columns
+    return data, columns, valor_prodgas, valor_prodcond, valor_prodwat, valor_perdidas, valor_potencial

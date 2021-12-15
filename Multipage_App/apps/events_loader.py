@@ -4,7 +4,8 @@ from dash_bootstrap_components._components.Row import Row
 import dash_core_components as dcc
 import dash_html_components as html
 from dash.dependencies import Input, Output, State
-from dash_html_components.Br import Br
+import dash_admin_components as dac
+from dash_table.Format import Format, Symbol
 import dash_table
 import sqlite3
 import configparser
@@ -41,54 +42,69 @@ query = 'SELECT * FROM EVENTOS'
 data_results =pd.read_sql(query, con)
 con.close()
 
+columns_format = [
+    dict(id='FECHA', name='FECHA', type='datetime'), 
+    dict(id='EVENTO', name='EVENTO', type='text'), 
+]
+
 layout = html.Div([
     dbc.Row([
         dbc.Col([
-            dcc.Input(
-                id='inp_add_columns',
-                placeholder='Entre el nombre de columna',
-                value='',
-                style={'padding': 10}
-            ),
-        ], width=2),
-        dbc.Col([
-            dbc.Button("Agregar Columnas", id="btn_add_columns", color="primary", n_clicks=0, className="mr-1"),
-        ], width=1.5),
-        dbc.Col([
-            dbc.Button("Agregar Filas", id="btn_add_row", color="primary", n_clicks=0, className="mr-1"),
-        ], width=1),
-        dbc.Col([
-            dbc.Button("Salvar cambios", id="btn_save_change", color="success", n_clicks=0, className="mr-1"),
-        ], width=1)
+            dbc.Card([
+                html.Br(),
+                dbc.Row([
+                    dbc.Col([
+                        dbc.Button(html.Span(["filas ", html.I(className="fas fa-plus-circle ml-1")],style={'font-size':'1.5em','text-align':'center'}),
+                         id="btn_add_row", color="primary", n_clicks=0, className="mr-1"),
+                    ], width={"size": 2, "offset": 1}),
+                    dbc.Col([
+                        dbc.Button(html.Span(["Grabar ", html.I(className="fas fa-save ml-1")],style={'font-size':'1.5em','text-align':'center'}), 
+                        id="btn_save_change", color="success", n_clicks=0, className="mr-1"),
+                    ], width={"size": 1, "offset": 1}),
+                ]),
+                html.Br(),
+            ]),
+        ], width={"size": 3, "offset": 0}),
     ]),
     html.Br(),
     html.Div(id="save_message"),
     html.Br(),
     dbc.Row([
-        dbc.Card([
-            dbc.CardBody([
-                dash_table.DataTable(
-                    id='tab_data',
-                    columns = [{'name': i, 'id': i} for i in data_results.columns],
-                    data = data_results.to_dict('records'),
-                        editable=True,
-                        row_deletable=True,
-                        style_header={
-                            'backgroundColor': 'blue',
-                            'fontWeight': 'bold',
-                            'color': 'white'
-                        },
-                        filter_action="native",
-                        sort_action="native",  # give user capability to sort columns
-                        sort_mode="single",  # sort across 'multi' or 'single' columns
-                        page_action="native",
-                        page_current= 0,
-                        page_size= 13,
-                        style_table={'height': '500px', 'overflowY': 'auto'},
-                        style_cell={'textAlign': 'left', 'minWidth': '100px', 'width': '200px', 'maxWidth': '300px'},
+        dac.Box(
+            [
+                dac.BoxHeader(
+                    collapsible = False,
+                    closable = False,
+                    title="Eventos"
                 ),
-            ]),
-        ]),
+                dac.BoxBody(
+                    dash_table.DataTable(
+                        id='tab_data',
+                        columns = columns_format,
+                        data = data_results.to_dict('records'),
+                            editable=True,
+                            row_deletable=True,
+                            style_header={
+                                'backgroundColor': 'blue',
+                                'fontWeight': 'bold',
+                                'color': 'white'
+                            },
+                            filter_action="native",
+                            sort_action="native",  # give user capability to sort columns
+                            sort_mode="single",  # sort across 'multi' or 'single' columns
+                            page_action="native",
+                            page_current= 0,
+                            page_size= 20,
+                            style_table={'height': '500px', 'overflowY': 'auto'},
+                            style_cell={'textAlign': 'left', 'minWidth': '100px', 'width': '200px', 'maxWidth': '300px'},
+                    ),
+                )		
+            ],
+            color='primary',
+            solid_header=True,
+            elevation=4,
+            width=8
+        ),
     ]),
 ])
 
@@ -103,19 +119,6 @@ def add_row(n_clicks, rows, columns):
         rows.append({c['id']: '' for c in columns})
     return rows
 
-
-@app.callback(
-    Output('tab_data', 'columns'),
-    Input('btn_add_columns', 'n_clicks'),
-    State('inp_add_columns', 'value'),
-    State('tab_data', 'columns'))
-def update_columns(n_clicks, value, existing_columns):
-    if n_clicks > 0:
-        existing_columns.append({
-            'id': value, 'name': value,
-            'renamable': True, 'deletable': True
-        })
-    return existing_columns
 
 @app.callback(
     Output("save_message", "children"),

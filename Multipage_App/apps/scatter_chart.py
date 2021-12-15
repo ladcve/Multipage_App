@@ -4,6 +4,8 @@ from dash_bootstrap_components._components.Row import Row
 import dash_core_components as dcc
 import dash_html_components as html
 from dash.dependencies import Input, Output, State
+from dash_table.Format import Format, Symbol
+import dash_admin_components as dac
 import plotly.graph_objects as go
 import plotly.express as px
 from plotly.subplots import make_subplots
@@ -111,18 +113,18 @@ layout = html.Div([
                      dbc.Col([
                         html.Br(),
                         dcc.Upload(
-                            dbc.Button(html.Span(["Abrir Grafico ", html.I(className="fas fa-upload ml-1")],style={'font-size':'1.5em','text-align':'center'}),
+                            dbc.Button(html.Span(["Abrir ", html.I(className="fas fa-upload ml-1")],style={'font-size':'1.5em','text-align':'center'}),
                               n_clicks=0, color="primary", className="mr-3"),
                             id='btn_open_scatterchart',
                             multiple=False
                         ),
-                    ], width={"size": 3, "offset": 0}),
+                    ], width={"size": 1, "offset": 0}),
                     dbc.Col([
                         html.Br(),
-                        dbc.Button(html.Span(["Grabar Grafico ", html.I(className="fas fa-save ml-1")],style={'font-size':'1.5em','text-align':'center'}),
+                        dbc.Button(html.Span(["Grabar ", html.I(className="fas fa-save ml-1")],style={'font-size':'1.5em','text-align':'center'}),
                          id="btn_save_scatterchart", n_clicks=0, color="primary", className="mr-3"),
                         html.Div(id="save_message_scatter"),
-                    ]),
+                    ], width={"size": 1, "offset": 1}),
                 ]),
                 html.Br(),
             ]),
@@ -131,60 +133,60 @@ layout = html.Div([
     html.Br(),
     dbc.Row([
         dbc.Col([
-            dbc.Card([
-                dbc.CardHeader(html.Label(['Gráfico de Scatter'],style={'font-weight': 'bold', "text-align": "left"})),
-                dbc.CardBody([
-                    dbc.Spinner(
-                        dcc.Graph(id='cht-scatter-chart'),
+            dac.Box([
+                    dac.BoxHeader(
+                        collapsible = False,
+                        closable = False,
+                        title="Marcadores Estratgráficos"
                     ),
-                ])
-            ]),
+                    dac.BoxBody(
+                        dbc.Spinner(
+                            dcc.Graph(id='cht-scatter-chart',style={"height": 700, "width":1100}),
+                        ),
+                    ),	
+                ],
+                color='primary',
+                solid_header=True,
+                elevation=4,
+                width=12
+            ),
         ], width=9),
         dbc.Col([
-            dbc.Card([
-                dbc.CardHeader(html.Label(['Opciones'],style={'font-weight': 'bold', "text-align": "left"})),
-                dbc.CardBody([
-                    dbc.Card([
-                        dbc.CardHeader(html.Label(['Eje X'],style={'font-weight': 'bold', "text-align": "left"})),
-                        dbc.CardBody([
-                            html.Label(['Datos:'],style={'font-weight': 'bold', "text-align": "left"}),
-                            dcc.Dropdown(
-                                id='dpd-column-list-x-scatter',
-                                clearable=False,
-                                multi=False
-                            ),
-                        ]),
+            dac.Box([
+                dac.BoxHeader(
+                    collapsible = False,
+                    closable = False,
+                    title="Opciones"
+                ),
+                dac.BoxBody([
+                        html.Label(['Eje X'],style={'font-weight': 'bold', "text-align": "left"}),
+                        html.Label(['Datos:'],style={'font-weight': 'bold', "text-align": "left"}),
+                        dcc.Dropdown(
+                            id='dpd-column-list-x-scatter',
+                            clearable=False,
+                            multi=False
+                        ),
+                        html.Label(['Eje Y'],style={'font-weight': 'bold', "text-align": "left"}),
+                        html.Label(['Datos:'],style={'font-weight': 'bold', "text-align": "left"}),
+                        dcc.Dropdown(
+                            id='dpd-column-list-y-scatter',
+                            clearable=False,
+                            multi=False
+                        ),
+                        html.Label(['Variable Calculadas:'],style={'font-weight': 'bold', "text-align": "left"}),
+                        dcc.Dropdown(
+                            id='dpd-var-list-scatterchart',
+                            options=[{'label': i, 'value': i} for i in var_list],
+                            clearable=False,
+                            multi=True,
+                        ),
                     ]),
-                    dbc.Card([
-                        dbc.CardHeader(html.Label(['Eje Y'],style={'font-weight': 'bold', "text-align": "left"})),
-                        dbc.CardBody([
-                            html.Label(['Datos:'],style={'font-weight': 'bold', "text-align": "left"}),
-                            dcc.Dropdown(
-                                id='dpd-column-list-y-scatter',
-                                clearable=False,
-                                multi=False
-                            ),
-                        ]),
-                    ]),
-                    dbc.Card([
-                        dbc.CardBody([
-                            html.Label(['Variable Calculadas:'],style={'font-weight': 'bold', "text-align": "left"}),
-                            dcc.Dropdown(
-                                id='dpd-var-list-scatterchart',
-                                options=[{'label': i, 'value': i} for i in var_list],
-                                clearable=False,
-                                multi=True,
-                            ),
-                        ])
-                    ]),
-                    dbc.Card([
-                        dbc.CardHeader(html.Label(['Eventos'],style={'font-weight': 'bold', "text-align": "left"})),
-                        dbc.CardBody([
-                            html.Br(),
-                        ]),
-                    ]),
-                ])
-            ]),
+                ],
+                color='primary',
+                solid_header=True,
+                elevation=4,
+                width=12
+            ),
         ], width=3),
     ]),
 ])
@@ -208,6 +210,7 @@ def update_scatter_chart(n_clicks, file_name, well_name, column_list_x, column_l
         con = sqlite3.connect(archivo)
         query = "SELECT * FROM VARIABLES"
         variables =pd.read_sql(query, con)
+        query= ''
         if file_name is not None:
             with open(os.path.join(QUERY_DIRECTORY, file_name)) as f:
                 contenido = f.readlines()
@@ -228,12 +231,10 @@ def update_scatter_chart(n_clicks, file_name, well_name, column_list_x, column_l
 
                     fig = px.scatter(x=df[column_list_x],
                             y=df[column_list_y],)
-                    fig.update_xaxes(title_text="Fecha",showline=True, linewidth=2, linecolor='black', showgrid=False,)
-                    fig.update_yaxes(showline=True, linewidth=2, linecolor='black', showgrid=False,)
+                    fig.update_xaxes(title_text=column_list_x,showline=True, linewidth=2, linecolor='black', showgrid=False,)
+                    fig.update_yaxes(title_text=column_list_y,showline=True, linewidth=2, linecolor='black', showgrid=False,)
                     fig.update_layout(
                         autosize=False,
-                        width=1400,
-                        height=750,
                         paper_bgcolor='rgba(0,0,0,0)',
                         plot_bgcolor='rgb(240, 240, 240)',
                         margin=dict(
@@ -263,12 +264,13 @@ def update_column_list(file_name, var_list):
 
     df = pd.DataFrame()
     columns = [{'label': i, 'value': i} for i in []]
-    query= ''
+
     changed_id = [p['prop_id'] for p in dash.callback_context.triggered][0]
     if 'dpd-query-list-scatter' in changed_id:
         con = sqlite3.connect(archivo)
         query = "SELECT * FROM VARIABLES"
         variables =pd.read_sql(query, con)
+        query= ''
         if file_name:
             with open(os.path.join(QUERY_DIRECTORY, file_name)) as f:
                 contenido = f.readlines()

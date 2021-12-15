@@ -4,6 +4,8 @@ from dash_bootstrap_components._components.Row import Row
 import dash_core_components as dcc
 import dash_html_components as html
 from dash.dependencies import Input, Output, State
+import dash_admin_components as dac
+from dash_table.Format import Format, Symbol
 import dash_table
 import sqlite3
 import configparser
@@ -49,33 +51,67 @@ data_results =pd.read_sql(query, con)
 con.close()
 
 layout = html.Div([
-     dbc.Row([
+    dbc.Row([
         dbc.Col([
-            dbc.Button("Agregar Filas", id="btn_add_rows", color="primary", n_clicks=0, className="mr-1"),
-        ], width=1),
-        dbc.Col([
-            dbc.Button("Salvar cambios", id="btn_save_data_changes", color="success", n_clicks=0, className="mr-1"),
-        ], width=1)
+            dbc.Card([
+                html.Br(),
+                dbc.Row([
+                    dbc.Col([
+                        dbc.Button(html.Span(["filas ", html.I(className="fas fa-plus-circle ml-1")],style={'font-size':'1.5em','text-align':'center'}), 
+                        id="btn_add_rows", color="primary", n_clicks=0, className="mr-1"),
+                    ], width={"size": 2, "offset": 1}),
+                    dbc.Col([
+                        dbc.Button(html.Span(["Grabar ", html.I(className="fas fa-save ml-1")],style={'font-size':'1.5em','text-align':'center'}), 
+                        id="btn_save_data_changes", color="success", n_clicks=0, className="mr-1"),
+                    ], width={"size": 1, "offset": 1}),
+                ]),
+                html.Br(),
+            ]),
+        ], width={"size": 3, "offset": 0}),
     ]),
     html.Br(),
     html.Div(id="save_data_messages"),
     html.Br(),
     dbc.Row([
-        dbc.Card([
-            dbc.CardBody([
+        dac.Box([
+            dac.BoxHeader(
+                collapsible = False,
+                closable = False,
+                title="Diagrama Mecánico"
+            ),
+            dac.BoxBody(
                 dash_table.DataTable(
                     id='table-dropdown',
                     data=data_results.to_dict('records'),
                     columns=[
-                                {'id': 'NOMBRE', 'name': 'NOMBRE', 'presentation': 'dropdown'},
-                                {'id': 'TIPO', 'name': 'TIPO', 'presentation': 'dropdown'},
-                                {'id': 'DESCRIPCION', 'name': 'DESCRIPCION'},
-                                {'id': 'ID', 'name': 'ID'},
-                                {'id': 'OD', 'name': 'OD'},
-                                {'id': 'MD', 'name': 'MD'},
-                                {'id': 'LONGITUD', 'name': 'LONGITUD'},
-                            ],
-
+                            dict(id='NOMBRE', name= 'NOMBRE', type='text'),
+                            dict(id='TIPO', name= 'TIPO', type='text'),
+                            dict(id='DESCRIPCION', name= 'DESCRIPCION', type='text'),
+                            dict(id= 'ID', name=u'ID (in)', type='numeric', 
+                            format= Format(
+                                        precision=6,
+                                        symbol=Symbol.yes,
+                                        symbol_suffix=u'in'
+                                    )),
+                            dict(id= 'OD', name=u'OD (in)', type='numeric', 
+                            format= Format(
+                                        precision=6,
+                                        symbol=Symbol.yes,
+                                        symbol_suffix=u' in'
+                                    )),
+                            dict(id= 'MD', name=u'MD (ft)', type='numeric', 
+                            format= Format(
+                                        precision=6,
+                                        symbol=Symbol.yes,
+                                        symbol_suffix=u' ft'
+                                    )),
+                            dict(id= 'LONGITUD', name=  'LONGITUD (ft)', type='numeric', 
+                            format= Format(
+                                        precision=6,
+                                        symbol=Symbol.yes,
+                                        symbol_suffix=u'ft'
+                                    )),
+                        ],
                     editable=True,
                     dropdown = {
                         'NOMBRE': {
@@ -102,6 +138,12 @@ layout = html.Div([
                         'fontWeight': 'bold',
                         'color': 'white'
                     },
+                    style_cell_conditional=[
+                        {
+                            'if': {'column_id': c},
+                            'textAlign': 'right'
+                        } for c in ['MD', 'ID', 'OD', 'LONGITUD']
+                    ],
                     filter_action="native",
                     sort_action="native",  # give user capability to sort columns
                     sort_mode="single",  # sort across 'multi' or 'single' columns
@@ -111,8 +153,11 @@ layout = html.Div([
                     style_table={'height': '500px', 'overflowY': 'auto'},
                     style_cell={'textAlign': 'left', 'minWidth': '100px', 'width': '200px', 'maxWidth': '300px'},
                 ),
-            ])
-        ])
+            ),	
+        ],
+        color='primary',
+        solid_header=True,
+        width=12),
     ]),
     html.Div(id='table-dropdown-container')
 ])

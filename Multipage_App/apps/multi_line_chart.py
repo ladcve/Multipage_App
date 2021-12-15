@@ -4,6 +4,7 @@ from dash_bootstrap_components._components.Row import Row
 import dash_core_components as dcc
 import dash_html_components as html
 from dash.dependencies import Input, Output, State, ALL, MATCH
+import dash_admin_components as dac
 import plotly.express as px
 from plotly.subplots import make_subplots
 import dash_table
@@ -108,14 +109,20 @@ layout = html.Div([
         ], width={"size": 6, "offset": 0}),
     ]),
     html.Br(),
-    dbc.Card([
-        dbc.CardHeader(html.Label(['Gráficos de Líneas'],style={'font-weight': 'bold', "text-align": "left"})),
-        dbc.CardBody([
-            dbc.Col([
-                html.Div(content),
-            ], width=12),
-        ]),
-    ]),
+    dac.Box([
+        dac.BoxHeader(
+            collapsible = False,
+            closable = False,
+            title="Gráficos de Líneas"
+        ),
+        dac.BoxBody(
+            html.Div(content),
+        )],
+        color='primary',
+        solid_header=True,
+        elevation=4,
+        width=12
+    ),
 ])
 
 def create_figure(column_x, column_y, well, file_name, selected_color):
@@ -125,26 +132,22 @@ def create_figure(column_x, column_y, well, file_name, selected_color):
     if selected_color=='verde':
         color = dict(hex='#008f39')
     
-    quer= ''
+    query= ''
     con = sqlite3.connect(archivo)
     fig = {}
     if file_name:
         with open(os.path.join(QUERY_DIRECTORY, file_name)) as f:
             contenido = f.readlines()
             for linea in contenido:
-                query =  linea +" ORDER BY FECHA"
+                query +=  linea 
             df =pd.read_sql(query, con)
             df = df.query("NOMBRE == '{}'".format(well))
+            df = df.sort_values(by='FECHA')
         con.close()
         fig = px.line(df, x=column_x, y=column_y)
         fig.update_layout(
                 title="{} {} vs {}".format(well, column_x, column_y),
-                margin_l=0,
-                margin_r=0,
-                margin_b=30,
                 hovermode='x unified',
-                width=1200,
-                height=440,
                 paper_bgcolor='rgba(0,0,0,0)',
                 plot_bgcolor='rgb(240, 240, 240)',
             )
@@ -158,10 +161,8 @@ def create_figure(column_x, column_y, well, file_name, selected_color):
     [
         Input("btn_add_chart", "n_clicks"),
         Input({"type": "dynamic-delete", "index": ALL}, "n_clicks"),
-        Input("dpd-well-list", "value"),
-        Input("dpd-query-list", "value"),
     ],
-    [State("container", "children")],
+    [State("dpd-well-list", "value"),  State("dpd-query-list", "value"), State("container", "children")],
 )
 def display_dropdowns(n_clicks, _,  well, file_name, children):
     query = ''
@@ -173,7 +174,7 @@ def display_dropdowns(n_clicks, _,  well, file_name, children):
             for chart in children
             if "'index': " + str(delete_chart) not in str(chart)
         ]
-    if 'btn_add_chart' in input_id:
+    else:
         default_column_x = "FECHA" 
         default_column_y = ""
         con = sqlite3.connect(archivo)
@@ -194,12 +195,9 @@ def display_dropdowns(n_clicks, _,  well, file_name, children):
                         dbc.Col([
                             dcc.Graph(
                                 id={"type": "dynamic-output", "index": n_clicks},
-                                style={"height": 440, "width":780},
-                                #figure=create_figure(default_column_x, default_column_y, well, file_name, default_color),
-                                figure={}
+                                figure=create_figure(default_column_x, default_column_y, well, file_name, default_color),
                             ),
-                        ], width={"size": 5, "offset": 0}),
-                        
+                        ], width=8),
                         dbc.Col([
                             html.Div(
                                 dbc.Button(html.Span(["Borrar ", html.I(className="fas fa-trash-alt ml-1")],style={'font-size':'1.5em','text-align':'center'}),
@@ -213,18 +211,20 @@ def display_dropdowns(n_clicks, _,  well, file_name, children):
                                         html.Br(),
                                         html.Label(['Eje X:'],style={'font-weight': 'bold', "text-align": "left"}),
                                         dcc.Dropdown(
-                                            id={"type": "dynamic-dropdown-x", "index": n_clicks},
+                                            id={"type": "dynamic-drop-x", "index": n_clicks},
                                             options=[{"label": i, "value": i} for i in df.columns],
                                             value=default_column_x,
                                             clearable=False,
                                         ), 
+                                        html.Br(),
                                         html.Label(['Eje Y:'],style={'font-weight': 'bold', "text-align": "left"}),
                                         dcc.Dropdown(
-                                            id={"type": "dynamic-dropdown-y", "index": n_clicks},
+                                            id={"type": "dynamic-drop-y", "index": n_clicks},
                                             options=[{"label": i, "value": i} for i in df.columns],
                                             value=default_column_y,
                                             clearable=False,
                                         ),
+                                        html.Br(),
                                         html.Label(['Color Linea:'],style={'font-weight': 'bold', "text-align": "left"}),
                                         dcc.Dropdown(
                                             id={"type": "dynamic-color-picker", "index": n_clicks},
@@ -238,7 +238,7 @@ def display_dropdowns(n_clicks, _,  well, file_name, children):
                                     ]),
                                 ]),
                             ]),
-                        ], width={"size": 3, "offset": 3}),
+                        ], width=3),
                     ]),
                 ],
             )
@@ -246,14 +246,37 @@ def display_dropdowns(n_clicks, _,  well, file_name, children):
     return children
 
 @app.callback(
-    Output({"type": "dynamic-output", "index": MATCH}, "figure"),
+    [Output({"type": "dynamic-output", "index": MATCH}, "figure"),
+    Output({"type": "dynamic-drop-x", "index": MATCH}, "options"),
+    Output({"type": "dynamic-drop-y", "index": MATCH}, "options")],
     [
-        Input({"type": "dynamic-dropdown-x", "index": MATCH}, "value"),
-        Input({"type": "dynamic-dropdown-y", "index": MATCH}, "value"),
+        Input({"type": "dynamic-drop-x", "index": MATCH}, "value"),
+        Input({"type": "dynamic-drop-x", "index": MATCH}, "options"),
+        Input({"type": "dynamic-drop-y", "index": MATCH}, "value"),
+        Input({"type": "dynamic-drop-y", "index": MATCH}, "options"),
         Input("dpd-well-list", "value"),
         Input("dpd-query-list", "value"),
         Input({"type": "dynamic-color-picker", "index": MATCH}, "value"),
     ],
 )
-def display_output(column_name_x, column_name_y, well,file_name, color):
-    return create_figure(column_name_x, column_name_y, well, file_name, color)
+def display_output(column_name_x, column_name_x_options, column_name_y, column_name_y_options, well, file_name, color):
+    con = sqlite3.connect(archivo)
+    query=''
+    options_x = column_name_x_options
+    options_y = column_name_y_options
+    if file_name is not None:
+        with open(os.path.join(QUERY_DIRECTORY, file_name)) as f:
+            contenido = f.readlines()
+        if contenido is not None:
+            for linea in contenido:
+                query +=  linea 
+
+            df =pd.read_sql(query, con)
+            options_x=[{'label': i, 'value': i} for i in df.columns]
+            options_y=[{'label': i, 'value': i} for i in df.columns]
+
+        if column_name_y not in df.columns:
+            column_name_y = df.columns[3]
+        if column_name_x not in df.columns:
+            column_name_x = df.columns[4]
+    return create_figure(column_name_x, column_name_y, well, file_name, color), options_x, options_y
