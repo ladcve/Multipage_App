@@ -4,8 +4,8 @@ from dash_bootstrap_components._components.Row import Row
 import dash_core_components as dcc
 import dash_html_components as html
 from dash.dependencies import Input, Output, State, ALL, MATCH
-from dash_html_components.Br import Br
 import plotly.graph_objects as go
+import dash_admin_components as dac
 from plotly.subplots import make_subplots
 import dash_table
 import configparser
@@ -61,14 +61,23 @@ layout = html.Div([
     html.Br(),
     dbc.Row([
         dbc.Col([
-            dbc.Card([
-                dbc.CardHeader(html.Label(['Registros Electricos'],style={'font-weight': 'bold', "text-align": "left"})),
-                dbc.CardBody([
-                    dbc.Spinner(
-                        dcc.Graph(id='cht-curve-chart'),
+            dac.Box([
+                    dac.BoxHeader(
+                        collapsible = False,
+                        closable = False,
+                        title="Marcadores Estratgráficos"
                     ),
-                ])
-            ]),
+                    dac.BoxBody([
+                        dbc.Spinner(
+                            dcc.Graph(id='cht-curve-chart'),
+                        ),
+                    ]),	
+                ],
+                color='primary',
+                solid_header=True,
+                elevation=4,
+                width=12
+            ),
         ], width=11),
     ]),
 ])

@@ -4,6 +4,7 @@ from dash_bootstrap_components._components.Row import Row
 import dash_core_components as dcc
 import dash_html_components as html
 from dash.dependencies import Input, Output, State
+import dash_admin_components as dac
 import dash_table
 import sqlite3
 import configparser
@@ -54,38 +55,56 @@ QUERY_DIRECTORY = "./querys"
 layout = html.Div([
     dbc.Row([
         dbc.Col([
-            html.Label(['Consulta:'],style={'font-weight': 'bold', "text-align": "left"}),
-            dcc.Dropdown(
-                id='dpd-query-lista',
-                options=[
-                     {'label': i, 'value': i} for i in files
-                 ],
-                clearable=False
-            ),
-        ], width=2),
-        dbc.Col([
-            dbc.Button("Agregar Variable", id="btn_add_var", color="primary", n_clicks=0, className="mr-1"),
-        ], width=1),
-        dbc.Col([
-            dbc.Button("Salvar cambios", id="btn_save_var", color="success", n_clicks=0, className="mr-1"),
-        ], width=1),
-        dbc.Col([
-            dbc.Button("Probar", id="btn_run_var", color="warning", n_clicks=0, className="mr-1"),
-        ], width=1)
+            dbc.Card([
+                html.Br(),
+                dbc.Row([
+                    dbc.Col([
+                        html.Label(['Consulta:'],style={'font-weight': 'bold', "text-align": "left"}),
+                        dcc.Dropdown(
+                            id='dpd-query-lista',
+                            options=[
+                                {'label': i, 'value': i} for i in files
+                            ],
+                            clearable=False
+                        ),
+                    ], width={"size": 3, "offset": 1}),
+                    dbc.Col([
+                        html.Br(),
+                        dbc.Button(html.Span(["variable ", html.I(className="fas fa-plus-circle ml-1")],style={'font-size':'1.5em','text-align':'center'}),
+                        id="btn_add_var", color="primary", n_clicks=0, className="mr-1"),
+                    ], width={"size": 1, "offset": 0}),
+                    dbc.Col([
+                        html.Br(),
+                        dbc.Button(html.Span(["salvar ", html.I(className="fas fa-database ml-1")],style={'font-size':'1.5em','text-align':'center'}),
+                        id="btn_save_var", color="success", n_clicks=0, className="mr-1"),
+                    ], width={"size": 1, "offset": 1}),
+                    dbc.Col([
+                        html.Br(),
+                        dbc.Button(html.Span(["ejecutar ", html.I(className="fas fa-running ml-1")],style={'font-size':'1.5em','text-align':'center'}),
+                        id="btn_run_var", color="warning", n_clicks=0, className="mr-1"),
+                    ], width={"size": 1, "offset": 1})
+                ]),
+                html.Br(),
+            ]),
+        ], width={"size": 7, "offset": 0}),
     ]),
     html.Br(),
     html.Div(id="save_message_var"),
     html.Br(),
     dbc.Row([
         dbc.Col([
-            dbc.Card([
-                dbc.CardHeader(html.Label(['Variables Calculadas'],style={'font-weight': 'bold', "text-align": "left"})),
-                dbc.CardBody([
-                    dbc.Spinner(
-                        dash_table.DataTable(
-                            id='tab_variables',
-                            columns = [{'name': i, 'id': i} for i in data_results.columns],
-                            data = data_results.to_dict('records'),
+            dac.Box([
+                    dac.BoxHeader(
+                        collapsible = False,
+                        closable = False,
+                        title="Variables Calculadas"
+                    ),
+                    dac.BoxBody([
+                        dbc.Spinner(
+                            dash_table.DataTable(
+                                id='tab_variables',
+                                columns = [{'name': i, 'id': i} for i in data_results.columns],
+                                data = data_results.to_dict('records'),
                                 editable=True,
                                 filter_action="native",
                                 style_header={
@@ -101,38 +120,52 @@ layout = html.Div([
                                 selected_columns=[],
                                 selected_rows=[],
                                 page_current= 0,
+                                page_size= 20,
+                                style_table={'height': '700px', 'overflowY': 'auto'},
+                                style_cell={'textAlign': 'left', 'minWidth': '100px', 'width': '200px', 'maxWidth': '300px', 'font-family':'arial'},
+                            ),
+                        ),
+                    ]),	
+                ],
+                color='primary',
+                solid_header=True,
+                elevation=4,
+                width=12
+            ),
+        ], width={"size": 6, "offset": 0}),
+        dbc.Col([
+            dac.Box([
+                    dac.BoxHeader(
+                        collapsible = False,
+                        closable = False,
+                        title="Resultados"
+                    ),
+                    dac.BoxBody([
+                        dash_table.DataTable(
+                            id='tab_resultados',
+                                editable=False,
+                                style_header={
+                                    'backgroundColor': 'blue',
+                                    'fontWeight': 'bold',
+                                    'color': 'white'
+                                },
+                                filter_action="native",
+                                sort_action="native",  # give user capability to sort columns
+                                sort_mode="single",  # sort across 'multi' or 'single' columns
+                                page_action="native",
+                                page_current= 0,
                                 page_size= 13,
                                 style_table={'height': '500px', 'overflowY': 'auto'},
-                                style_cell={'textAlign': 'left', 'minWidth': '100px', 'width': '200px', 'maxWidth': '300px', 'font-family':'arial'},
+                                style_cell={'textAlign': 'left', 'minWidth': '100px', 'width': '200px', 'maxWidth': '300px'},
                         ),
-                    ),
-                ]),
-            ]),
-        ]),
-        dbc.Col([
-            dbc.Card([
-                dbc.CardHeader(html.Label(['Resultados'],style={'font-weight': 'bold', "text-align": "left"})),
-                dbc.CardBody([
-                    dash_table.DataTable(
-                        id='tab_resultados',
-                            editable=False,
-                            style_header={
-                                'backgroundColor': 'blue',
-                                'fontWeight': 'bold',
-                                'color': 'white'
-                            },
-                            filter_action="native",
-                            sort_action="native",  # give user capability to sort columns
-                            sort_mode="single",  # sort across 'multi' or 'single' columns
-                            page_action="native",
-                            page_current= 0,
-                            page_size= 13,
-                            style_table={'height': '500px', 'overflowY': 'auto'},
-                            style_cell={'textAlign': 'left', 'minWidth': '100px', 'width': '200px', 'maxWidth': '300px'},
-                    ),
-                ]),
-            ]),
-        ]),
+                    ]),	
+                ],
+                color='primary',
+                solid_header=True,
+                elevation=4,
+                width=12
+            ),
+        ], width={"size": 6, "offset": 0}),
     ]),
 ])
 
@@ -177,7 +210,7 @@ def update_table_results(n_clicks, rows, row_id,file_name, data, columns):
     data_results = pd.DataFrame()
     changed_id = [p['prop_id'] for p in dash.callback_context.triggered][0]
     df = pd.DataFrame()
-
+    query = ''
     if 'btn_run_var' in changed_id:
         indice = row_id[0]
         ecuacion = rows[indice]['ECUACION']
@@ -187,7 +220,7 @@ def update_table_results(n_clicks, rows, row_id,file_name, data, columns):
             with open(os.path.join(QUERY_DIRECTORY, file_name)) as f:
                 contenido = f.readlines()
                 for linea in contenido:
-                    query =  linea
+                    query +=  linea
                 df =pd.read_sql(query, con)
             evalu = eval(ecuacion)
             df[titulo] = evalu 

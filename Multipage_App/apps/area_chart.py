@@ -111,7 +111,7 @@ layout = html.Div([
             dbc.Card([
                 dbc.Row([
                     dbc.Col([
-                        html.Label(['Nombre Archivo:'],style={'font-weight': 'bold', "text-align": "left"}),
+                        html.Label(['Nombre Plantilla:'],style={'font-weight': 'bold', "text-align": "left"}),
                         dbc.Input(id="inp-ruta-areachart", placeholder="Type something...", type="text", style={'backgroundColor':'white'}),
                     ], width={"size": 4, "offset": 1}),
                      dbc.Col([
@@ -122,7 +122,7 @@ layout = html.Div([
                             id='btn_open_areachart',
                             multiple=False
                         ),
-                    ], width={"size": 1, "offset": 0}),
+                    ], width={"size": 2, "offset": 0}),
                     dbc.Col([
                         html.Br(),
                         dbc.Button(html.Span(["Grabar ", html.I(className="fas fa-save ml-1")],style={'font-size':'1.5em','text-align':'center'}),
@@ -145,7 +145,7 @@ layout = html.Div([
                     ),
                     dac.BoxBody(
                         dbc.Spinner(
-                            dcc.Graph(id='cht-area-chart',style={"height": 600, "width":1100}),
+                            dcc.Graph(id='cht-area-chart', style={"width": "100%"}),
                         ),
                     ),	
                 ],
@@ -237,6 +237,7 @@ def update_bar_chart(n_clicks, file_name, well_name, columns_list, chart_title, 
                         hovermode='x unified',
                         paper_bgcolor='rgba(0,0,0,0)',
                         plot_bgcolor='rgb(240, 240, 240)',
+                        height=700,
                         margin=dict(
                             l=50,
                             r=50,

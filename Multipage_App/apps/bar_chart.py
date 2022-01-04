@@ -122,7 +122,7 @@ layout = html.Div([
             dbc.Card([
                 dbc.Row([
                     dbc.Col([
-                        html.Label(['Nombre Archivo:'],style={'font-weight': 'bold', "text-align": "left"}),
+                        html.Label(['Nombre Plantilla:'],style={'font-weight': 'bold', "text-align": "left"}),
                         dbc.Input(id="inp-ruta-barchart", placeholder="Type something...", type="text", style={'backgroundColor':'white'}),
                     ], width={"size": 3, "offset": 1}),
                      dbc.Col([
@@ -152,11 +152,11 @@ layout = html.Div([
                 dac.BoxHeader(
                     collapsible = False,
                     closable = False,
-                    title="Marcadores Estratgráficos"
+                    title="Gráfico de Barra"
                 ),
                 dac.BoxBody(
                     dbc.Spinner(
-                        dcc.Graph(id='cht-bar-chart',style={"height": 600, "width":1100}),
+                        dcc.Graph(id='cht-bar-chart', style={"width": "100%"}),
                     ),
                 ),	
                 ],
@@ -259,9 +259,9 @@ def update_bar_chart(n_clicks, file_name, well_name, columns_list, dtp_start_dat
                 if well_name is not None and columns_list:
                     df= df[df['NOMBRE'].isin(well_name)]
                     if staked_columns=='STC':
-                        fig = px.bar(df, x="NOMBRE", y=columns_list, title=chart_title, animation_frame="FECHA", animation_group="NOMBRE")
+                        fig = px.bar(df, x="NOMBRE", y=columns_list,  height=700,  title=chart_title, barmode='stack', animation_frame="FECHA"  )
                     else:
-                        fig = px.bar(df, x="NOMBRE", y=columns_list, title=chart_title,  barmode="group",animation_frame="FECHA", animation_group="NOMBRE")
+                        fig = px.bar(df, x="NOMBRE", y=columns_list,  height=700,  title=chart_title,orientation='h', barmode='group', animation_group="NOMBRE")
     return fig
 
 @app.callback(

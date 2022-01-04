@@ -109,7 +109,7 @@ layout = html.Div([
             dbc.Card([
                 dbc.Row([
                     dbc.Col([
-                        html.Label(['Nombre Archivo:'],style={'font-weight': 'bold', "text-align": "left"}),
+                        html.Label(['Nombre Plantilla:'],style={'font-weight': 'bold', "text-align": "left"}),
                         dbc.Input(id="inp-ruta-report", placeholder="Type something...", type="text", style={'backgroundColor':'white'}),
                     ], width={"size": 3, "offset": 1}),
                     dbc.Col([
@@ -120,7 +120,7 @@ layout = html.Div([
                             id="btn_open_report",
                             multiple=False
                         ),
-                    ], width={"size": 1, "offset": 0}),
+                    ], width={"size": 2, "offset": 0}),
                     dbc.Col([
                         html.Br(),
                         dbc.Button(html.Span(["Salvar", html.I(className="fas fa-save ml-1")],style={'font-size':'1.5em','text-align':'center'}),
@@ -182,7 +182,7 @@ layout = html.Div([
                         dcc.Checklist(
                             id='ckl-group-by',
                             options=[
-                                {'label': 'Aplicar agrupación por: ', 'value': 'GBY'},
+                                {'label': ' Aplicar agrupación por: ', 'value': 'GBY'},
                             ],
                         ),
                         dcc.Dropdown(
@@ -196,8 +196,8 @@ layout = html.Div([
                         dcc.RadioItems(
                             id='rb-aggregation',
                             options=[
-                                {'label': 'Sumatoria  ', 'value': 'SUM'},
-                                {'label': 'Media', 'value': 'MEAN'},
+                                {'label': ' Sumatoria  ', 'value': 'SUM'},
+                                {'label': ' Media', 'value': 'MEAN'},
                             ],
                             value='SUM',
                         ),

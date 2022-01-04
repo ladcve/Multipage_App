@@ -5,6 +5,7 @@ import dash_core_components as dcc
 import dash_html_components as html
 from dash.dependencies import Input, Output, State
 import plotly.graph_objects as go
+import dash_admin_components as dac
 import plotly.express as px
 from plotly.subplots import make_subplots
 import dash_table
@@ -53,79 +54,112 @@ well_list =pd.read_sql(query, con)
 well_list = well_list.sort_values('NOMBRE')['NOMBRE'].unique()
 
 layout = html.Div([
-    html.Label(['Análisis Nodal'],style={'font-weight': 'bold', "text-align": "left"}),
-    html.Br(),
     dbc.Row([
         dbc.Col([
-            html.Label(['Nombre de Archivo Excel:'],style={'font-weight': 'bold', "text-align": "left"}),
-            dbc.Input(id="inp-ruta-excel-nodal", placeholder="Type something...", type="text", style={'backgroundColor':'white'}),
-            html.Div(id="loading-message")
-        ], width=2),
-        dbc.Col([
-            html.Br(),
-            dcc.Upload(
-                html.Button('Cargar Archivo'),
-                id='upload_excel_data_nodal',
-                # Allow multiple files to be uploaded
-                multiple=False
-            ),
-        ], width=2),
-        dbc.Col([
-            html.Label(['Pozo:'],style={'font-weight': 'bold', "text-align": "left"}),
-            dcc.Dropdown(
-                id='dpd-well-lists-nodal',
-                options=[{'label': i, 'value': i} for i in well_list],
-                clearable=False
-            ),
-        ], width=1),
-        dbc.Col([
-            html.Br(),
-            dbc.Button("Grabar Datos", id="btn_save_excel_data_nodal", color="success", className="mr-3"),
-        ], width=2),
+            dbc.Card([
+                html.Br(),
+                dbc.Row([
+                    dbc.Col([
+                        html.Label(['Nombre de Archivo Excel:'],style={'font-weight': 'bold', "text-align": "left"}),
+                        dbc.Input(id="inp-ruta-excel-nodal", placeholder="Type something...", type="text", style={'backgroundColor':'white'}),
+                        html.Div(id="loading-message")
+                    ], width={"size": 3, "offset": 1}),
+                    dbc.Col([
+                        html.Br(),
+                        dcc.Upload(
+                            dbc.Button(html.Span(["CARGAR ", html.I(className="fas fa-upload ml-1")],style={'font-size':'1.5em','text-align':'center'}),
+                        id="upload_excel_data_nodal", color="success", className="mr-3"),
+                            # Allow multiple files to be uploaded
+                            multiple=False
+                        ),
+                    ], width={"size": 2, "offset": 1}),
+                    dbc.Col([
+                        html.Label(['Pozo:'],style={'font-weight': 'bold', "text-align": "left"}),
+                        dcc.Dropdown(
+                            id='dpd-well-lists-nodal',
+                            options=[{'label': i, 'value': i} for i in well_list],
+                            clearable=False
+                        ),
+                    ], width={"size": 1, "offset": 0}),
+                    dbc.Col([
+                        html.Br(),
+                        dbc.Button(html.Span(["Grabar ", html.I(className="fas fa-save ml-1")],style={'font-size':'1.5em','text-align':'center'}),
+                        id="btn_save_excel_data_nodal", color="success", className="mr-3"),
+                    ], width={"size": 1, "offset": 0}),
+                ]),
+                html.Br(),
+                dbc.Row([
+                    dbc.Col([
+                        html.Label(['Nombre de la hoja:'],style={'font-weight': 'bold', "text-align": "left"}),
+                        dbc.Input(id="inp_sheet_name_nodal", placeholder="Type something...", type="text", style={'backgroundColor':'white'}),
+                        html.Div(id="save_message_excel")
+                    ], width={"size": 2, "offset": 1}),
+                    dbc.Col([
+                        html.Br(),
+                        dbc.Button(html.Span(["VER ", html.I(className="fas fa-database ml-1")],style={'font-size':'1.5em','text-align':'center'}),
+                         id="btn_show_excel_data_nodal", color="primary", className="mr-3"),
+                    ], width={"size": 1, "offset": 0}),
+                ]),
+                html.Br(),
+            ]),
+        ], width={"size": 7, "offset": 0}),
     ]),
+
     html.Br(),
     dbc.Row([
-        dbc.Col([
-            html.Label(['Nombre de la hoja:'],style={'font-weight': 'bold', "text-align": "left"}),
-            dbc.Input(id="inp_sheet_name_nodal", placeholder="Type something...", type="text", style={'backgroundColor':'white'}),
-            html.Div(id="save_message_excel")
-        ], width=2),
-        dbc.Col([
-            html.Br(),
-            dbc.Button("Ver Datos", id="btn_show_excel_data_nodal", color="primary", className="mr-3"),
-        ], width=2),
-    ]),
-    html.Br(),
-    dbc.Row([
-        dbc.Card([
-            dbc.CardHeader(html.Label(['Datos Archivo Excel'],style={'font-weight': 'bold', "text-align": "left"})),
-            dbc.CardBody([
-                dbc.Spinner(
-                    dash_table.DataTable(id="query_results_excel_nodal", 
-                    style_as_list_view=True,
-                    editable=True,
-                    row_deletable=True,
-                    style_cell={'padding': '5px','fontSize':15, 'font-family':'arial'},
-                    style_header={
-                        'backgroundColor': 'blue',
-                        'fontWeight': 'bold',
-                        'color': 'white',
-                        'font-family':'arial'
-                    },
-                    page_action="native",
-                    page_current= 0,
-                    page_size= 10,),
+        dac.Box([
+                dac.BoxHeader(
+                    collapsible = False,
+                    closable = False,
+                    title="Datos Archivo Excel"
                 ),
+                dac.BoxBody([
+                    dbc.Spinner(
+                        dash_table.DataTable(id="query_results_excel_nodal", 
+                        style_as_list_view=True,
+                        editable=True,
+                        row_deletable=True,
+                        style_cell={'padding': '5px','fontSize':15, 'font-family':'arial'},
+                        style_header={
+                            'backgroundColor': 'blue',
+                            'fontWeight': 'bold',
+                            'color': 'white',
+                            'font-family':'arial'
+                        },
+                        page_action="native",
+                        page_current= 0,
+                        page_size= 10,),
+                    ),
+                ]),	
+            ],
+            color='primary',
+            solid_header=True,
+            elevation=4,
+            width=12
+        ),
+        dbc.Card([
+            dbc.CardHeader(html.Label([''],style={'font-weight': 'bold', "text-align": "left"})),
+            dbc.CardBody([
+
             ]),
         ]),
-        dbc.Card([
-            dbc.CardHeader(html.Label(['Datos Archivo Excel'],style={'font-weight': 'bold', "text-align": "left"})),
-            dbc.CardBody([
-                dbc.Spinner(
-                    dcc.Graph(id='cht-nodal-chart'),
+        dac.Box([
+                dac.BoxHeader(
+                    collapsible = False,
+                    closable = False,
+                    title="Datos Archivo Excel"
                 ),
-            ]),
-        ]),
+                dac.BoxBody([
+                    dbc.Spinner(
+                        dcc.Graph(id='cht-nodal-chart'),
+                    ),
+                ]),	
+            ],
+            color='primary',
+            solid_header=True,
+            elevation=4,
+            width=12
+        ),
     ])
 ])
 

@@ -57,8 +57,9 @@ well_list =pd.read_sql(query, con)
 well_list = well_list.sort_values('NOMBRE')['NOMBRE'].unique()
 
 #Crea dataframe con datos de produccion
-query = "SELECT NOMBRE, FECHA, TASA_GAS FROM CIERRE_DIARIO_POZO ORDER BY FECHA "
+query = "SELECT NOMBRE, FECHA, TASA_GAS, ACUM_GAS FROM CIERRE_DIARIO_POZO WHERE TASA_GAS>0 ORDER BY FECHA "
 daily_prod =pd.read_sql(query, con)
+daily_prod['FECHA'] =  pd.to_datetime(daily_prod['FECHA'], format='%Y-%m-%d') 
 
 con.close()
 
@@ -223,7 +224,7 @@ layout = html.Div([
                                 html.Label(html.Div(id="txt-decline-coef"),style={'font-weight': 'bold', 'color':'blue', "text-align": "left", "margin-left": "15px"}),
                             ]),
                             dbc.Row([
-                                html.Label(['Maximo Qp: '],style={'font-weight': 'bold', "text-align": "left", "margin-left": "15px"}),
+                                html.Label(['EUR: '],style={'font-weight': 'bold', "text-align": "left", "margin-left": "15px"}),
                                 html.Label(html.Div(id="txt-max-qp"),style={'font-weight': 'bold', 'color':'blue', "text-align": "left", "margin-left": "15px"}),
                             ]),
                         ]),	
@@ -311,7 +312,12 @@ def update_line_chart(n_clicks1, n_clicks2, well_name, decline_type, total_days,
     if 'btn_show_data_prod' in changed_id:
         #Filtra los datos por pozo y valores en diferentes a cero
         daily_prod_well = daily_prod[daily_prod['NOMBRE']==well_name]
-        daily_prod_well= daily_prod_well[daily_prod_well['TASA_GAS'] != 0]
+        daily_prod_well.drop('NOMBRE', inplace=True, axis=1)
+
+        #daily_prod_well.set_index('FECHA', inplace=True)
+        #daily_prod_well.index = pd.to_datetime(daily_prod_well.index)
+        #daily_prod_well = daily_prod_well.resample('1M').sum()
+        #daily_prod_well.reset_index(inplace=True)
 
         #Construye grafico de declinacion
         fig1.add_trace(
@@ -322,7 +328,7 @@ def update_line_chart(n_clicks1, n_clicks2, well_name, decline_type, total_days,
             ),
         ),
         fig1.update_xaxes(title_text="Fecha"),
-        fig1.update_yaxes(title_text="Tasa (SCF/d)"),
+        fig1.update_yaxes(title_text="Tasa (SCF/d)", type="log"),
         fig1.update_layout(legend=dict(
                     orientation="h",
                     yanchor="bottom",
@@ -346,10 +352,10 @@ def update_line_chart(n_clicks1, n_clicks2, well_name, decline_type, total_days,
         if well_name:
             #Filtra los datos por pozo y valores en diferentes a cero
             daily_prod_well = daily_prod[daily_prod['NOMBRE']==well_name]
-            daily_prod_well= daily_prod_well[daily_prod_well['TASA_GAS'] > 0]
-
-            # convert date string to Panda datetime format
-            daily_prod_well['FECHA'] =  pd.to_datetime(daily_prod_well['FECHA'], format='%Y-%m-%d') 
+            #daily_prod_well.set_index('FECHA', inplace=True)
+            #daily_prod_well.index = pd.to_datetime(daily_prod_well.index)
+            #daily_prod_well = daily_prod_well.resample('1M').sum()
+            #daily_prod_well.reset_index(inplace=True)
 
             #Filtrado por perido estable
             df_filter = daily_prod_well[(daily_prod_well['FECHA'] > start_date) & (daily_prod_well['FECHA'] < end_date)]
@@ -402,7 +408,7 @@ def update_line_chart(n_clicks1, n_clicks2, well_name, decline_type, total_days,
             elif (decline_type=="ARM"):
                 q_forecast = harmonic(t_forecast, qi, di)
 
-            # forecast cumulative production until 1,500 days
+            # forecast cumulative production 
             Qp_forecast = cumpro(q_forecast, qi, di, b)
             Max_Qp_Forecast = max(Qp_forecast)
 
@@ -437,7 +443,7 @@ def update_line_chart(n_clicks1, n_clicks2, well_name, decline_type, total_days,
                         x=1
                     ))
             fig1.update_xaxes(title_text="Dias Produccion"),
-            fig1.update_yaxes(title_text="Tasa (SCF/d)"),
+            fig1.update_yaxes(title_text="Tasa (SCF/d)", type="log"),
             fig1.update_layout(
                 autosize=True,
                 margin=dict(

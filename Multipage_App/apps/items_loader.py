@@ -39,7 +39,7 @@ if os.path.isfile('config.ini'):
 
 #Ruta de la BD
 archivo = ruta +  basededatos
-engine = create_engine('sqlite:///'+archivo, echo=True)
+engine = create_engine('sqlite:///'+archivo, echo=False)
 con = engine.connect()
 #con = sqlite3.connect(archivo)
 
@@ -55,13 +55,13 @@ layout = html.Div([
                 html.Br(),
                 dbc.Row([
                     dbc.Col([
-                        dbc.Button(html.Span(["AGREGAR", html.I(className="fas fa-plus-circle ml-1")],style={'font-size':'1.5em','text-align':'center'}), 
+                        dbc.Button(html.Span(["Filas", html.I(className="fas fa-plus-circle ml-1")],style={'font-size':'1.5em','text-align':'center'}), 
                         id="btn_add_items", color="primary", n_clicks=0, className="mr-1"),
-                    ], width={"size": 3, "offset": 1}),
+                    ], width={"size": 2, "offset": 1}),
                     dbc.Col([
-                        dbc.Button(html.Span(["SALVAR", html.I(className="fas fa-save ml-1")],style={'font-size':'1.5em','text-align':'center'}), 
+                        dbc.Button(html.Span(["Grabar", html.I(className="fas fa-save ml-1")],style={'font-size':'1.5em','text-align':'center'}), 
                         id="btn_save_items", color="success", n_clicks=0, className="mr-1"),
-                    ], width={"size": 2, "offset": 0})
+                    ], width={"size": 1, "offset": 1})
                 ]),
                 html.Br(),
             ]),

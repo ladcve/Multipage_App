@@ -125,16 +125,20 @@ layout = html.Div([
     ),
 ])
 
-def create_figure(column_x, column_y, well, file_name, selected_color):
-    color = dict(hex='#0000ff')
-    if selected_color=='rojo':
-        color = dict(hex='#FF0000')
-    if selected_color=='verde':
-        color = dict(hex='#008f39')
-    
+def create_figure(column_x, column_y1, column_y2, well, file_name, color_y1, color_y2):
+    sel_color_y1 = dict(hex='#0000ff')
+    sel_color_y2 = dict(hex='#0000ff')
+    if color_y1=='rojo':
+        sel_color_y1 = dict(hex='#FF0000')
+    if color_y1=='verde':
+        sel_color_y1 = dict(hex='#008f39')
+    if color_y2=='rojo':
+        sel_color_y2 = dict(hex='#FF0000')
+    if color_y2=='verde':
+        sel_color_y2 = dict(hex='#008f39')
     query= ''
     con = sqlite3.connect(archivo)
-    fig = {}
+    fig = make_subplots(specs=[[{"secondary_y": True}]])
     if file_name:
         with open(os.path.join(QUERY_DIRECTORY, file_name)) as f:
             contenido = f.readlines()
@@ -144,14 +148,24 @@ def create_figure(column_x, column_y, well, file_name, selected_color):
             df = df.query("NOMBRE == '{}'".format(well))
             df = df.sort_values(by='FECHA')
         con.close()
-        fig = px.line(df, x=column_x, y=column_y)
+        fig = px.line(df, x=column_x, y=column_y1)
         fig.update_layout(
-                title="{} {} vs {}".format(well, column_x, column_y),
+                title="{} {} vs {}".format(well, column_x, column_y1),
                 hovermode='x unified',
+                line_color=sel_color_y1["hex"],
                 paper_bgcolor='rgba(0,0,0,0)',
                 plot_bgcolor='rgb(240, 240, 240)',
             )
-        fig.update_traces(line_color=color["hex"]) 
+        for columnas_y2 in column_y2:
+            fig.add_trace(
+                px.Scatter(x=df['FECHA'],
+                    y=df[columnas_y2],
+                    name=columnas_y2,
+                    line_color=sel_color_y1["hex"],
+                    yaxis= 'y2'),
+                secondary_y=True,
+            )
+        #fig.update_traces(line_color=color["hex"]) 
         fig.update_xaxes(title_text="",showline=True, linewidth=2, linecolor='black', showgrid=False,)
         fig.update_yaxes(title_text="",showline=True, linewidth=2, linecolor='black', showgrid=False,)
     return fig
@@ -176,7 +190,8 @@ def display_dropdowns(n_clicks, _,  well, file_name, children):
         ]
     else:
         default_column_x = "FECHA" 
-        default_column_y = ""
+        default_column_y1 = ""
+        default_column_y2 = ""
         con = sqlite3.connect(archivo)
         if file_name:
             with open(os.path.join(QUERY_DIRECTORY, file_name)) as f:
@@ -187,27 +202,43 @@ def display_dropdowns(n_clicks, _,  well, file_name, children):
                 df = df.query("NOMBRE == '{}'".format(well))
                 df =df.sort_values("FECHA")
             column_name_list = df.columns.values.tolist()
-            default_column_y = column_name_list[3]
+            default_column_y1 = column_name_list[3]
+            default_column_y2 = column_name_list[3]
             default_color = 'Azul'
             
             new_element = html.Div([
                     dbc.Row([
                         dbc.Col([
-                            dcc.Graph(
-                                id={"type": "dynamic-output", "index": n_clicks},
-                                figure=create_figure(default_column_x, default_column_y, well, file_name, default_color),
+                            dac.Box([
+                                    dac.BoxBody([
+                                        dcc.Graph(
+                                            id={"type": "dynamic-output", "index": n_clicks},
+                                            style={"width": "100%"},
+                                            figure=create_figure(default_column_x, default_column_y1,default_column_y2, well, file_name, default_color, default_color),
+                                        ),
+                                    ]),	
+                                ],
+                                color='primary',
+                                solid_header=True,
+                                elevation=4,
+                                width=12
                             ),
-                        ], width=8),
+
+                        ], width={"size": 9, "offset": -1}),
                         dbc.Col([
                             html.Div(
                                 dbc.Button(html.Span(["Borrar ", html.I(className="fas fa-trash-alt ml-1")],style={'font-size':'1.5em','text-align':'center'}),
                                 id={"type": "dynamic-delete", "index": n_clicks}, n_clicks=0, color="danger", className="mr-3"),
                                 className="d-grid gap-2 d-md-flex justify-content-md-end"
                             ),
-                            dbc.Card([
-                                dbc.CardHeader(html.Label(['Opciones: '],style={'font-weight': 'bold', "text-align": "left"})),
-                                dbc.CardBody([
-                                    dbc.Col([
+                            html.Br(),
+                            dac.Box([
+                                    dac.BoxHeader(
+                                        collapsible = False,
+                                        closable = False,
+                                        title="Opciones:"
+                                    ),
+                                    dac.BoxBody([
                                         html.Br(),
                                         html.Label(['Eje X:'],style={'font-weight': 'bold', "text-align": "left"}),
                                         dcc.Dropdown(
@@ -219,7 +250,7 @@ def display_dropdowns(n_clicks, _,  well, file_name, children):
                                         html.Br(),
                                         html.Label(['Eje Y:'],style={'font-weight': 'bold', "text-align": "left"}),
                                         dcc.Dropdown(
-                                            id={"type": "dynamic-drop-y", "index": n_clicks},
+                                            id={"type": "dynamic-drop-y1", "index": n_clicks},
                                             options=[{"label": i, "value": i} for i in df.columns],
                                             value=default_column_y,
                                             clearable=False,
@@ -227,7 +258,7 @@ def display_dropdowns(n_clicks, _,  well, file_name, children):
                                         html.Br(),
                                         html.Label(['Color Linea:'],style={'font-weight': 'bold', "text-align": "left"}),
                                         dcc.Dropdown(
-                                            id={"type": "dynamic-color-picker", "index": n_clicks},
+                                            id={"type": "dynamic-color-picker-y1", "index": n_clicks},
                                             options=[
                                                 {'label': 'Azul', 'value': 'azul'},
                                                 {'label': 'Rojo', 'value': 'rojo'},
@@ -235,10 +266,33 @@ def display_dropdowns(n_clicks, _,  well, file_name, children):
                                             ],
                                             value='azul',
                                         ),
-                                    ]),
-                                ]),
-                            ]),
-                        ], width=3),
+                                        html.Br(),
+                                        html.Label(['Eje Y:'],style={'font-weight': 'bold', "text-align": "left"}),
+                                        dcc.Dropdown(
+                                            id={"type": "dynamic-drop-y2", "index": n_clicks},
+                                            options=[{"label": i, "value": i} for i in df.columns],
+                                            value=default_column_y,
+                                            clearable=False,
+                                        ),
+                                        html.Br(),
+                                        html.Label(['Color Linea:'],style={'font-weight': 'bold', "text-align": "left"}),
+                                        dcc.Dropdown(
+                                            id={"type": "dynamic-color-picker-y2", "index": n_clicks},
+                                            options=[
+                                                {'label': 'Azul', 'value': 'azul'},
+                                                {'label': 'Rojo', 'value': 'rojo'},
+                                                {'label': 'Verde', 'value': 'verde'}
+                                            ],
+                                            value='azul',
+                                        ),
+                                    ]),	
+                                ],
+                                color='primary',
+                                solid_header=True,
+                                elevation=4,
+                                width=12
+                            ),
+                        ], width={"size": 3, "offset": 0}),
                     ]),
                 ],
             )
@@ -248,22 +302,27 @@ def display_dropdowns(n_clicks, _,  well, file_name, children):
 @app.callback(
     [Output({"type": "dynamic-output", "index": MATCH}, "figure"),
     Output({"type": "dynamic-drop-x", "index": MATCH}, "options"),
-    Output({"type": "dynamic-drop-y", "index": MATCH}, "options")],
+    Output({"type": "dynamic-drop-y1", "index": MATCH}, "options"),
+    Output({"type": "dynamic-drop-y2", "index": MATCH}, "options")],
     [
         Input({"type": "dynamic-drop-x", "index": MATCH}, "value"),
         Input({"type": "dynamic-drop-x", "index": MATCH}, "options"),
-        Input({"type": "dynamic-drop-y", "index": MATCH}, "value"),
-        Input({"type": "dynamic-drop-y", "index": MATCH}, "options"),
+        Input({"type": "dynamic-drop-y1", "index": MATCH}, "value"),
+        Input({"type": "dynamic-drop-y1", "index": MATCH}, "options"),
+        Input({"type": "dynamic-drop-y2", "index": MATCH}, "value"),
+        Input({"type": "dynamic-drop-y2", "index": MATCH}, "options"),
         Input("dpd-well-list", "value"),
         Input("dpd-query-list", "value"),
-        Input({"type": "dynamic-color-picker", "index": MATCH}, "value"),
+        Input({"type": "dynamic-color-picker-y1", "index": MATCH}, "value"),
+        Input({"type": "dynamic-color-picker-y2", "index": MATCH}, "value"),
     ],
 )
-def display_output(column_name_x, column_name_x_options, column_name_y, column_name_y_options, well, file_name, color):
+def display_output(column_name_x, column_name_x_options, column_name_y1, column_name_y1_options, column_name_y2, column_name_y2_options, well, file_name, color_y1, color_y2):
     con = sqlite3.connect(archivo)
     query=''
     options_x = column_name_x_options
-    options_y = column_name_y_options
+    options_y1 = column_name_y1_options
+    options_y2 = column_name_y2_options
     if file_name is not None:
         with open(os.path.join(QUERY_DIRECTORY, file_name)) as f:
             contenido = f.readlines()
@@ -275,8 +334,10 @@ def display_output(column_name_x, column_name_x_options, column_name_y, column_n
             options_x=[{'label': i, 'value': i} for i in df.columns]
             options_y=[{'label': i, 'value': i} for i in df.columns]
 
-        if column_name_y not in df.columns:
-            column_name_y = df.columns[3]
+        if column_name_y1 not in df.columns:
+            column_name_y1 = df.columns[3]
+        if column_name_y2 not in df.columns:
+            column_name_y2 = df.columns[3]
         if column_name_x not in df.columns:
             column_name_x = df.columns[4]
-    return create_figure(column_name_x, column_name_y, well, file_name, color), options_x, options_y
+    return create_figure(column_name_x, column_name_y1, column_name_y2, well, file_name, color_y1, color_y2), options_x, options_y1, options_y2

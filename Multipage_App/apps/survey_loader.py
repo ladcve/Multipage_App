@@ -48,44 +48,56 @@ well_list = well_list.sort_values('NOMBRE')['NOMBRE'].unique()
 layout = html.Div([
     dbc.Row([
         dbc.Col([
-            html.Label(['Nombre de Archivo Excel:'],style={'font-weight': 'bold', "text-align": "left"}),
-            dbc.Input(id="inp-ruta-excel", placeholder="Type something...", type="text", style={'backgroundColor':'white'}),
-            html.Div(id="loading-message")
-        ], width=2),
-        dbc.Col([
-            html.Br(),
-            dcc.Upload(
-                html.Button('Cargar Archivo'),
-                id='upload_excel_data',
-                # Allow multiple files to be uploaded
-                multiple=False
-            ),
-        ], width=2),
-        dbc.Col([
-            html.Label(['Pozo:'],style={'font-weight': 'bold', "text-align": "left"}),
-            dcc.Dropdown(
-                id='dpd-well-lists',
-                options=[{'label': i, 'value': i} for i in well_list],
-                clearable=False
-            ),
-        ], width=1),
-        dbc.Col([
-            html.Br(),
-            dbc.Button("Grabar Datos", id="btn_save_excel_data", color="success", className="mr-3"),
-        ], width=2),
+            dbc.Card([
+                html.Br(),
+                dbc.Row([
+                    dbc.Col([
+                        html.Label(['Nombre de Archivo Excel:'],style={'font-weight': 'bold', "text-align": "left"}),
+                        dbc.Input(id="inp-ruta-excel", placeholder="Type something...", type="text", style={'backgroundColor':'white'}),
+                        html.Div(id="loading-message")
+                    ], width={"size": 3, "offset": 1}),
+                    dbc.Col([
+                        html.Br(),
+                        dcc.Upload(
+                            dbc.Button(html.Span(["archivo ", html.I(className="fas fa-upload ml-1")],style={'font-size':'1.5em','text-align':'center'}),
+                                id="btn_add_row", color="primary", n_clicks=0, className="mr-1"),
+                            id='upload_excel_data',
+                            # Allow multiple files to be uploaded
+                            multiple=False
+                        ),
+                    ], width=2),
+                    dbc.Col([
+                        html.Label(['Pozo:'],style={'font-weight': 'bold', "text-align": "left"}),
+                        dcc.Dropdown(
+                            id='dpd-well-lists',
+                            options=[{'label': i, 'value': i} for i in well_list],
+                            clearable=False
+                        ),
+                    ], width=2),
+                    dbc.Col([
+                        html.Br(),
+                        dbc.Button(html.Span(["salvar ", html.I(className="fas fa-save ml-1")],style={'font-size':'1.5em','text-align':'center'}),
+                         id="btn_save_excel_data", color="success", className="mr-3"),
+                    ], width=2),
+                ]),
+                html.Br(),
+                dbc.Row([
+                    dbc.Col([
+                        html.Label(['Nombre de la hoja:'],style={'font-weight': 'bold', "text-align": "left"}),
+                        dbc.Input(id="inp_sheet_name", placeholder="Type something...", type="text", style={'backgroundColor':'white'}),
+                        html.Div(id="save_message_excel")
+                    ], width={"size": 2, "offset": 1}),
+                    dbc.Col([
+                        html.Br(),
+                        dbc.Button(html.Span(["ver ", html.I(className="fas fa-database ml-1")],style={'font-size':'1.5em','text-align':'center'}),
+                         id="btn_show_excel_data", color="primary", className="mr-3"),
+                    ], width=2),
+                ]),
+                html.Br(),
+            ]),
+        ], width=7),
     ]),
-    html.Br(),
-    dbc.Row([
-        dbc.Col([
-            html.Label(['Nombre de la hoja:'],style={'font-weight': 'bold', "text-align": "left"}),
-            dbc.Input(id="inp_sheet_name", placeholder="Type something...", type="text", style={'backgroundColor':'white'}),
-            html.Div(id="save_message_excel")
-        ], width=2),
-        dbc.Col([
-            html.Br(),
-            dbc.Button("Ver Datos", id="btn_show_excel_data", color="primary", className="mr-3"),
-        ], width=2),
-    ]),
+
     html.Br(),
     dbc.Row([
         dbc.Card([

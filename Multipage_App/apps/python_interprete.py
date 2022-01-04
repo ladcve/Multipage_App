@@ -4,6 +4,7 @@ from dash_bootstrap_components._components.Row import Row
 import dash_core_components as dcc
 import dash_html_components as html
 from dash.dependencies import Input, Output, State, ALL, MATCH
+import dash_admin_components as dac
 import plotly.express as px
 from plotly.subplots import make_subplots
 import dash_table
@@ -87,7 +88,8 @@ layout = html.Div([
                     ], width={"size": 4, "offset": 1}),
                     dbc.Col([
                          html.Br(),
-                        dbc.Button("Salva a BD", id="btn_save_db", color="primary", n_clicks=0, className="mr-1"),
+                        dbc.Button(html.Span(["salvar ", html.I(className="fas fas fa-database ml-1")],style={'font-size':'1.5em','text-align':'center'}),
+                         id="btn_save_db", color="primary", n_clicks=0, className="mr-1"),
                     ], width={"size": 1, "offset": 0}),
                 ]),
                 html.Br(),
@@ -100,39 +102,58 @@ layout = html.Div([
         dbc.Col([
             dbc.Button("Ejecutar", id="btn_run", color="success", n_clicks=0, className="mr-1"),
             html.Br(),
-            dbc.Card([
-                dbc.CardHeader(html.Label(['Codigo'],style={'font-weight': 'bold', "text-align": "left"})),
-                dbc.CardBody(
-                    dash_ace.DashAceEditor(
-                        id='textarea-code',
-                        value='import pandas as pd\n'
-                            'df = pd.read_csv("./datasets/read_data.csv")',
-                        theme='github',
-                        mode='python',
-                        setOptions=({
-                            'maxline' : 100,
-                        }),
-                        tabSize=1,
-                        enableBasicAutocompletion=True,
-                        enableLiveAutocompletion=True,
-                        autocompleter='/autocompleter?prefix=',
-                        placeholder='Python code ...'
-                    )
-                ),
-            ]),
+            dac.Box([
+                    dac.BoxHeader(
+                        collapsible = False,
+                        closable = False,
+                        title="Código"
+                    ),
+                    dac.BoxBody([
+                        dash_ace.DashAceEditor(
+                            id='textarea-code',
+                            value='import pandas as pd\n'
+                                'df = pd.read_csv("./datasets/read_data.csv")',
+                            theme='github',
+                            mode='python',
+                            setOptions=({
+                                'maxline' : 100,
+                            }),
+                            tabSize=1,
+                            enableBasicAutocompletion=True,
+                            enableLiveAutocompletion=True,
+                            autocompleter='/autocompleter?prefix=',
+                            placeholder='Python code ...'
+                        )
+                    ]),	
+                ],
+                color='primary',
+                solid_header=True,
+                elevation=4,
+                width=12
+            ),
         ]),
         dbc.Col([
             html.Br(),
-            dbc.Card([
-                dbc.CardHeader(html.Label(['Shell'],style={'font-weight': 'bold', "text-align": "left"})),
-                dbc.CardBody(
+            html.Br(),
+            dac.Box([
+                dac.BoxHeader(
+                    collapsible = False,
+                    closable = False,
+                    title="Marcadores Estratgráficos"
+                ),
+                dac.BoxBody([
                     dcc.Textarea(
                         id='textarea-shell',
                         value='',
                         style={'width': '100%', 'height': 1000, 'background-color' : '#d1d1d1'},
                     ),
-                ),
-            ]),
+                ]),	
+            ],
+            color='primary',
+            solid_header=True,
+            elevation=4,
+            width=12
+        ),
         ])
     ])
     

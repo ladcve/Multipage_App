@@ -31,16 +31,17 @@ archivo = ruta +  basededatos
 con = sqlite3.connect(archivo)
 
 #Listado de pozos activos
-query = "SELECT * FROM  CIERRE_DIARIO_POZO "
+query = "SELECT * FROM  CIERRE_DIARIO_POZO WHERE FECHA='2021-08-01'"
 df =pd.read_sql(query, con)
 query = "SELECT * FROM  VARIABLES "
 variables =pd.read_sql(query, con)
+
 selec_var=variables.loc[variables['NOMBRE']=='LIQ']
+
 ecuacion = selec_var.iloc[0]['ECUACION']
 titulo = selec_var.iloc[0]['TITULO']
 evalu = eval(ecuacion)
-df[titulo] = evalu
-print(df)
+#df[titulo] = evalu
 
 @contextlib.contextmanager
 def stdoutIO(stdout=None):
@@ -54,4 +55,11 @@ def stdoutIO(stdout=None):
 with stdoutIO() as s:
     eval("print(10+10)")
 
-print("out:", s.getvalue())
+columns_list = ['TASA_GAS','TASA_AGUA']
+for columna in columns_list:
+    filtro = ['NOMBRE']
+    filtro.append(columna)
+    df2 = df[filtro]
+    df2.rename(columns={columna: "VOLUMEN"}, inplace=True)
+    df2['FLUIDO']=columna
+    df = df.append(df2)

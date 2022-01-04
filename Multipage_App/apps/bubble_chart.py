@@ -19,7 +19,7 @@ from os import listdir
 from os.path import isfile, join
 import numpy as np
 import pandas as pd
-from datetime import date
+from datetime import datetime, tzinfo, timezone, timedelta, date
 from collections import OrderedDict
 import base64
 import json
@@ -78,7 +78,7 @@ layout = html.Div([
                     dbc.Col([
                         html.Label(['Consulta:'],style={'font-weight': 'bold', "text-align": "left"}),
                         dcc.Dropdown(
-                            id='dpd-query-list-scatter',
+                            id='dpd-query-list-bubble',
                             options=[
                                 {'label': i, 'value': i} for i in files
                             ],
@@ -88,16 +88,28 @@ layout = html.Div([
                     dbc.Col([
                         html.Label(['Pozo:'],style={'font-weight': 'bold', "text-align": "left"}),
                         dcc.Dropdown(
-                            id='dpd-well-list-scatter',
+                            id='dpd-well-list-bubble',
                             options=[{'label': i, 'value': i} for i in well_list],
                             clearable=False,
-                            multi=False
+                            multi=True
                         ),
                     ], width={"size": 4, "offset": 0}),
                     dbc.Col([
+                        html.Label(['Fecha: '],style={'font-weight': 'bold', "text-align": "left"}),
+                        dcc.DatePickerRange(
+                            id='dtp_fecha_bubble',
+                            min_date_allowed= date(1995, 8, 5),
+                            max_date_allowed=date.today(),
+                            start_date = date.today()- timedelta(days=-7),
+                            end_date=date.today(),
+                            display_format='YYYY-MM-DD',
+                            style={'backgroundColor':'white'},
+                        )
+                    ], width={"size": 3, "offset": 0}),
+                    dbc.Col([
                         html.Br(),
                         dbc.Button(html.Span(["Mostrar ", html.I(className="fas fa-chart-bar ml-1")],style={'font-size':'1.5em','text-align':'center'}),
-                         id="btn_show_scatterchart", color="success", className="mr-3"),
+                         id="btn_show_bubblechart", color="success", className="mr-3"),
                     ]),
                 ]),
                 html.Br(),
@@ -107,23 +119,23 @@ layout = html.Div([
             dbc.Card([
                 dbc.Row([
                     dbc.Col([
-                        html.Label(['Nombre Plantilla:'],style={'font-weight': 'bold', "text-align": "left"}),
-                        dbc.Input(id="inp-ruta-scatterchart", placeholder="Type something...", type="text", style={'backgroundColor':'white'}),
+                        html.Label(['Nombre Archivo:'],style={'font-weight': 'bold', "text-align": "left"}),
+                        dbc.Input(id="inp-ruta-bubblechart", placeholder="Type something...", type="text", style={'backgroundColor':'white'}),
                     ], width={"size": 3, "offset": 1}),
                      dbc.Col([
                         html.Br(),
                         dcc.Upload(
                             dbc.Button(html.Span(["Abrir ", html.I(className="fas fa-upload ml-1")],style={'font-size':'1.5em','text-align':'center'}),
                               n_clicks=0, color="primary", className="mr-3"),
-                            id='btn_open_scatterchart',
+                            id='btn_open_bubblechart',
                             multiple=False
                         ),
                     ], width={"size": 1, "offset": 0}),
                     dbc.Col([
                         html.Br(),
                         dbc.Button(html.Span(["Grabar ", html.I(className="fas fa-save ml-1")],style={'font-size':'1.5em','text-align':'center'}),
-                         id="btn_save_scatterchart", n_clicks=0, color="primary", className="mr-3"),
-                        html.Div(id="save_message_scatter"),
+                         id="btn_save_bubblechart", n_clicks=0, color="primary", className="mr-3"),
+                        html.Div(id="save_message_bubble"),
                     ], width={"size": 1, "offset": 1}),
                 ]),
                 html.Br(),
@@ -137,11 +149,11 @@ layout = html.Div([
                     dac.BoxHeader(
                         collapsible = False,
                         closable = False,
-                        title="Grafico de Dispersión"
+                        title="Gráfico de Burbuja"
                     ),
                     dac.BoxBody(
                         dbc.Spinner(
-                            dcc.Graph(id='cht-scatter-chart', style={"width": "100%"}),
+                            dcc.Graph(id='cht-bubble-chart', style={"width": "100%"}),
                         ),
                     ),	
                 ],
@@ -162,20 +174,20 @@ layout = html.Div([
                         html.Label(['Eje X'],style={'font-weight': 'bold', "text-align": "left"}),
                         html.Label(['Datos:'],style={'font-weight': 'bold', "text-align": "left"}),
                         dcc.Dropdown(
-                            id='dpd-column-list-x-scatter',
+                            id='dpd-column-list-x-bubble',
                             clearable=False,
                             multi=False
                         ),
                         html.Label(['Eje Y'],style={'font-weight': 'bold', "text-align": "left"}),
                         html.Label(['Datos:'],style={'font-weight': 'bold', "text-align": "left"}),
                         dcc.Dropdown(
-                            id='dpd-column-list-y-scatter',
+                            id='dpd-column-list-y-bubble',
                             clearable=False,
                             multi=False
                         ),
                         html.Label(['Variable Calculadas:'],style={'font-weight': 'bold', "text-align": "left"}),
                         dcc.Dropdown(
-                            id='dpd-var-list-scatterchart',
+                            id='dpd-var-list-bubblechart',
                             options=[{'label': i, 'value': i} for i in var_list],
                             clearable=False,
                             multi=True,
@@ -191,22 +203,26 @@ layout = html.Div([
     ]),
 ])
 
+
 @app.callback(
-    Output('cht-scatter-chart','figure'),
-    [Input("btn_show_scatterchart", "n_clicks"),
-     Input('dpd-query-list-scatter', 'value'), 
-     Input('dpd-well-list-scatter', 'value'),
-     Input('dpd-column-list-x-scatter', 'value'),
-     Input('dpd-column-list-y-scatter', 'value'),
-     Input('dpd-var-list-scatterchart', 'value')])
-def update_scatter_chart(n_clicks, file_name, well_name, column_list_x, column_list_y, var_list):
+    Output('cht-bubble-chart','figure'),
+    [Input("btn_show_bubblechart", "n_clicks"),
+     Input('dpd-query-list-bubble', 'value'), 
+     Input('dpd-well-list-bubble', 'value'),
+     Input('dpd-column-list-x-bubble', 'value'),
+     Input('dpd-column-list-y-bubble', 'value'),
+     Input('dpd-var-list-bubblechart', 'value'),
+     Input('dtp_fecha_bubble', 'start_date'),
+     Input('dtp_fecha_bubble', 'end_date')])
+def update_bubble_chart(n_clicks, file_name, well_name, column_list_x, column_list_y, var_list, dtp_start_date, dtp_end_date):
 
     df = pd.DataFrame()
     query= ''
     changed_id = [p['prop_id'] for p in dash.callback_context.triggered][0]
     fig = {}
-    
-    if 'btn_show_scatterchart' in changed_id:
+    fecha_inicio = str(dtp_start_date)
+    fecha_fin = str(dtp_end_date)
+    if 'btn_show_bubblechart' in changed_id:
         con = sqlite3.connect(archivo)
         query = "SELECT * FROM VARIABLES"
         variables =pd.read_sql(query, con)
@@ -218,9 +234,13 @@ def update_scatter_chart(n_clicks, file_name, well_name, column_list_x, column_l
                 if well_name is not None:
                     for linea in contenido:
                         query +=  linea 
+
+                    query += " WHERE date(FECHA)>='"+fecha_inicio+"' AND  date(FECHA)<='"+fecha_fin+"' ORDER BY FECHA"
+
                     df =pd.read_sql(query, con)
                     df =df.sort_values("FECHA")
-                    df = df[df['NOMBRE']==well_name]
+                    df= df[df['NOMBRE'].isin(well_name)]
+                    print(column_list_y)
                     if var_list is not None:
                         for var in var_list:
                             selec_var=variables.loc[variables['NOMBRE']==var]
@@ -229,10 +249,13 @@ def update_scatter_chart(n_clicks, file_name, well_name, column_list_x, column_l
                             evalu = eval(ecuacion)
                             df[titulo] = evalu
 
-                    fig = px.scatter(x=df[column_list_x],
-                            y=df[column_list_y],)
-                    fig.update_xaxes(title_text=column_list_x,showline=True, linewidth=2, linecolor='black', showgrid=False,)
-                    fig.update_yaxes(title_text=column_list_y,showline=True, linewidth=2, linecolor='black', showgrid=False,)
+                    fig = px.scatter(df,
+                            x=column_list_x,
+                            y=column_list_y,
+                            size=column_list_y,
+                            color="NOMBRE", 
+                            hover_name="NOMBRE",
+                            animation_frame="FECHA" )
                     fig.update_layout(
                         autosize=False,
                         paper_bgcolor='rgba(0,0,0,0)',
@@ -257,17 +280,17 @@ def update_scatter_chart(n_clicks, file_name, well_name, column_list_x, column_l
     return fig
 
 @app.callback(
-    [Output('dpd-column-list-x-scatter','options'),
-     Output('dpd-column-list-y-scatter','options')],
-    [Input('dpd-query-list-scatter', 'value'),
-    Input('dpd-var-list-scatterchart', 'value')])
+    [Output('dpd-column-list-x-bubble','options'),
+     Output('dpd-column-list-y-bubble','options')],
+    [Input('dpd-query-list-bubble', 'value'),
+    Input('dpd-var-list-bubblechart', 'value')])
 def update_column_list(file_name, var_list):
 
     df = pd.DataFrame()
     columns = [{'label': i, 'value': i} for i in []]
 
     changed_id = [p['prop_id'] for p in dash.callback_context.triggered][0]
-    if 'dpd-query-list-scatter' in changed_id:
+    if 'dpd-query-list-bubble' in changed_id:
         con = sqlite3.connect(archivo)
         query = "SELECT * FROM VARIABLES"
         variables =pd.read_sql(query, con)
@@ -292,17 +315,17 @@ def update_column_list(file_name, var_list):
     return columns, columns
 
 @app.callback(
-    Output('save_message_scatter','children'),
-    [Input('btn_save_scatterchart', 'n_clicks'),
-    Input('dpd-query-list-scatter', 'value'),
-    Input('dpd-column-list-x-scatter', 'value'),
-    Input('dpd-column-list-y-scatter', 'value'),
-    Input('inp-ruta-scatterchart', 'value'),
-    Input('dpd-var-list-scatterchart', 'value')]) 
-def save_scatterchart(n_clicks, consulta, datos_y1, datos_y2, file_name, var_list ):
+    Output('save_message_bubble','children'),
+    [Input('btn_save_bubblechart', 'n_clicks'),
+    Input('dpd-query-list-bubble', 'value'),
+    Input('dpd-column-list-x-bubble', 'value'),
+    Input('dpd-column-list-y-bubble', 'value'),
+    Input('inp-ruta-bubblechart', 'value'),
+    Input('dpd-var-list-bubblechart', 'value')]) 
+def save_bubblerchart(n_clicks, consulta, datos_y1, datos_y2, file_name, var_list ):
     mensaje=''
     changed_id = [p['prop_id'] for p in dash.callback_context.triggered][0]
-    if 'btn_save_scatterchart' in changed_id:
+    if 'btn_save_bubblechart' in changed_id:
         data = {}
         data['grafico'] = []
         data['grafico'].append({
@@ -315,19 +338,20 @@ def save_scatterchart(n_clicks, consulta, datos_y1, datos_y2, file_name, var_lis
         mensaje = 'Archivo guardado'
     return mensaje
 
-@app.callback( [Output('inp-ruta-scatterchart', 'value'),
-                Output('dpd-query-list', 'value'),
-                Output('dpd-column-list-x', 'value'),
-                Output('dpd-column-list-y', 'value'),
-                Output('dpd-var-list-scatterchart', 'value')],
-              [Input('btn_open_linechart', 'filename'),
-              Input('btn_open_linechart', 'contents')]
+@app.callback( [Output('inp-ruta-bubblechart', 'value'),
+                Output('dpd-query-list-bubble', 'value'),
+                Output('dpd-column-list-x-bubble', 'value'),
+                Output('dpd-column-list-y-bubble', 'value'),
+                Output('dpd-var-list-bubblechart', 'value')],
+              [Input('btn_open_bubblechart', 'filename'),
+              Input('btn_open_bubblechart', 'contents')]
               )
-def open_scatterchart( list_of_names, list_of_contents):
+def open_bubblechart( list_of_names, list_of_contents):
     archivo = list_of_names
     consulta=[]
     datos_y1=[]
     datos_y2=[]
+    var_list=[]
 
     if list_of_names is not None:
         print(list_of_names)
@@ -339,4 +363,4 @@ def open_scatterchart( list_of_names, list_of_contents):
                 datos_y1 = drop_values['datos_y1']
                 datos_y2 = drop_values['datos_y2']
                 var_list = drop_values['var_list']
-    return archivo, consulta, datos_y1, datos_y2
+    return archivo, consulta, datos_y1, datos_y2, var_list

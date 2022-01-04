@@ -116,7 +116,7 @@ layout = html.Div([
             dbc.Card([
                 dbc.Row([
                     dbc.Col([
-                        html.Label(['Nombre Archivo:'],style={'font-weight': 'bold', "text-align": "left"}),
+                        html.Label(['Nombre Plantilla:'],style={'font-weight': 'bold', "text-align": "left"}),
                         dbc.Input(id="inp-ruta-linechart", placeholder="Type something...", type="text", style={'backgroundColor':'white'}),
                     ], width={"size": 3, "offset": 1}),
                      dbc.Col([
@@ -156,7 +156,7 @@ layout = html.Div([
                 ),
                 dac.BoxBody(
                     dbc.Spinner(
-                        dcc.Graph(id='cht-line-chart',style={"height": 700, "width":1100}),
+                        dcc.Graph(id='cht-line-chart', style={"width": "100%" }),
                     ),
                 ),	
                 ],
@@ -321,7 +321,10 @@ def update_line_chart(n_clicks, file_name, well_name, column_list_y1, column_lis
                     query +=  linea 
 
                 df =pd.read_sql(query, con)
-                df = df[df['NOMBRE'].isin(well_name)]
+
+                if well_name:
+                    df = df[df['NOMBRE'].isin(well_name)]
+                    
                 df = df.sort_values(by="FECHA")
                 
                 if clear_data:
@@ -360,6 +363,7 @@ def update_line_chart(n_clicks, file_name, well_name, column_list_y1, column_lis
                 fig.update_layout(
                     autosize=False,
                     hovermode='x unified',
+                    height=700,
                     paper_bgcolor='rgba(0,0,0,0)',
                     plot_bgcolor='rgb(240, 240, 240)',
                     margin=dict(
@@ -368,6 +372,13 @@ def update_line_chart(n_clicks, file_name, well_name, column_list_y1, column_lis
                         b=100,
                         t=100,
                         pad=4,
+                    ),
+                    legend=dict(
+                        orientation="h",
+                        yanchor="bottom",
+                        y=1.02,
+                        xanchor="right",
+                        x=1
                     ),
                    )
                 fig.update_xaxes(
@@ -382,13 +393,6 @@ def update_line_chart(n_clicks, file_name, well_name, column_list_y1, column_lis
                         ])
                     )
                 )
-                fig.update_layout(legend=dict(
-                    orientation="h",
-                    yanchor="bottom",
-                    y=1.02,
-                    xanchor="right",
-                    x=1
-                ))
                 if show_annot:
                     dff = pd.DataFrame(annot_data)
                     for ind in dff.index:

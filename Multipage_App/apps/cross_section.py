@@ -56,10 +56,10 @@ well_list = well_list.sort_values('NOMBRE')['NOMBRE'].unique()
 con.close()
 
 #Obtener nombre de las curvas de un archivo las
-las = lasio.LASFile(DATASET_DIRECTORY+"Perla-1X.LAS")
-curves_lits = []
-for curve in las.curves[1:]:
-    curves_lits.append(curve.mnemonic)
+#las = lasio.LASFile(DATASET_DIRECTORY+"Perla-1X.LAS")
+#curves_lits = []
+#for curve in las.curves[1:]:
+#    curves_lits.append(curve.mnemonic)
 
 #Lee el archivo de configuracion
 configuracion = configparser.ConfigParser()
@@ -79,7 +79,7 @@ layout = html.Div([
                         dbc.Col([
                             dcc.Dropdown(
                                 id='dpd-wells-lists',
-                                options=[{'label': i, 'value': i} for i in well_list],
+                                #options=[{'label': i, 'value': i} for i in well_list],
                                 clearable=False,
                                 multi = True,
                             ),
@@ -103,7 +103,7 @@ layout = html.Div([
                                 html.Label(['seleccion de Curvas:'],style={'font-weight': 'bold', "text-align": "left"}),
                                 dcc.Dropdown(
                                     id='dpd-curve-selection',
-                                    options=[{'label': i, 'value': i} for i in curves_lits],
+                                    #options=[{'label': i, 'value': i} for i in curves_lits],
                                     clearable=False,
                                     multi = True,
                                 ),
@@ -232,7 +232,7 @@ def display_cross_section(n_clicks, well_list, curve_list, show_marker, children
         for well in well_list:
             new_element = html.Div(
                     style={
-                    "width": "  18%",
+                    "width": "  19%",
                     "display": "inline-block",
                     "outline": "thin lightgrey solid",
                     "padding": 5,

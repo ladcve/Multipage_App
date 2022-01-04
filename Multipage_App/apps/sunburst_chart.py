@@ -114,7 +114,7 @@ layout = html.Div([
                     dbc.Col([
                         html.Br(),
                         dbc.Button(html.Span(["Mostrar ", html.I(className="fas fa-chart-bar ml-1")],style={'font-size':'1.5em','text-align':'center'}),
-                         id="btn_show_piechart", color="primary", className="mr-3"),
+                         id="btn_show_piechart", color="success", className="mr-3"),
                     ], width={"size": 1, "offset": 1}),
                 ]),
                 html.Br(),
@@ -127,14 +127,14 @@ layout = html.Div([
             dbc.Card([
                 dbc.Row([
                     dbc.Col([
-                        html.Label(['Nombre Archivo:'],style={'font-weight': 'bold', "text-align": "left"}),
+                        html.Label(['Nombre Plantilla:'],style={'font-weight': 'bold', "text-align": "left"}),
                         dbc.Input(id="inp-ruta-piechart", placeholder="Type something...", type="text", style={'backgroundColor':'white'}),
                     ], width={"size": 3, "offset": 1}),
                      dbc.Col([
                         html.Br(),
                         dcc.Upload(
                             dbc.Button(html.Span(["Abrir ", html.I(className="fas fa-upload ml-1")],style={'font-size':'1.5em','text-align':'center'}),
-                             n_clicks=0, color="warning", className="mr-3"),
+                             n_clicks=0, color="primary", className="mr-3"),
                             id='btn_open_piechart',
                             multiple=False
                         ),
@@ -142,7 +142,7 @@ layout = html.Div([
                     dbc.Col([
                         html.Br(),
                         dbc.Button(html.Span(["Grabar  ", html.I(className="fas fa-save ml-1")],style={'font-size':'1.5em','text-align':'center'}),
-                         id="btn_save_piechart", n_clicks=0, color="warning", className="mr-3"),
+                         id="btn_save_piechart", n_clicks=0, color="primary", className="mr-3"),
                         html.Div(id="save_message_piechart"),
                     ], width={"size": 1, "offset": 1}),
                 ]),
@@ -161,7 +161,7 @@ layout = html.Div([
                     ),
                     dac.BoxBody(
                         dbc.Spinner(
-                            dcc.Graph(id='cht-pie-chart'),
+                            dcc.Graph(id='cht-pie-chart', style={"width": "100%"}),
                         ),
                     ),	
                 ],
@@ -277,6 +277,7 @@ def update_pie_chart(n_clicks, file_name, well_name, columns_list, dtp_fecha, ch
                     fig =px.sunburst(
                             df3,
                             path=['NOMBRE', 'FLUIDO'],
+                            height=700,
                             values='VOLUMEN',
                             title=chart_title,
                         )

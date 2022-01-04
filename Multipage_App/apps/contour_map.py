@@ -115,7 +115,7 @@ layout = html.Div([
             dbc.Card([
                 dbc.Row([
                     dbc.Col([
-                        html.Label(['Nombre Archivo:'],style={'font-weight': 'bold', "text-align": "left"}),
+                        html.Label(['Nombre Plantilla:'],style={'font-weight': 'bold', "text-align": "left"}),
                         dbc.Input(id="inp-ruta-contour", placeholder="Type something...", type="text", style={'backgroundColor':'white'}),
                     ], width={"size": 3, "offset": 1}),
                      dbc.Col([
@@ -128,7 +128,7 @@ layout = html.Div([
                             id='btn_open_contour',
                             multiple=False
                         ),
-                    ], width={"size": 1, "offset": 0}),
+                    ], width={"size": 2, "offset": 0}),
                     dbc.Col([
                         html.Br(),
                         dbc.Button(html.Span(["Grabar ", html.I(className="fas fa-save ml-1")],style={'font-size':'1.5em','text-align':'center'}),
@@ -155,7 +155,7 @@ layout = html.Div([
                     ),
                     dac.BoxBody([
                         dbc.Spinner(
-                            dcc.Graph(id='cht-contour-chart'),
+                            dcc.Graph(id='cht-contour-chart', style={"width": "100%"}),
                         ),
                     ]),	
                 ],
@@ -320,6 +320,16 @@ def update_contour_map(n_clicks, file_name, columns_list, dtp_fecha, chart_title
                                     args=["reversescale", True],
                                     label="True",
                                     method="restyle"
+                                ),
+                                dict(
+                                    args=["type", "surface"],
+                                    label="3D Surface",
+                                    method="restyle"
+                                ),
+                                dict(
+                                    args=["type", "heatmap"],
+                                    label="Contorno",
+                                    method="restyle"
                                 )
                             ]),
                             type = "buttons",
@@ -338,7 +348,7 @@ def update_contour_map(n_clicks, file_name, columns_list, dtp_fecha, chart_title
                     annotations=[
                         dict(text="Escala<br>Colores", x=0, xref="paper", y=1.1, yref="paper",
                                             align="left", showarrow=False),
-                        dict(text="Reversar<br>Escala Colores", x=0.6, xref="paper", y=1.1,
+                        dict(text="Reversar<br>Escala Colores y Forma", x=0.6, xref="paper", y=1.1,
                                             yref="paper", align="left", showarrow=False),
                     ])
                 

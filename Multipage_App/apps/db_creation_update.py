@@ -4,6 +4,7 @@ from dash_bootstrap_components._components.Row import Row
 import dash_core_components as dcc
 import dash_html_components as html
 from dash.dependencies import Input, Output, State
+import dash_admin_components as dac
 import dash_table
 import sqlite3
 from sqlalchemy import create_engine
@@ -58,13 +59,21 @@ dstart = dstart.replace("',)]","")
 con.close()
 
 layout = html.Div([
-     dbc.Row([
+    dbc.Row([
         dbc.Col([
-            dbc.Button("Crear BD", id="btn_create_db", color="primary", n_clicks=0, className="mr-1"),
-        ], width=1),
-        dbc.Col([
-            dbc.Button("Actualizar BD", id="btn_udpate_db", color="success", n_clicks=0, className="mr-1"),
-        ], width=1)
+            dbc.Card([
+                html.Br(),
+                dbc.Row([
+                    dbc.Col([
+                        dbc.Button("Crear BD", id="btn_create_db", color="primary", n_clicks=0, className="mr-1"),
+                    ], width={"size": 3, "offset": 0}),
+                    dbc.Col([
+                        dbc.Button("Actualizar BD", id="btn_udpate_db", color="success", n_clicks=0, className="mr-1"),
+                    ], width={"size": 2, "offset": 0})
+                ]),
+                html.Br(),
+            ]),
+        ], width={"size": 3, "offset": 0}), 
     ]),
     html.Br(),
     dbc.Spinner(
@@ -72,28 +81,37 @@ layout = html.Div([
     ),
     html.Br(),
     dbc.Row([
-        dbc.Card([
-            dbc.CardHeader(html.Label(['Tablas de la BD'],style={'font-weight': 'bold', "text-align": "left"})),
-            dbc.CardBody([
-                dcc.Checklist(
-                    id='ckl-tables',
-                    options=[
-                        {'label': ' Items', 'value': 'ITEMS'},
-                        {'label': ' Asignada', 'value': 'CIERRE'},
-                        {'label': ' Estimacion', 'value': 'ESTIM'},
-                        {'label': ' Lecturas', 'value': 'LECTU'},
-                        {'label': ' Potencial', 'value': 'POTEN'},
-                        {'label': ' Pruebas', 'value': 'PRUEBAS'},
-                        {'label': ' Perdidas', 'value': 'PERDI'},
-                        {'label': ' Survey', 'value': 'SURVEY'},
-                        {'label': ' Nodal', 'value': 'NODAL'},
-                        {'label': ' Eventos', 'value': 'EVENTO'},
-                        {'label': ' Wellbore', 'value': 'WELLB'},
-                    ],
-                    value=['ITEMS', 'CIERRE', 'ESTIM']
+        dac.Box([
+                dac.BoxHeader(
+                    collapsible = False,
+                    closable = False,
+                    title="Tablas de la BD"
                 ),
-            ])
-        ]),
+                dac.BoxBody([
+                    dcc.Checklist(
+                        id='ckl-tables',
+                        options=[
+                            {'label': ' Items', 'value': 'ITEMS'},
+                            {'label': ' Asignada', 'value': 'CIERRE'},
+                            {'label': ' Estimacion', 'value': 'ESTIM'},
+                            {'label': ' Lecturas', 'value': 'LECTU'},
+                            {'label': ' Potencial', 'value': 'POTEN'},
+                            {'label': ' Pruebas', 'value': 'PRUEBAS'},
+                            {'label': ' Perdidas', 'value': 'PERDI'},
+                            {'label': ' Survey', 'value': 'SURVEY'},
+                            {'label': ' Nodal', 'value': 'NODAL'},
+                            {'label': ' Eventos', 'value': 'EVENTO'},
+                            {'label': ' Wellbore', 'value': 'WELLB'},
+                        ],
+                        value=['ITEMS', 'CIERRE', 'ESTIM']
+                    ),
+                ]),	
+            ],
+            color='primary',
+            solid_header=True,
+            elevation=4,
+            width=4
+        ),
     ]),
 ])
 
