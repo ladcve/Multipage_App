@@ -29,7 +29,7 @@ from app import app
 
 #Variable con la ruta para salvar los querys
 QUERY_DIRECTORY = "./querys"
-CHART_DIRECTORY = "./template/"
+TEMPLATE_DIRECTORY = "./template/"
 
 #Lee el archivo de configuracion
 configuracion = configparser.ConfigParser()
@@ -98,11 +98,6 @@ layout = html.Div([
                         dbc.Button(html.Span(["Mostrar ", html.I(className="fas fa-chart-bar ml-1")],style={'font-size':'1.5em','text-align':'center'}),
                          id="btn_show_areachart", color="success", className="mr-3"),
                     ], width={"size": 1, "offset": 0}),
-                    dbc.Col([
-                        html.Br(),
-                        dbc.Button(html.Span(["Imagen ", html.I(className="fas fa-file-export ml-1")],style={'font-size':'1.5em','text-align':'center'}),
-                         id="btn_export_areaimg", color="warning", className="mr-3"),
-                    ], width={"size": 1, "offset": 1}),
                 ]),
                 html.Br(),
             ]),
@@ -322,7 +317,7 @@ def save_area_chart(n_clicks, consulta, datos_y1, file_name, var_list ):
             'datos_y1': datos_y1,
             'var_list': var_list,})
         if file_name:
-            with open(CHART_DIRECTORY+file_name, 'w') as file:
+            with open(TEMPLATE_DIRECTORY+file_name, 'w') as file:
                 json.dump(data, file, indent=4)
             mensaje = 'Archivo guardado'
     return mensaje
@@ -343,7 +338,7 @@ def open_area_chart( list_of_names, list_of_contents):
     if list_of_names is not None:
         print(list_of_names)
         archivo = list_of_names
-        with open(CHART_DIRECTORY+archivo) as file:
+        with open(TEMPLATE_DIRECTORY+archivo) as file:
             data = json.load(file)
             for drop_values   in data['grafico']:
                 consulta = str(drop_values['consulta'])

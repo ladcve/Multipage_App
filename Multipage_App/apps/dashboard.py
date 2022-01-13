@@ -17,7 +17,7 @@ import os.path
 import json
 import os
 import pandas as pd
-from datetime import date
+from datetime import datetime, tzinfo, timezone, timedelta, date
 import dash_table
 
 from app import app 
@@ -74,6 +74,15 @@ well_list = well_list.sort_values('NOMBRE')['NOMBRE'].unique()
 query = "SELECT NOMBRE FROM VARIABLES"
 var_list =pd.read_sql(query, con)
 var_list = var_list.sort_values('NOMBRE')['NOMBRE'].unique()
+
+#Maxima fecha de produccion
+query = "SELECT FECHA FROM CIERRE_DIARIO_POZO WHERE TASA_GAS>0"
+daily_prod = pd.read_sql(query, con)
+MAX_FECHA =daily_prod['FECHA'].max()
+
+#Listado de unidades por variables
+query = "SELECT * FROM UNIDADES"
+unidades =pd.read_sql(query, con)
 
 con.close()
 
@@ -151,7 +160,7 @@ layout = html.Div([
                         html.Label(['Fecha: '],style={'font-weight': 'bold', "text-align": "left"}),
                         dcc.DatePickerSingle(
                             id='dtp_fecha_dashboard',
-                            date=date.today(),
+                            date=MAX_FECHA,
                             display_format='YYYY-MM-DD',
                             style={'backgroundColor':'white'},
                         )
@@ -249,13 +258,7 @@ layout = html.Div([
     ]),
 ])
 
-def create_figure(well, column_y, color_selected, clear_data, file_name):
-
-    color = dict(hex='#0000ff')
-    if color_selected=='rojo':
-        color = dict(hex='#FF0000')
-    if color_selected=='verde':
-        color = dict(hex='#008f39')
+def create_figure(well, column_y, clear_data, file_name):
 
     con = sqlite3.connect(archivo)
     fig = {}
@@ -271,10 +274,19 @@ def create_figure(well, column_y, color_selected, clear_data, file_name):
             df =pd.read_sql(query, con)
         if clear_data:
             df = df.loc[df[column_y] >0]
+
+        selec_unit = unidades.set_index(['VARIABLE'])
+        var_title = selec_unit.loc[column_y]['GRAFICO']
+        var_unit = selec_unit.loc[column_y]['UNIDAD']
+        var_color = selec_unit.loc[column_y]['COLOR']
+        var_name = var_title + " " + var_unit
+
+        color = dict(hex=var_color)
+
         df = df.set_index('NOMBRE')
         fig = px.line(df.query("NOMBRE == '{}'".format(well)), x='FECHA', y=column_y)
         fig.update_layout(
-            title="{} {}".format(well, column_y),
+            title="{} {}".format(well, var_name),
             hovermode='x unified',
             margin_l=10,
             margin_r=0,
@@ -312,7 +324,6 @@ def create_figure(well, column_y, color_selected, clear_data, file_name):
 )
 def display_dropdowns(n_clicks, _, clear_data, file_name,  children):
 
-    color = dict(hex='#0000ff')
     input_id = dash.callback_context.triggered[0]["prop_id"].split(".")[0]
     if "index" in input_id:
         delete_chart = json.loads(input_id)["index"]
@@ -358,7 +369,8 @@ def display_dropdowns(n_clicks, _, clear_data, file_name,  children):
                     dcc.Graph(
                         id={"type": "dynamic-chart-output", "index": n_clicks},
                         style={"height": 300},
-                        figure=create_figure(default_well, default_column_y, color, clear_data, file_name),
+                        #figure=create_figure(default_well, default_column_y, color, clear_data, file_name),
+                        figure={}
                     ),
                     dcc.Dropdown(
                         id={"type": "dynamic-well", "index": n_clicks},
@@ -369,15 +381,6 @@ def display_dropdowns(n_clicks, _, clear_data, file_name,  children):
                         id={"type": "dynamic-dropdown-y", "index": n_clicks},
                         options=[{"label": i, "value": i} for i in df.columns],
                         value=default_column_y,
-                    ),
-                    dcc.Dropdown(
-                        id={"type": "dynamic-color", "index": n_clicks},
-                        options=[
-                                {'label': 'Azul', 'value': 'azul'},
-                                {'label': 'Rojo', 'value': 'rojo'},
-                                {'label': 'Verde', 'value': 'verde'}
-                            ],
-                        value='azul',
                     ),
                 ],
             )
@@ -392,12 +395,11 @@ def display_dropdowns(n_clicks, _, clear_data, file_name,  children):
         Input({"type": "dynamic-well", "index": MATCH}, "value"),
         Input({"type": "dynamic-dropdown-y", "index": MATCH}, "value"),
         Input({"type": "dynamic-dropdown-y", "index": MATCH}, "options"),
-        Input({"type": "dynamic-color", "index": MATCH}, "value"),
         Input("cb_clear_data", "value"),
         Input("dpd-consulta-lista", "value"),
     ],
 )
-def display_output(well, column_y, y_options, color_selected, clear_data, file_name):
+def display_output(well, column_y, y_options, clear_data, file_name):
     con = sqlite3.connect(archivo)
     query=''
     options = y_options
@@ -414,7 +416,7 @@ def display_output(well, column_y, y_options, color_selected, clear_data, file_n
         if column_y not in df.columns:
             column_y = df.columns[3]
          
-    return create_figure(well, column_y, color_selected, clear_data, file_name), options
+    return create_figure(well, column_y, clear_data, file_name), options
 
 @app.callback(
     [Output("dt_compare_results", "data"), Output("dt_compare_results", "columns"),

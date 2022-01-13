@@ -6,6 +6,7 @@ import dash_html_components as html
 from dash.dependencies import Input, Output, State, ALL, MATCH
 import dash_admin_components as dac
 import plotly.express as px
+import plotly.graph_objects as go
 from plotly.subplots import make_subplots
 import dash_table
 import sqlite3
@@ -62,6 +63,10 @@ con = sqlite3.connect(archivo)
 query = "SELECT NOMBRE FROM ITEMS WHERE ESTATUS=1 "
 well_list =pd.read_sql(query, con)
 well_list = well_list.sort_values('NOMBRE')['NOMBRE'].unique()
+
+#Listado de unidades por variables
+query = "SELECT * FROM UNIDADES"
+unidades =pd.read_sql(query, con)
 
 con.close()
 
@@ -126,16 +131,9 @@ layout = html.Div([
 ])
 
 def create_figure(column_x, column_y1, column_y2, well, file_name, color_y1, color_y2):
-    sel_color_y1 = dict(hex='#0000ff')
-    sel_color_y2 = dict(hex='#0000ff')
-    if color_y1=='rojo':
-        sel_color_y1 = dict(hex='#FF0000')
-    if color_y1=='verde':
-        sel_color_y1 = dict(hex='#008f39')
-    if color_y2=='rojo':
-        sel_color_y2 = dict(hex='#FF0000')
-    if color_y2=='verde':
-        sel_color_y2 = dict(hex='#008f39')
+    color_axis_y1 = dict(hex=color_y1)
+    color_axis_y2 = dict(hex=color_y2)
+
     query= ''
     con = sqlite3.connect(archivo)
     fig = make_subplots(specs=[[{"secondary_y": True}]])
@@ -148,24 +146,50 @@ def create_figure(column_x, column_y1, column_y2, well, file_name, color_y1, col
             df = df.query("NOMBRE == '{}'".format(well))
             df = df.sort_values(by='FECHA')
         con.close()
-        fig = px.line(df, x=column_x, y=column_y1)
+        i=1
+        selec_unit = unidades.set_index(['VARIABLE'])
+
+        var_title = selec_unit.loc[column_y1]['GRAFICO']
+        var_unit = selec_unit.loc[column_y1]['UNIDAD']
+        var_color = selec_unit.loc[column_y1]['COLOR']
+        var_name = var_title + " " + var_unit
+
+        if color_axis_y1 == {'hex': '#1530E3'}:
+            color_axis_y1 = dict(hex=var_color)
+            
+        fig.add_trace(
+            go.Scatter(x=df['FECHA'],
+                y=df[column_y1],
+                name=var_name,
+                line_color=color_axis_y1["hex"],
+                yaxis= 'y'+ str(i)),
+            secondary_y=False,
+        )
+
+        var_title = selec_unit.loc[column_y2]['GRAFICO']
+        var_unit = selec_unit.loc[column_y2]['UNIDAD']
+        var_name = var_title + " " + var_unit
+        var_color = selec_unit.loc[column_y2]['COLOR']
+
+        if color_axis_y2 == {'hex': '#1530E3'}:
+            color_axis_y2 = dict(hex=var_color)
+
+        fig.add_trace(
+            go.Scatter(x=df['FECHA'],
+                y=df[column_y2],
+                name=var_name,
+                line_color=color_axis_y2["hex"],
+                yaxis= 'y'+ str(i)),
+            secondary_y=True,
+        )
+
+        #fig.update_traces(line_color=color["hex"]) 
         fig.update_layout(
                 title="{} {} vs {}".format(well, column_x, column_y1),
                 hovermode='x unified',
-                line_color=sel_color_y1["hex"],
                 paper_bgcolor='rgba(0,0,0,0)',
                 plot_bgcolor='rgb(240, 240, 240)',
             )
-        for columnas_y2 in column_y2:
-            fig.add_trace(
-                px.Scatter(x=df['FECHA'],
-                    y=df[columnas_y2],
-                    name=columnas_y2,
-                    line_color=sel_color_y1["hex"],
-                    yaxis= 'y2'),
-                secondary_y=True,
-            )
-        #fig.update_traces(line_color=color["hex"]) 
         fig.update_xaxes(title_text="",showline=True, linewidth=2, linecolor='black', showgrid=False,)
         fig.update_yaxes(title_text="",showline=True, linewidth=2, linecolor='black', showgrid=False,)
     return fig
@@ -203,10 +227,18 @@ def display_dropdowns(n_clicks, _,  well, file_name, children):
                 df =df.sort_values("FECHA")
             column_name_list = df.columns.values.tolist()
             default_column_y1 = column_name_list[3]
-            default_column_y2 = column_name_list[3]
-            default_color = 'Azul'
+            default_column_y2 = column_name_list[4]
+            default_color = "#1530E3"
             
             new_element = html.Div([
+                    dbc.Row([
+                        html.Div(
+                            dbc.Button(html.Span(["Borrar ", html.I(className="fas fa-trash-alt ml-1")],style={'font-size':'1.5em','text-align':'center'}),
+                            id={"type": "dynamic-delete", "index": n_clicks}, n_clicks=0, color="danger", className="mr-3"),
+                            className="d-grid gap-2 d-md-flex justify-content-md-end"
+                        ),
+                    ]),
+                    html.Br(),
                     dbc.Row([
                         dbc.Col([
                             dac.Box([
@@ -214,7 +246,7 @@ def display_dropdowns(n_clicks, _,  well, file_name, children):
                                         dcc.Graph(
                                             id={"type": "dynamic-output", "index": n_clicks},
                                             style={"width": "100%"},
-                                            figure=create_figure(default_column_x, default_column_y1,default_column_y2, well, file_name, default_color, default_color),
+                                            figure=create_figure(default_column_x, default_column_y1, default_column_y2, well, file_name, default_color, default_color),
                                         ),
                                     ]),	
                                 ],
@@ -226,12 +258,6 @@ def display_dropdowns(n_clicks, _,  well, file_name, children):
 
                         ], width={"size": 9, "offset": -1}),
                         dbc.Col([
-                            html.Div(
-                                dbc.Button(html.Span(["Borrar ", html.I(className="fas fa-trash-alt ml-1")],style={'font-size':'1.5em','text-align':'center'}),
-                                id={"type": "dynamic-delete", "index": n_clicks}, n_clicks=0, color="danger", className="mr-3"),
-                                className="d-grid gap-2 d-md-flex justify-content-md-end"
-                            ),
-                            html.Br(),
                             dac.Box([
                                     dac.BoxHeader(
                                         collapsible = False,
@@ -248,42 +274,36 @@ def display_dropdowns(n_clicks, _,  well, file_name, children):
                                             clearable=False,
                                         ), 
                                         html.Br(),
-                                        html.Label(['Eje Y:'],style={'font-weight': 'bold', "text-align": "left"}),
+                                        html.Label(['Eje Y1:'],style={'font-weight': 'bold', "text-align": "left"}),
                                         dcc.Dropdown(
                                             id={"type": "dynamic-drop-y1", "index": n_clicks},
                                             options=[{"label": i, "value": i} for i in df.columns],
-                                            value=default_column_y,
+                                            value=default_column_y1,
                                             clearable=False,
                                         ),
                                         html.Br(),
-                                        html.Label(['Color Linea:'],style={'font-weight': 'bold', "text-align": "left"}),
-                                        dcc.Dropdown(
+                                        html.Label(['color Linea:'],style={'font-weight': 'bold', "text-align": "left"}),
+                                        dbc.Input(
+                                            type="color",
                                             id={"type": "dynamic-color-picker-y1", "index": n_clicks},
-                                            options=[
-                                                {'label': 'Azul', 'value': 'azul'},
-                                                {'label': 'Rojo', 'value': 'rojo'},
-                                                {'label': 'Verde', 'value': 'verde'}
-                                            ],
-                                            value='azul',
+                                            value="#1530E3",
+                                            style={"width": 75, "height": 50},
                                         ),
                                         html.Br(),
-                                        html.Label(['Eje Y:'],style={'font-weight': 'bold', "text-align": "left"}),
+                                        html.Label(['Eje Y2:'],style={'font-weight': 'bold', "text-align": "left"}),
                                         dcc.Dropdown(
                                             id={"type": "dynamic-drop-y2", "index": n_clicks},
                                             options=[{"label": i, "value": i} for i in df.columns],
-                                            value=default_column_y,
+                                            value=default_column_y2,
                                             clearable=False,
                                         ),
                                         html.Br(),
                                         html.Label(['Color Linea:'],style={'font-weight': 'bold', "text-align": "left"}),
-                                        dcc.Dropdown(
+                                        dbc.Input(
+                                            type="color",
                                             id={"type": "dynamic-color-picker-y2", "index": n_clicks},
-                                            options=[
-                                                {'label': 'Azul', 'value': 'azul'},
-                                                {'label': 'Rojo', 'value': 'rojo'},
-                                                {'label': 'Verde', 'value': 'verde'}
-                                            ],
-                                            value='azul',
+                                            value="#1530E3",
+                                            style={"width": 75, "height": 50},
                                         ),
                                     ]),	
                                 ],

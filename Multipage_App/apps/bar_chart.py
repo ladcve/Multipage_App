@@ -106,11 +106,6 @@ layout = html.Div([
                         dbc.Button(html.Span(["Mostrar ", html.I(className="fas fa-chart-bar ml-1")],style={'font-size':'1.5em','text-align':'center'}),
                          id="btn_show_barchart", color="success", className="mr-3"),
                     ], width={"size": 1, "offset": 0}),
-                    dbc.Col([
-                        html.Br(),
-                        dbc.Button(html.Span(["Imagen ", html.I(className="fas fa-file-export ml-1")],style={'font-size':'1.5em','text-align':'center'}),
-                         id="btn_export_img", color="warning", className="mr-3"),
-                    ], width={"size": 1, "offset": 0}),
                 ]),
                 html.Br(),
             ]),
@@ -305,17 +300,19 @@ def update_column_list(file_name, var_list):
     Input('dpd-query-list-bar', 'value'),
     Input('dpd-column-list', 'value'),
     Input('inp-ruta-barchart', 'value'),
-    Input('dpd-var-list-barchart', 'value')]) 
-def save_bar_chart(n_clicks, consulta, datos_y1, file_name, var_list ):
+    Input('dpd-var-list-barchart', 'value'),
+    Input('inp_barchart_name', 'value')]) 
+def save_bar_chart(n_clicks, consulta, datos_y1, file_name, var_list, chart_title ):
     mensaje=''
     changed_id = [p['prop_id'] for p in dash.callback_context.triggered][0]
-    if 'btn_save_linechart' in changed_id:
+    if 'btn_save_barchart' in changed_id:
         data = {}
         data['grafico'] = []
         data['grafico'].append({
             'consulta': consulta,
             'datos_y1': datos_y1,
-            'var_list': var_list,})
+            'var_list': var_list,
+            'chart_title': chart_title,})
         if file_name:
             with open(CHART_DIRECTORY+file_name, 'w') as file:
                 json.dump(data, file, indent=4)
@@ -325,7 +322,8 @@ def save_bar_chart(n_clicks, consulta, datos_y1, file_name, var_list ):
 @app.callback( [Output('inp-ruta-barchart', 'value'),
                 Output('dpd-query-list-bar', 'value'),
                 Output('dpd-column-list', 'value'),
-                Output('dpd-var-list-barchart', 'value')],
+                Output('dpd-var-list-barchart', 'value'),
+                Output('inp_barchart_name', 'value')],
               [Input('btn_open_barchart', 'filename'),
               Input('btn_open_barchart', 'contents')]
               )
@@ -334,6 +332,7 @@ def open_bar_chart( list_of_names, list_of_contents):
     consulta=[]
     datos_y1=[]
     var_list=[]
+    chart_title=[]
 
     changed_id = [p['prop_id'] for p in dash.callback_context.triggered][0]
     if 'btn_open_barchart' in changed_id:
@@ -346,4 +345,5 @@ def open_bar_chart( list_of_names, list_of_contents):
                     consulta = str(drop_values['consulta'])
                     datos_y1 = drop_values['datos_y1']
                     var_list = drop_values['var_list']
-    return archivo, consulta, datos_y1, var_list
+                    chart_title = drop_values['chart_title']
+    return archivo, consulta, datos_y1, var_list, chart_title

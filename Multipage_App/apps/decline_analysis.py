@@ -6,7 +6,7 @@ import dash_html_components as html
 from dash.dependencies import Input, Output, State
 from dash_table.Format import Format, Symbol
 import dash_admin_components as dac
-from dash_html_components.Br import Br
+import dash_daq as daq
 import plotly.graph_objects as go
 from plotly.subplots import make_subplots
 import dash_table
@@ -19,7 +19,7 @@ from os import listdir
 from os.path import isfile, join
 import numpy as np
 import pandas as pd
-from datetime import date
+from datetime import datetime, tzinfo, timezone, timedelta, date
 from collections import OrderedDict
 import base64
 import json
@@ -34,7 +34,7 @@ configuracion = configparser.ConfigParser()
 
 #Variable con la ruta para salvar los querys
 QUERY_DIRECTORY = "./querys"
-CHART_DIRECTORY = "./template/"
+TEMPLATE_DIRECTORY = "./template/"
 
 if os.path.isfile('config.ini'):
 
@@ -61,7 +61,22 @@ query = "SELECT NOMBRE, FECHA, TASA_GAS, ACUM_GAS FROM CIERRE_DIARIO_POZO WHERE 
 daily_prod =pd.read_sql(query, con)
 daily_prod['FECHA'] =  pd.to_datetime(daily_prod['FECHA'], format='%Y-%m-%d') 
 
+#Maxima fecha de produccion
+MAX_FECHA =daily_prod['FECHA'].max()
+
 con.close()
+
+def listToString(s): 
+    
+    # initialize an empty string
+    str1 = "" 
+    
+    # traverse in the string  
+    for ele in s: 
+        str1 += ele  
+    
+    # return string  
+    return str1 
 
 # Define las funciones de declinacion
 def hyperbolic(t, qi, di, b):
@@ -81,7 +96,6 @@ layout = html.Div([
     dbc.Row([
         dbc.Col([
             dbc.Card([
-                html.Br(),
                 dbc.Row([
                     dbc.Col([
                         html.Label(['Pozo:'],style={'font-weight': 'bold', "text-align": "left"}),
@@ -105,11 +119,38 @@ layout = html.Div([
                         html.Br(),
                         dbc.Button(html.Span(["Grabar ", html.I(className="fas fa-save ml-1")],style={'font-size':'1.5em','text-align':'center'}),
                          id="btn_save_forecast", color="success", className="mr-3"),
+                        html.Div(id="save_message_forecast"),
                     ], width={"size": 1, "offset": 1}),
                 ]),
                 html.Br(),
             ]),
-        ], width={"size": 7, "offset": 0}),
+        ], width={"size": 6, "offset": 0}),
+        dbc.Col([
+            dbc.Card([
+                dbc.Row([
+                    dbc.Col([
+                        html.Label(['Nombre Plantilla:'],style={'font-weight': 'bold', "text-align": "left"}),
+                        dbc.Input(id="inp-ruta-decline", placeholder="Type something...", type="text", style={'backgroundColor':'white'}),
+                    ], width={"size": 4, "offset": 1}),
+                     dbc.Col([
+                        html.Br(),
+                        dcc.Upload(
+                            dbc.Button(html.Span(["Abrir ", html.I(className="fas fa-upload ml-1")],style={'font-size':'1.5em','text-align':'center'}),
+                             n_clicks=0, color="primary", className="mr-3"),
+                            id='btn_open_decline',
+                            multiple=False
+                        ),
+                    ], width={"size": 2, "offset": 0}),
+                    dbc.Col([
+                        html.Br(),
+                        dbc.Button(html.Span(["Grabar ", html.I(className="fas fa-save ml-1")],style={'font-size':'1.5em','text-align':'center'}),
+                         id="btn_save_decline", n_clicks=0, color="primary", className="mr-3"),
+                        html.Div(id="save_message_decline"),
+                    ], width={"size": 2, "offset": 1}),
+                ]),
+                html.Br(),
+            ]),
+        ], width={"size": 4, "offset": 0}),
     ]),
     html.Br(),
     dbc.Row([
@@ -154,6 +195,43 @@ layout = html.Div([
                     ),
                 ],width={"size": 6, "offset": 0}),
             ]),
+            html.Br(),
+            dbc.Row([
+                dbc.Col([
+                    dac.Box([
+                            dac.BoxHeader(
+                                collapsible = False,
+                                closable = False,
+                                title="Resultados"
+                            ),
+                            dac.BoxBody([
+                                dash_table.DataTable(id="dt_decline", 
+                                    style_as_list_view=True,
+                                    style_cell={'padding': '5px'},
+                                    style_header={
+                                        'backgroundColor': 'blue',
+                                        'fontWeight': 'bold',
+                                        'color': 'white'
+                                    },
+                                    style_table={'overflowX': 'auto'},
+                                    editable=False,
+                                    filter_action="native",
+                                    sort_action="native",
+                                    sort_mode="multi",
+                                    column_selectable="single",
+                                    page_action="native",
+                                    page_current= 0,
+                                    page_size= 20
+                                ),
+                            ]),	
+                        ],
+                        color='primary',
+                        solid_header=True,
+                        elevation=4,
+                        width=12
+                    ),
+                ]),
+            ]),
         ], width=9),
         dbc.Col([
             dbc.Col([
@@ -164,34 +242,57 @@ layout = html.Div([
                             title="Parámetros"
                         ),
                         dac.BoxBody([
-                            html.Label(['Tipo de Declinacion:'],style={'font-weight': 'bold', "text-align": "left"}),
-                            dcc.Dropdown(
-                                id='dpd-decline-type',
-                                options=[
-                                    {'label': 'Hiperbolica', 'value': 'HYP'},
-                                    {'label': 'Armonica', 'value': 'ARM'},
-                                    {'label': 'Exponencial', 'value': 'EXP'}
-                                ],
-                                value='HYP',
-                                clearable=False,
-                            ),
-                            html.Br(),
-                            html.Label(['Periodo Estable: '],style={'font-weight': 'bold', "text-align": "left"}),
-                            dcc.DatePickerSingle(
-                                id='dtp-start-date',
-                                date=date.today(),
-                                display_format='YYYY-MM-DD',
-                            ),
-                            dcc.DatePickerSingle(
-                                id='dtp-end-date',
-                                date=date.today(),
-                                display_format='YYYY-MM-DD',
-                            ),
-                            html.Br(),
-                            html.Br(),
-                            html.Label(['Total Dias:'],style={'font-weight': 'bold', "text-align": "left"}),
-                            dbc.Input(id="inp-total-days", value=3000, type="text", style={'backgroundColor':'white'}),
-                            html.Br(),
+                            dbc.Row([
+                                dbc.Col([
+                                    html.Label(['Tipo de Declinacion:'],style={'font-weight': 'bold', "text-align": "left"}),
+                                    dcc.Dropdown(
+                                        id='dpd-decline-type',
+                                        options=[
+                                            {'label': 'Hiperbolica', 'value': 'HYP'},
+                                            {'label': 'Armonica', 'value': 'ARM'},
+                                            {'label': 'Exponencial', 'value': 'EXP'}
+                                        ],
+                                        value='HYP',
+                                        clearable=False,
+                                    ),
+                                    html.Br(),
+                                    html.Label(['Periodo Estable: '],style={'font-weight': 'bold', "text-align": "left"}),
+                                    dcc.DatePickerSingle(
+                                        id='dtp-start-date',
+                                        date=MAX_FECHA - timedelta(days=30),
+                                        display_format='YYYY-MM-DD',
+                                    ),
+                                    dcc.DatePickerSingle(
+                                        id='dtp-end-date',
+                                        date=MAX_FECHA,
+                                        display_format='YYYY-MM-DD',
+                                    ),
+                                    html.Br(),
+                                    html.Br(),
+                                    daq.ToggleSwitch(
+                                        id='ts-end-days',
+                                        value=False,
+                                        label='Usar Dias or Fecha',
+                                        labelPosition='top'
+                                    ),
+                                ]),
+                            ]),
+                            dbc.Row([
+                                dbc.Col([
+                                    html.Label(['Total Dias:'],style={'font-weight': 'bold', "text-align": "left"}),
+                                    dbc.Input(id="inp-total-days", value=3000, type="number", step=1, style={'backgroundColor':'white'}),
+                                    html.Br(),
+                                ]),
+                                dbc.Col([ 
+                                    html.Label(['Fecha: '],style={'font-weight': 'bold', "text-align": "left"}),
+                                    dcc.DatePickerSingle(
+                                        id='dtp_max_date',
+                                        date=MAX_FECHA + timedelta(days=3000),
+                                        display_format='YYYY-MM-DD',
+                                        style={'backgroundColor':'white'},
+                                    ),
+                                ]),
+                            ]),
                         ]),	
                     ],
                     color='primary',
@@ -209,7 +310,6 @@ layout = html.Div([
                             dbc.Row([
                                 html.Label(['Tasa inicial Prod.: '],style={'font-weight': 'bold', "text-align": "left", "margin-left": "15px"}),
                                 html.Label(html.Div(id="txt-initial-rate"),style={'font-weight': 'bold', 'color':'blue', "text-align": "left", "margin-left": "15px"}),
-                                
                             ]),
                             dbc.Row([
                                 html.Label(['Última tasa Prod.: '],style={'font-weight': 'bold', "text-align": "left", "margin-left": "15px"}),
@@ -224,7 +324,19 @@ layout = html.Div([
                                 html.Label(html.Div(id="txt-decline-coef"),style={'font-weight': 'bold', 'color':'blue', "text-align": "left", "margin-left": "15px"}),
                             ]),
                             dbc.Row([
+                                html.Label(['Tiempo inicial: '],style={'font-weight': 'bold', "text-align": "left", "margin-left": "15px"}),
+                                html.Label(html.Div(id="txt-initial-time"),style={'font-weight': 'bold', 'color':'blue', "text-align": "left", "margin-left": "15px"}),
+                            ]),
+                            dbc.Row([
+                                html.Label(['Tiempo final: '],style={'font-weight': 'bold', "text-align": "left", "margin-left": "15px"}),
+                                html.Label(html.Div(id="txt-end-time"),style={'font-weight': 'bold', 'color':'blue', "text-align": "left", "margin-left": "15px"}),
+                            ]),
+                            dbc.Row([
                                 html.Label(['EUR: '],style={'font-weight': 'bold', "text-align": "left", "margin-left": "15px"}),
+                                html.Label(html.Div(id="txt-EUR"),style={'font-weight': 'bold', 'color':'blue', "text-align": "left", "margin-left": "15px"}),
+                            ]),
+                            dbc.Row([
+                                html.Label(['Cumpro: '],style={'font-weight': 'bold', "text-align": "left", "margin-left": "15px"}),
                                 html.Label(html.Div(id="txt-max-qp"),style={'font-weight': 'bold', 'color':'blue', "text-align": "left", "margin-left": "15px"}),
                             ]),
                         ]),	
@@ -237,43 +349,6 @@ layout = html.Div([
             ]),
         ], width=3),
     ]),
-    html.Br(),
-    dbc.Row([
-        dbc.Col([
-            dac.Box([
-                    dac.BoxHeader(
-                        collapsible = False,
-                        closable = False,
-                        title="Resultados"
-                    ),
-                    dac.BoxBody([
-                        dash_table.DataTable(id="dt_decline", 
-                            style_as_list_view=True,
-                            style_cell={'padding': '5px'},
-                            style_header={
-                                'backgroundColor': 'blue',
-                                'fontWeight': 'bold',
-                                'color': 'white'
-                            },
-                            style_table={'overflowX': 'auto'},
-                            editable=False,
-                            filter_action="native",
-                            sort_action="native",
-                            sort_mode="multi",
-                            column_selectable="single",
-                            page_action="native",
-                            page_current= 0,
-                            page_size= 20
-                        ),
-                    ]),	
-                ],
-                color='primary',
-                solid_header=True,
-                elevation=4,
-                width=12
-            ),
-        ]),
-    ]),
 ])
 
 @app.callback(
@@ -284,6 +359,9 @@ layout = html.Div([
     Output('txt-decline-rate','children'),
     Output('txt-decline-coef','children'),
     Output('txt-max-qp','children'),
+    Output('txt-EUR','children'),
+    Output('txt-initial-time','children'),
+    Output('txt-end-time','children'),
     Output('dt_decline','data'),
     Output('dt_decline','columns')],
     [Input("btn_show_data_prod", "n_clicks"),
@@ -292,8 +370,11 @@ layout = html.Div([
      Input('dpd-decline-type', 'value'),
      Input('inp-total-days', 'value'),
      Input('dtp-start-date', 'date'),
-     Input('dtp-end-date', 'date')]) 
-def update_line_chart(n_clicks1, n_clicks2, well_name, decline_type, total_days,start_date, end_date):
+     Input('dtp-end-date', 'date'),
+     Input('ts-end-days', 'value'),
+     Input('dtp_max_date', 'date'),
+     Input('inp-total-days', 'value')]) 
+def update_line_chart(n_clicks1, n_clicks2, well_name, decline_type, total_days,start_date, end_date, ts_days, decl_end_date, decl_days):
 
     data_results = pd.DataFrame()
     quer= ''
@@ -305,11 +386,19 @@ def update_line_chart(n_clicks1, n_clicks2, well_name, decline_type, total_days,
     max_qp = ''
     min_forecast = ''
     di_val = ''
+    EUR = ''
+    ti=''
+    acum_gas = 0
     columns = [],
     data=[]
+    max_decl_date = ''
     table_results = pd.DataFrame()
 
+
     if 'btn_show_data_prod' in changed_id:
+        decl_end_date = decl_end_date.replace("T00:00:00","")
+        decl_end_date = datetime.datetime.strptime( decl_end_date, '%Y-%m-%d')
+
         #Filtra los datos por pozo y valores en diferentes a cero
         daily_prod_well = daily_prod[daily_prod['NOMBRE']==well_name]
         daily_prod_well.drop('NOMBRE', inplace=True, axis=1)
@@ -361,13 +450,20 @@ def update_line_chart(n_clicks1, n_clicks2, well_name, decline_type, total_days,
             df_filter = daily_prod_well[(daily_prod_well['FECHA'] > start_date) & (daily_prod_well['FECHA'] < end_date)]
 
             raw_q = daily_prod_well['TASA_GAS']
+            ti = df_filter['FECHA'].min()
 
             t = df_filter['FECHA']
             q = df_filter['TASA_GAS']
+            acum_gas = daily_prod_well["ACUM_GAS"].max()
 
 
             #Define fix variables
-            total_days = 3000
+            if ts_days:
+                total_days = (decl_end_date - MAX_FECHA).days
+            else:
+                total_days = decl_days
+
+            max_decl_date = MAX_FECHA + datetime.timedelta(days=int(total_days))
 
             # subtract one datetime to another datetime
             timedelta = [j-i for i, j in zip(t[:-1], t[1:])]
@@ -399,7 +495,7 @@ def update_line_chart(n_clicks1, n_clicks2, well_name, decline_type, total_days,
             qi = qi * max(q)
             di = di / max(t)
 
-            # forecast gas rate until 1,500 days
+            # forecast gas rate until decline days
             t_forecast = np.arange(total_days)
             if (decline_type=="HYP"):
                 q_forecast = hyperbolic(t_forecast, qi, di, b)
@@ -417,10 +513,24 @@ def update_line_chart(n_clicks1, n_clicks2, well_name, decline_type, total_days,
             di_val = '{} SCF/D'.format(np.round(di, 6))
             b_val = '{}'.format(np.round(b, 3))
             max_qp = '{} MMSCF'.format(np.round(Max_Qp_Forecast, 3))
+            EUR = '{} MMSCF'.format(np.round(Max_Qp_Forecast + acum_gas, 6))
+            
 
-            #table_results = pd.concat([t_forecast, q_forecast], axis=1)
+            #tabla de resultados
             table_results['DIAS']=t_forecast
-            table_results['TASA_GAS_PRON']=q_forecast
+            table_results['PRONOSTICO']=q_forecast
+            table_results['NOMBRE']=well_name
+
+            if (decline_type=="HYP"):
+                table_results['DECLINACION']="HIPERBOLICA"
+            elif (decline_type=="EXP"):
+                table_results['DECLINACION']="EXPONENIAL"
+            elif (decline_type=="ARM"):
+                table_results['DECLINACION']="ARMONICA"     
+
+            table_results['FECHA']=timedelta(days=t_forecast)+MAX_FECHA
+
+
             #Construye grafico de declinacion
             fig1.add_trace(
                 go.Scatter(x=t,
@@ -485,4 +595,83 @@ def update_line_chart(n_clicks1, n_clicks2, well_name, decline_type, total_days,
 
     columns = [{'name': i, 'id': i} for i in table_results.columns]
     data=table_results.to_dict('records')
-    return fig1, fig2, qi_val, min_forecast, di_val, b_val, max_qp, data, columns
+    return fig1, fig2, qi_val, min_forecast, di_val, b_val, max_qp, EUR, ti, max_decl_date, data, columns
+
+@app.callback(
+    Output('save_message_decline','children'),
+    [Input('btn_save_decline', 'n_clicks'),
+    Input('dpd-decline-type', 'value'),
+    Input('dtp-start-date', 'date'),
+    Input('dtp-end-date', 'date'),
+    Input('inp-ruta-decline', 'value'),
+    Input('inp-total-days', 'value'),
+    Input('dtp_max_date', 'date')]) 
+def save_decline(n_clicks, tipo_decl, start_date, end_date, file_name, decl_days, decl_end_date ):
+    mensaje=''
+    changed_id = [p['prop_id'] for p in dash.callback_context.triggered][0]
+    if 'btn_save_decline' in changed_id:
+        data = {}
+        data['grafico'] = []
+        data['grafico'].append({
+            'declinacion': tipo_decl,
+            'start_date': start_date,
+            'end_date': end_date,
+            'decl_days': decl_days,
+            'decl_end_date': decl_end_date,})
+        if file_name:
+            with open(TEMPLATE_DIRECTORY+file_name, 'w') as file:
+                json.dump(data, file, indent=4)
+            mensaje = 'Archivo guardado'
+    return mensaje
+
+@app.callback( [Output('inp-ruta-decline', 'value'),
+                Output('dpd-decline-type', 'value'),
+                Output('dtp-start-date', 'date'),
+                Output('dtp-end-date', 'date'),
+                Output('inp-total-days', 'value'),
+                Output('dtp_max_date', 'date')],
+              [Input('btn_open_decline', 'n_clicks'),
+              Input('btn_open_decline', 'filename'),
+              Input('btn_open_decline', 'contents')]
+              )
+def open_decline( n_clicks, list_of_names, list_of_contents):
+    archivo = list_of_names
+    declinacion=['HYP']
+    start_date=MAX_FECHA - timedelta(days=30)
+    end_date=MAX_FECHA
+    decl_days=3000
+    decl_end_date=MAX_FECHA + timedelta(days=3000)
+
+    changed_id = [p['prop_id'] for p in dash.callback_context.triggered][0]
+
+    if 'btn_open_decline' in changed_id:
+        if list_of_names is not None:
+            print(list_of_names)
+            archivo = list_of_names
+            with open(TEMPLATE_DIRECTORY+archivo) as file:
+                data = json.load(file)
+                for drop_values   in data['grafico']:
+                    declinacion = str(drop_values['declinacion'])
+                    start_date = listToString(drop_values['start_date'])
+                    end_date = listToString(drop_values['end_date'])
+                    decl_days = drop_values['decl_days']
+                    decl_end_date = listToString(drop_values['decl_end_date'])
+
+    return archivo, declinacion, start_date, end_date, decl_days, decl_end_date
+
+@app.callback(
+    Output("save_message_forecast", "children"),
+    Input("btn_save_forecast", "n_clicks"),
+    [State('dt_decline', 'data')]
+)
+def fupdate_table(n_clicks, dataset):
+    changed_id = [p['prop_id'] for p in dash.callback_context.triggered][0]
+    mensaje = ''
+    pg = pd.DataFrame(dataset)
+    if 'btn_save_forecast' in changed_id:
+        con = sqlite3.connect(archivo)
+        pg.to_sql('DCA', con, if_exists='append', index=False)
+        con.commit()
+        con.close()
+        mensaje='Datos guardados'
+    return mensaje
