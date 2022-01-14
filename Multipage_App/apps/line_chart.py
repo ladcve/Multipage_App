@@ -339,7 +339,7 @@ def update_line_chart(n_clicks, file_name, well_name, column_list_y1, column_lis
                         df[titulo] = evalu
                 i=1
                 selec_unit = unidades.set_index(['VARIABLE'])
-                print(color_axis_y1)
+
                 for columnas_y1 in column_list_y1:
                     var_title = selec_unit.loc[columnas_y1]['GRAFICO']
                     var_unit = selec_unit.loc[columnas_y1]['UNIDAD']
@@ -445,6 +445,10 @@ def update_column_list(file_name, var_list):
                 contenido = f.readlines()
                 for linea in contenido:
                     query +=  linea
+                
+                #Filtrar solo la primera fila
+                query += " LIMIT 1"
+                
                 df =pd.read_sql(query, con)
 
             if var_list is not None:
@@ -510,8 +514,8 @@ def open_linechart( list_of_names, list_of_contents):
     datos_y1=[]
     datos_y2=[]
     var_list=[]
-    color_y1=[]
-    color_y2=[]
+    color_y1="#1530E3"
+    color_y2="#1530E3"
     text_annot=[]
 
     changed_id = [p['prop_id'] for p in dash.callback_context.triggered][0]

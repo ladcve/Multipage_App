@@ -24,6 +24,10 @@ from collections import OrderedDict
 import base64
 import json
 import os
+import dash_daq as daq
+from sklearn.preprocessing import PolynomialFeatures 
+from sklearn.linear_model import LinearRegression
+from sklearn.pipeline import make_pipeline
 
 from app import app 
 
@@ -69,6 +73,16 @@ pathway = './querys'
 files = [f for f in listdir(pathway) if isfile(join(pathway, f))]
 
 file_name = ''
+tab_height = '2vh'
+
+def reform_df(dft):
+    # quick and dirty stacking of cols 2,3 on 0,1
+    dfl = dft[[0,1]]
+    dfr = dft[[2,3]]
+    dfr.columns = 0,1
+    dfout = pd.concat([dfl,dfr])
+    dfout.columns=['Parameter','Value']
+    return dfout
 
 layout = html.Div([
     dbc.Row([
@@ -124,7 +138,7 @@ layout = html.Div([
                         dbc.Button(html.Span(["Grabar ", html.I(className="fas fa-save ml-1")],style={'font-size':'1.5em','text-align':'center'}),
                          id="btn_save_scatterchart", n_clicks=0, color="primary", className="mr-3"),
                         html.Div(id="save_message_scatter"),
-                    ], width={"size": 1, "offset": 1}),
+                    ], width={"size": 2, "offset": 1}),
                 ]),
                 html.Br(),
             ]),
@@ -143,7 +157,15 @@ layout = html.Div([
                         dbc.Spinner(
                             dcc.Graph(id='cht-scatter-chart', style={"width": "100%"}),
                         ),
-                    ),	
+                    ),
+                    html.Br(),
+                    html.Label(['Grado del Polinomio:'],style={'font-weight': 'bold', "text-align": "center"}),
+                    dcc.Slider(id='PolyFeat',
+                        min=1,
+                        max=6,
+                        marks={i: '{}'.format(i) for i in range(10)},
+                        value=1,
+                    ) 
                 ],
                 color='primary',
                 solid_header=True,
@@ -180,6 +202,34 @@ layout = html.Div([
                             clearable=False,
                             multi=True,
                         ),
+                        
+                    ]),
+                ],
+                color='primary',
+                solid_header=True,
+                elevation=4,
+                width=12
+            ),
+            dac.Box([
+                dac.BoxHeader(
+                    collapsible = False,
+                    closable = False,
+                    title="Estadísticas"
+                ),
+                dac.BoxBody([
+                        html.Br(),
+                        html.Label(['Regresión:'],style={'font-weight': 'bold', "text-align": "left"}),
+                        daq.ToggleSwitch(
+                            id='ts-statistic',
+                            value=False,
+                            label='Mostrar Linea Tendencia',
+                            labelPosition='top'
+                        ),
+                        html.Br(),
+                        html.Label(['Resultados:'],style={'font-weight': 'bold', "text-align": "left"}),
+                        html.Label(['Coeficientes:'],style={'font-weight': 'bold', "text-align": "left"}),
+                        html.Div(id="coeficientes"),
+                        html.Div(id="r_squared"),
                     ]),
                 ],
                 color='primary',
@@ -192,17 +242,29 @@ layout = html.Div([
 ])
 
 @app.callback(
-    Output('cht-scatter-chart','figure'),
+    [Output('cht-scatter-chart','figure'),
+     Output('coeficientes','children'),
+     Output('r_squared','children'),
+    ], 
     [Input("btn_show_scatterchart", "n_clicks"),
      Input('dpd-query-list-scatter', 'value'), 
      Input('dpd-well-list-scatter', 'value'),
      Input('dpd-column-list-x-scatter', 'value'),
      Input('dpd-column-list-y-scatter', 'value'),
-     Input('dpd-var-list-scatterchart', 'value')])
-def update_scatter_chart(n_clicks, file_name, well_name, column_list_x, column_list_y, var_list):
+     Input('dpd-var-list-scatterchart', 'value'),
+     Input("PolyFeat", "value"),
+     Input('ts-statistic', 'value'),
+     ])
+def update_scatter_chart(n_clicks, file_name, well_name, column_list_x, column_list_y, var_list, nFeatures, trendline):
 
     df = pd.DataFrame()
     query= ''
+    results=''
+    pd_results = pd.DataFrame()
+    dff = pd.DataFrame()
+    results = {}
+    r_squared = ''
+
     changed_id = [p['prop_id'] for p in dash.callback_context.triggered][0]
     fig = {}
     
@@ -211,6 +273,7 @@ def update_scatter_chart(n_clicks, file_name, well_name, column_list_x, column_l
         query = "SELECT * FROM VARIABLES"
         variables =pd.read_sql(query, con)
         query= ''
+        test_results=''
         if file_name is not None:
             with open(os.path.join(QUERY_DIRECTORY, file_name)) as f:
                 contenido = f.readlines()
@@ -230,7 +293,9 @@ def update_scatter_chart(n_clicks, file_name, well_name, column_list_x, column_l
                             df[titulo] = evalu
 
                     fig = px.scatter(x=df[column_list_x],
-                            y=df[column_list_y],)
+                            y=df[column_list_y])
+        
+
                     fig.update_xaxes(title_text=column_list_x,showline=True, linewidth=2, linecolor='black', showgrid=False,)
                     fig.update_yaxes(title_text=column_list_y,showline=True, linewidth=2, linecolor='black', showgrid=False,)
                     fig.update_layout(
@@ -253,8 +318,29 @@ def update_scatter_chart(n_clicks, file_name, well_name, column_list_x, column_l
                         xanchor="right",
                         x=1
                     ))
+                    if trendline:
+                        x=df[column_list_x]
+                        y=df[column_list_y]
+                        coeffs = np.polyfit(x, y, nFeatures)
+                        p7 = np.poly1d(np.polyfit(x, y,  nFeatures))
+                        xp = np.linspace(min(x), max(x), 500)
+
+                        results = coeffs.tolist()
+
+                        # r-squared
+                        p = np.poly1d(coeffs)
+                        # fit values, and mean
+                        yhat = p(x)                         # or [p(z) for z in x]
+                        ybar = np.sum(y)/len(y)          # or sum(y)/len(y)
+                        ssreg = np.sum((yhat-ybar)**2)   # or sum([ (yihat - ybar)**2 for yihat in yhat])
+                        sstot = np.sum((y - ybar)**2)    # or sum([ (yi - ybar)**2 for yi in y])
+                        r_squared = 'R2 = {} '.format(ssreg / sstot)
+
+                        fig.add_traces(go.Scatter(x=xp, y=p7(xp), mode='lines', name = 'Tendencia'))
         con.close()
-    return fig
+
+    return fig, html.Ul([html.Li(x) for x in results]), r_squared
+
 
 @app.callback(
     [Output('dpd-column-list-x-scatter','options'),
@@ -277,6 +363,9 @@ def update_column_list(file_name, var_list):
                 contenido = f.readlines()
                 for linea in contenido:
                     query +=  linea
+
+                #Filtrar solo la primera fila
+                query += " LIMIT 1"
                 df =pd.read_sql(query, con)
                 if var_list is not None:
                     for var in var_list:
@@ -298,8 +387,10 @@ def update_column_list(file_name, var_list):
     Input('dpd-column-list-x-scatter', 'value'),
     Input('dpd-column-list-y-scatter', 'value'),
     Input('inp-ruta-scatterchart', 'value'),
-    Input('dpd-var-list-scatterchart', 'value')]) 
-def save_scatterchart(n_clicks, consulta, datos_y1, datos_y2, file_name, var_list ):
+    Input('dpd-var-list-scatterchart', 'value'),
+    Input('ts-statistic','value'),
+    Input("PolyFeat", "value"),]) 
+def save_scatterchart(n_clicks, consulta, datos_y1, datos_y2, file_name, var_list, trend_type, nFeatures ):
     mensaje=''
     changed_id = [p['prop_id'] for p in dash.callback_context.triggered][0]
     if 'btn_save_scatterchart' in changed_id:
@@ -309,34 +400,47 @@ def save_scatterchart(n_clicks, consulta, datos_y1, datos_y2, file_name, var_lis
             'consulta': consulta,
             'datos_y1': datos_y1,
             'datos_y2': datos_y2,
-            'var_list': var_list,})
+            'var_list': var_list,
+            'trend_line': trend_type,
+            'nFeatures' : nFeatures,
+            })
         with open(CHART_DIRECTORY+file_name, 'w') as file:
             json.dump(data, file, indent=4)
         mensaje = 'Archivo guardado'
     return mensaje
 
 @app.callback( [Output('inp-ruta-scatterchart', 'value'),
-                Output('dpd-query-list', 'value'),
-                Output('dpd-column-list-x', 'value'),
-                Output('dpd-column-list-y', 'value'),
-                Output('dpd-var-list-scatterchart', 'value')],
-              [Input('btn_open_linechart', 'filename'),
-              Input('btn_open_linechart', 'contents')]
+                Output('dpd-query-list-scatter', 'value'),
+                Output('dpd-column-list-x-scatter', 'value'),
+                Output('dpd-column-list-y-scatter', 'value'),
+                Output('dpd-var-list-scatterchart', 'value'),
+                Output('ts-statistic', 'value'),
+                Output("PolyFeat", "value"),
+                ],
+              [Input('btn_open_scatterchart', 'filename'),
+              Input('btn_open_scatterchart', 'contents')]
               )
 def open_scatterchart( list_of_names, list_of_contents):
     archivo = list_of_names
     consulta=[]
     datos_y1=[]
     datos_y2=[]
+    var_list=[]
+    trend_line=False
+    nFeatures=1
 
-    if list_of_names is not None:
-        print(list_of_names)
-        archivo = list_of_names
-        with open(CHART_DIRECTORY+archivo) as file:
-            data = json.load(file)
-            for drop_values   in data['grafico']:
-                consulta = str(drop_values['consulta'])
-                datos_y1 = drop_values['datos_y1']
-                datos_y2 = drop_values['datos_y2']
-                var_list = drop_values['var_list']
-    return archivo, consulta, datos_y1, datos_y2
+    changed_id = [p['prop_id'] for p in dash.callback_context.triggered][0]
+    if 'btn_open_scatterchart' in changed_id:
+        if list_of_names is not None:
+            archivo = list_of_names
+            with open(CHART_DIRECTORY+archivo) as file:
+                data = json.load(file)
+                for drop_values   in data['grafico']:
+                    consulta = str(drop_values['consulta'])
+                    datos_y1 = drop_values['datos_y1']
+                    datos_y2 = drop_values['datos_y2']
+                    var_list = drop_values['var_list']
+                    trend_line = drop_values['trend_line']
+                    nFeatures = drop_values['nFeatures']
+
+    return archivo, consulta, datos_y1, datos_y2, var_list, trend_line, nFeatures

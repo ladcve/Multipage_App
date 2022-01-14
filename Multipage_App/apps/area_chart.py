@@ -62,6 +62,13 @@ query = "SELECT NOMBRE FROM VARIABLES"
 var_list =pd.read_sql(query, con)
 var_list = var_list.sort_values('NOMBRE')['NOMBRE'].unique()
 
+
+#Listado de unidades por variables
+query = "SELECT * FROM UNIDADES"
+unidades =pd.read_sql(query, con)
+
+con.close()
+
 #Listado de query
 pathway = './querys'
 files = [f for f in listdir(pathway) if isfile(join(pathway, f))]
@@ -198,7 +205,8 @@ def update_bar_chart(n_clicks, file_name, well_name, columns_list, chart_title, 
 
     df = pd.DataFrame()
     changed_id = [p['prop_id'] for p in dash.callback_context.triggered][0]
-    fig = {}
+    fig = go.Figure()
+
     if 'btn_show_areachart' in changed_id:
         con = sqlite3.connect(archivo)
         query = "SELECT * FROM VARIABLES"
@@ -225,41 +233,54 @@ def update_bar_chart(n_clicks, file_name, well_name, columns_list, chart_title, 
                 if well_name is not None:
                     df= df[df['NOMBRE'].isin(well_name)]
 
-                if columns_list:
-                    fig = px.area(df, x="FECHA", y=columns_list, title=chart_title)
-                    fig.update_layout(
-                        autosize=False,
-                        hovermode='x unified',
-                        paper_bgcolor='rgba(0,0,0,0)',
-                        plot_bgcolor='rgb(240, 240, 240)',
-                        height=700,
-                        margin=dict(
-                            l=50,
-                            r=50,
-                            b=100,
-                            t=100,
-                            pad=4,
+                selec_unit = unidades.set_index(['VARIABLE'])
+                for columnas_y in columns_list:
+                    var_title = selec_unit.loc[columnas_y]['GRAFICO']
+                    var_unit = selec_unit.loc[columnas_y]['UNIDAD']
+                    var_name = var_title + " " + var_unit
+
+                    fig.add_trace(
+                        go.Scatter( x=df["FECHA"],
+                            y=df[columnas_y],
+                            fill='tozeroy',
+                            name=var_name,
                         ),
                     )
-                    fig.update_xaxes(
-                        rangeslider_visible=True,
-                            rangeselector=dict(
-                                buttons=list([
-                                dict(count=1, label="1m", step="month", stepmode="backward"),
-                                dict(count=6, label="6m", step="month", stepmode="backward"),
-                                dict(count=1, label="YTD", step="year", stepmode="todate"),
-                                dict(count=1, label="1y", step="year", stepmode="backward"),
-                                dict(step="all")
-                                ])
-                            )
+
+                fig.update_layout(
+                    autosize=False,
+                    title=chart_title,
+                    hovermode='x unified',
+                    paper_bgcolor='rgba(0,0,0,0)',
+                    plot_bgcolor='rgb(240, 240, 240)',
+                    height=700,
+                    margin=dict(
+                        l=50,
+                        r=50,
+                        b=100,
+                        t=100,
+                        pad=4,
+                    ),
+                )
+                fig.update_xaxes(
+                    rangeslider_visible=True,
+                        rangeselector=dict(
+                            buttons=list([
+                            dict(count=1, label="1m", step="month", stepmode="backward"),
+                            dict(count=6, label="6m", step="month", stepmode="backward"),
+                            dict(count=1, label="YTD", step="year", stepmode="todate"),
+                            dict(count=1, label="1y", step="year", stepmode="backward"),
+                            dict(step="all")
+                            ])
                         )
-                    fig.update_layout(legend=dict(
-                        orientation="h",
-                        yanchor="bottom",
-                        y=1.02,
-                        xanchor="right",
-                        x=1
-                    ))
+                    )
+                fig.update_layout(legend=dict(
+                    orientation="h",
+                    yanchor="bottom",
+                    y=1.02,
+                    xanchor="right",
+                    x=1
+                ))
     return fig
 
 @app.callback(
