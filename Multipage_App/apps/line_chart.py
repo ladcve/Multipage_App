@@ -83,6 +83,8 @@ tab_height = '2vh'
 layout = html.Div([
     dbc.Row([
         dbc.Col([
+            #********************** Cabecera ******************
+            #
             dbc.Card([
                 dbc.Row([
                     dbc.Col([
@@ -101,22 +103,15 @@ layout = html.Div([
                             id='dpd-pozo-lista',
                             options=[{'label': i, 'value': i} for i in well_list],
                             clearable=False,
-                            multi=True
+                            multi=False,
                         ),
                     ], width={"size": 4, "offset": 0}),
-                    dbc.Col([
-                        html.Br(),
-                        dbc.Button(
-                            html.Span(["Mostrar ", html.I(className="fas fa-chart-bar ml-1")],style={'font-size':'1.5em','text-align':'center'}),
-                            id="btn_show_chart",
-                            color="success",
-                            className="me-1"
-                        )
-                    ]),
                 ]),
                 html.Br(),
             ]),
         ], width={"size": 6, "offset": 0}),
+        #********************** Plantilla ******************
+        #
         dbc.Col([
             dbc.Card([
                 dbc.Row([
@@ -137,7 +132,7 @@ layout = html.Div([
                     ], width={"size": 3, "offset": 0}),
                     dbc.Col([
                         html.Br(),
-                        dbc.Button(html.Span(["Grabar ", html.I(className="fas fa-save ml-1")],style={'font-size':'1.5em','text-align':'center'}),
+                        dbc.Button(html.Span(["simple ", html.I(className="fas fa-save ml-1")],style={'font-size':'1.5em','text-align':'center'}),
                             id="btn_save_linechart", 
                             n_clicks=0, 
                             color="primary", 
@@ -145,142 +140,575 @@ layout = html.Div([
                         ),
                         html.Div(id="save_message_linechart"),
                     ]),
+                    dbc.Col([
+                        html.Br(),
+                        dbc.Button(html.Span(["Triple ", html.I(className="fas fa-save ml-1")],style={'font-size':'1.5em','text-align':'center'}),
+                            id="btn_save_Triplechart", 
+                            n_clicks=0, 
+                            color="primary", 
+                            className="mr-3"
+                        ),
+                        html.Div(id="save_message_Triplechart"),
+                    ]),
                 ]),
                 html.Br(),
             ]),
         ], width={"size": 6, "offset": 0}),
     ]),
     html.Br(),
-    dbc.Row([
-        dbc.Col([
-            dac.Box([
-                dac.BoxHeader(
-                    collapsible = False,
-                    closable = False,
-                    title="Gráfico de Líneas"
-                ),
-                dac.BoxBody(
-                    dbc.Spinner(
-                        dcc.Graph(id='cht-line-chart', style={"width": "100%" }),
-                    ),
-                ),	
-                ],
-                color='primary',
-                solid_header=True,
-                elevation=4,
-                width=12
-            ),
-        ], width={"size": 9,"offset": 0}),
-        dbc.Col([
-            dac.Box([
-                dac.BoxHeader(
-                    collapsible = False,
-                    closable = False,
-                    title="Parametros"
-                ),
-                dac.BoxBody([
-                    dcc.Tabs(style={
-                        'width': '50%',
-                        'font-size': '100%',
-                        'height':tab_height
-                    },children=[
-                        dcc.Tab(label='Opciones', style={'padding': '0','line-height': tab_height},selected_style={'padding': '0','line-height': tab_height}, children=[
-                            html.Br(),
-                            dcc.Checklist(
-                                id="cb_clear_data_line",
-                                options=[{"label": "  Limpiar valores Ceros", "value": "YES"}],
-                                value=[],
-                                labelStyle={"display": "inline-block"},
+    dcc.Tabs(style={
+        'width': '50%',
+        'font-size': '100%',
+        'height':tab_height
+    },children=[
+        #*********************************** Primer Tab *********************************
+        #
+        dcc.Tab(label='Grafico Simple', style={'padding': '0','line-height': tab_height},selected_style={'padding': '0','line-height': tab_height}, children=[
+            dbc.Row([
+                dbc.Col([
+                    html.Br(),
+                    dbc.Button(
+                        html.Span(["Mostrar ", html.I(className="fas fa-chart-bar ml-1")],style={'font-size':'1.5em','text-align':'center'}),
+                        id="btn_show_chart",
+                        color="success",
+                        className="me-1"
+                    )
+                ]),
+            ]),
+            html.Br(),
+            dbc.Row([
+                dbc.Col([
+                    dac.Box([
+                        dac.BoxHeader(
+                            collapsible = False,
+                            closable = False,
+                            title="Gráfico de Líneas"
+                        ),
+                        dac.BoxBody(
+                            dbc.Spinner(
+                                dcc.Graph(id='cht-line-chart', style={"width": "100%" }),
                             ),
+                        ),	
+                        ],
+                        color='primary',
+                        solid_header=True,
+                        elevation=4,
+                        width=12
+                    ),
+                ], width={"size": 9,"offset": 0}),
+                dbc.Col([
+                    dac.Box([
+                        dac.BoxHeader(
+                            collapsible = False,
+                            closable = False,
+                            title="Parametros"
+                        ),
+                        dac.BoxBody([
+                            dcc.Tabs(style={
+                                'width': '50%',
+                                'font-size': '100%',
+                                'height':tab_height
+                            },children=[
+                                dcc.Tab(label='Opciones', style={'padding': '0','line-height': tab_height},selected_style={'padding': '0','line-height': tab_height}, children=[
+                                    html.Br(),
+                                    dcc.Checklist(
+                                        id="cb_clear_data_line",
+                                        options=[{"label": "  Limpiar valores Ceros", "value": "YES"}],
+                                        value=[],
+                                        labelStyle={"display": "inline-block"},
+                                    ),
+                                    html.Br(),
+                                    dbc.Card([
+                                        dbc.CardHeader(html.Label(['Eje Primario'],style={'font-weight': 'bold', "text-align": "left"})),
+                                        dbc.CardBody([
+                                            dbc.Row([
+                                                dbc.Col([
+                                                    html.Label(['Datos:'],style={'font-weight': 'bold', "text-align": "left"}),
+                                                    dcc.Dropdown(
+                                                        id='dpd-column-list-y1',
+                                                        clearable=False,
+                                                        multi=True
+                                                    ),
+                                                ]),
+                                            ]),
+                                            dbc.Row([
+                                                dbc.Col([
+                                                    html.Label(['color:'],style={'font-weight': 'bold', "text-align": "left"}),
+                                                    dbc.Input(
+                                                        type="color",
+                                                        id="inp-color-list-y1",
+                                                        value="#1530E3",
+                                                        style={"width": 75, "height": 50},
+                                                    ),
+                                                ]),
+                                                dbc.Col([
+                                                    html.Label(['Estilo:'],style={'font-weight': 'bold', "text-align": "left"}),
+                                                    dcc.Dropdown(
+                                                        id='dpd-LineStile-y1',
+                                                        options=[
+                                                            {'label': 'Solid', 'value': 'solid'},
+                                                            {'label': 'Dash', 'value': 'dash'},
+                                                            {'label': 'Dot', 'value': 'dot'},
+                                                            {'label': 'Dash-dot', 'value': 'dashdot'},
+                                                        ],
+                                                        value='solid',
+                                                        clearable=False,
+                                                        multi=False,
+                                                    ),
+                                                ]),
+                                            ]),
+                                        ]),
+                                    ]),
+                                    dbc.Card([
+                                        dbc.CardHeader(html.Label(['Eje Secundario'],style={'font-weight': 'bold', "text-align": "left"})),
+                                        dbc.CardBody([
+                                            dbc.Row([
+                                                dbc.Col([
+                                                    html.Label(['Datos:'],style={'font-weight': 'bold', "text-align": "left"}),
+                                                    dcc.Dropdown(
+                                                        id='dpd-column-list-y2',
+                                                        clearable=False,
+                                                        multi=True
+                                                    ),
+                                                ]),
+                                            ]),
+                                            dbc.Row([
+                                                dbc.Col([
+                                                    html.Label(['color:'],style={'font-weight': 'bold', "text-align": "left"}),
+                                                    dbc.Input(
+                                                        type="color",
+                                                        id="inp-color-list-y2",
+                                                        value="#1530E3",
+                                                        style={"width": 75, "height": 50},
+                                                    ),
+                                                ]),
+                                                dbc.Col([
+                                                    html.Label(['Estilo:'],style={'font-weight': 'bold', "text-align": "left"}),
+                                                    dcc.Dropdown(
+                                                        id='dpd-LineStile-y2',
+                                                        options=[
+                                                            {'label': 'Solid', 'value': 'solid'},
+                                                            {'label': 'Dash', 'value': 'dash'},
+                                                            {'label': 'Dot', 'value': 'dot'},
+                                                            {'label': 'Dash-Dot', 'value': 'dashdot'},
+                                                        ],
+                                                        value='solid',
+                                                        clearable=False,
+                                                        multi=False,
+                                                    ),
+                                                ]),
+                                            ]),
+                                        ]),
+                                    ]),
+                                    dbc.Card([
+                                        dbc.CardBody([
+                                            html.Label(['Variable Calculadas:'],style={'font-weight': 'bold', "text-align": "left"}),
+                                            dcc.Dropdown(
+                                                id='dpd-var-list-chart',
+                                                options=[{'label': i, 'value': i} for i in var_list],
+                                                clearable=False,
+                                                multi=True,
+                                            ),
+                                        ])
+                                    ]),
+                                ]),
+                                dcc.Tab(label='Eventos', style={'padding': '0','line-height': tab_height},selected_style={'padding': '0','line-height': tab_height},children=[
+                                    dbc.Card([
+                                        dbc.CardHeader(html.Label(['Eventos'],style={'font-weight': 'bold', "text-align": "left"})),
+                                        dbc.CardBody([
+                                            daq.ToggleSwitch(
+                                                id='ts-annotation',
+                                                value=False,
+                                                label='Mostrar Anotaciones',
+                                                labelPosition='top'
+                                            ),
+                                            dash_table.DataTable(id="dt_table_event", 
+                                                columns = [{'name': i, 'id': i, "deletable": True} for i in event_list.columns],
+                                                data = event_list.to_dict('records'),
+                                                style_as_list_view=True,
+                                                style_cell={'padding': '5px', 'textAlign':'left','fontSize':10, 'font-family':'arial'},
+                                                style_table={
+                                                    'overflowX': 'auto',
+                                                    'whiteSpace': 'normal',
+                                                    'height': 'auto',
+                                                },
+                                                style_header={
+                                                    'backgroundColor': 'blue',
+                                                    'fontWeight': 'bold',
+                                                    'color': 'white',
+                                                    'textAlign':'center',
+                                                    'fontSize':10,
+                                                    'font-family':'arial'
+                                                },),
+                                        ]),
+                                    ]),
+                                ]),
+                            ]),
+                        ]),	
+                        ],
+                        color='primary',
+                        solid_header=True,
+                        elevation=4,
+                        width=12
+                    ),
+                ], width=3),
+            ]),
+        ]),
+        #*********************************** Sedundo Tab *********************
+        #
+        dcc.Tab(label='Gráfico Triple', style={'padding': '0','line-height': tab_height},selected_style={'padding': '0','line-height': tab_height}, children=[
+            dbc.Row([
+                dbc.Col([
+                    html.Br(),
+                    dbc.Button(
+                        html.Span(["Mostrar ", html.I(className="fas fa-chart-bar ml-1")],style={'font-size':'1.5em','text-align':'center'}),
+                        id="btn_show_chart_triple",
+                        color="success",
+                        className="me-1"
+                    )
+                ]),
+            ]),
+            html.Br(),
+            dbc.Row([
+                dbc.Col([
+                    dac.Box([
+                        dac.BoxHeader(
+                            collapsible = False,
+                            closable = False,
+                            title="Gráfico Nro 1 "
+                        ),
+                        dac.BoxBody(
+                            dbc.Spinner(
+                                dcc.Graph(id='cht-line-chart1', style={"width": "100%" }),
+                            ),
+                        ),	
+                        ],
+                        color='primary',
+                        solid_header=True,
+                        elevation=4,
+                        width=12
+                    ),
+                ], width={"size": 9,"offset": 0}),
+                dbc.Col([
+                    dac.Box([
+                        dac.BoxHeader(
+                            collapsible = False,
+                            closable = False,
+                            title="Parametros "
+                        ),
+                        dac.BoxBody([
+                            dbc.Row([
+                                dbc.Col([
+                                    html.Label(['Eje Primario:'],style={'font-weight': 'bold', "text-align": "left"}),
+                                    dcc.Dropdown(
+                                        id='dpd-column-chart1-y1',
+                                        clearable=False,
+                                        multi=True
+                                    ),
+                                ]),
+                            ]),
+                            dbc.Row([
+                                dbc.Col([
+                                    html.Label(['color:'],style={'font-weight': 'bold', "text-align": "left"}),
+                                    dbc.Input(
+                                        type="color",
+                                        id="inp-color-chart1-y1",
+                                        value="#1530E3",
+                                        style={"width": 75, "height": 50},
+                                    ),
+                                ]),
+                                dbc.Col([
+                                    html.Label(['Estilo:'],style={'font-weight': 'bold', "text-align": "left"}),
+                                    dcc.Dropdown(
+                                        id='dpd-LineStile-chart1-y1',
+                                        options=[
+                                            {'label': 'Solid', 'value': 'solid'},
+                                            {'label': 'Dash', 'value': 'dash'},
+                                            {'label': 'dot', 'value': 'dot'},
+                                            {'label': 'dot', 'value': 'dashdot'},
+                                        ],
+                                        value='solid',
+                                        clearable=False,
+                                        multi=False,
+                                    ),
+                                ]),
+                            ]),
                             html.Br(),
-                            dbc.Card([
-                                dbc.CardHeader(html.Label(['Eje Primario'],style={'font-weight': 'bold', "text-align": "left"})),
-                                dbc.CardBody([
-                                    html.Label(['Datos:'],style={'font-weight': 'bold', "text-align": "left"}),
+                            dbc.Row([
+                                dbc.Col([
+                                    html.Label(['Eje Secundario:'],style={'font-weight': 'bold', "text-align": "left"}),
                                     dcc.Dropdown(
-                                        id='dpd-column-list-y1',
+                                        id='dpd-column-chart1-y2',
                                         clearable=False,
                                         multi=True
                                     ),
+                                ]),
+                            ]),
+                            dbc.Row([
+                                dbc.Col([
                                     html.Label(['color:'],style={'font-weight': 'bold', "text-align": "left"}),
                                     dbc.Input(
                                         type="color",
-                                        id="inp-color-list-y1",
+                                        id="inp-color-chart1-y2",
+                                        value="#1530E3",
+                                        style={"width": 75, "height": 50},
+                                    ),
+                                ]),
+                                dbc.Col([
+                                    html.Label(['Estilo:'],style={'font-weight': 'bold', "text-align": "left"}),
+                                    dcc.Dropdown(
+                                        id='dpd-LineStile-chart1-y2',
+                                        options=[
+                                            {'label': 'Solid', 'value': 'solid'},
+                                            {'label': 'Dash', 'value': 'dash'},
+                                            {'label': 'dot', 'value': 'dot'},
+                                            {'label': 'dot', 'value': 'dashdot'},
+                                        ],
+                                        value='solid',
+                                        clearable=False,
+                                        multi=False,
+                                    ),
+                                ]),
+                            ]),
+                            html.Br(),
+                            html.Label(['Variable Calculadas:'],style={'font-weight': 'bold', "text-align": "left"}),
+                            dcc.Dropdown(
+                                id='dpd-var-chart1',
+                                options=[{'label': i, 'value': i} for i in var_list],
+                                clearable=False,
+                                multi=True,
+                            ),
+                        ]),	
+                        ],
+                        color='primary',
+                        solid_header=True,
+                        elevation=4,
+                        width=12
+                    ),
+                ], width={"size": 3,"offset": 0}),
+            ]),
+            dbc.Row([
+                dbc.Col([
+                    dac.Box([
+                        dac.BoxHeader(
+                            collapsible = False,
+                            closable = False,
+                            title="Gráfico Nro 2 "
+                        ),
+                        dac.BoxBody(
+                            dbc.Spinner(
+                                dcc.Graph(id='cht-line-chart2', style={"width": "100%" }),
+                            ),
+                        ),	
+                        ],
+                        color='primary',
+                        solid_header=True,
+                        elevation=4,
+                        width=12
+                    ),
+                ], width={"size": 9,"offset": 0}),
+                dbc.Col([
+                    dac.Box([
+                        dac.BoxHeader(
+                            collapsible = False,
+                            closable = False,
+                            title="Parametros"
+                        ),
+                        dac.BoxBody([
+                            dbc.Row([
+                                dbc.Col([
+                                    html.Label(['Eje Primario:'],style={'font-weight': 'bold', "text-align": "left"}),
+                                    dcc.Dropdown(
+                                        id='dpd-column-chart2-y1',
+                                        clearable=False,
+                                        multi=True
+                                    ),
+                                ]),
+                            ]),
+                            dbc.Row([
+                                dbc.Col([
+                                    html.Label(['color:'],style={'font-weight': 'bold', "text-align": "left"}),
+                                    dbc.Input(
+                                        type="color",
+                                        id="inp-color-chart2-y1",
                                         value="#1530E3",
                                         style={"width": 75, "height": 50},
                                     ),
                                 ]),
                             ]),
-                            dbc.Card([
-                                dbc.CardHeader(html.Label(['Eje Secundario'],style={'font-weight': 'bold', "text-align": "left"})),
-                                dbc.CardBody([
-                                    html.Label(['Datos:'],style={'font-weight': 'bold', "text-align": "left"}),
+                            html.Br(),
+                            dbc.Row([
+                                dbc.Col([
+                                    html.Label(['Eje Secundario:'],style={'font-weight': 'bold', "text-align": "left"}),
                                     dcc.Dropdown(
-                                        id='dpd-column-list-y2',
+                                        id='dpd-column-chart2-y2',
                                         clearable=False,
                                         multi=True
                                     ),
+                                ]),
+                            ]),
+                            dbc.Row([
+                                dbc.Col([
                                     html.Label(['color:'],style={'font-weight': 'bold', "text-align": "left"}),
                                     dbc.Input(
                                         type="color",
-                                        id="inp-color-list-y2",
+                                        id="inp-color-chart2-y2",
                                         value="#1530E3",
                                         style={"width": 75, "height": 50},
                                     ),
                                 ]),
-                            ]),
-                            dbc.Card([
-                                dbc.CardBody([
-                                    html.Label(['Variable Calculadas:'],style={'font-weight': 'bold', "text-align": "left"}),
+                                dbc.Col([
+                                    html.Label(['Estilo:'],style={'font-weight': 'bold', "text-align": "left"}),
                                     dcc.Dropdown(
-                                        id='dpd-var-list-chart',
-                                        options=[{'label': i, 'value': i} for i in var_list],
+                                        id='dpd-LineStile-chart2-y2',
+                                        options=[
+                                            {'label': 'Solid', 'value': 'solid'},
+                                            {'label': 'Dash', 'value': 'dash'},
+                                            {'label': 'dot', 'value': 'dot'},
+                                            {'label': 'dot', 'value': 'dashdot'},
+                                        ],
+                                        value='solid',
                                         clearable=False,
-                                        multi=True,
+                                        multi=False,
                                     ),
-                                ])
-                            ]),
-                        ]),
-                        dcc.Tab(label='Eventos', style={'padding': '0','line-height': tab_height},selected_style={'padding': '0','line-height': tab_height},children=[
-                            dbc.Card([
-                                dbc.CardHeader(html.Label(['Eventos'],style={'font-weight': 'bold', "text-align": "left"})),
-                                dbc.CardBody([
-                                    daq.ToggleSwitch(
-                                        id='ts-annotation',
-                                        value=False,
-                                        label='Mostrar Anotaciones',
-                                        labelPosition='top'
-                                    ),
-                                    dash_table.DataTable(id="dt_table_event", 
-                                        columns = [{'name': i, 'id': i, "deletable": True} for i in event_list.columns],
-                                        data = event_list.to_dict('records'),
-                                        style_as_list_view=True,
-                                        style_cell={'padding': '5px', 'textAlign':'left','fontSize':10, 'font-family':'arial'},
-                                        style_table={
-                                            'overflowX': 'auto',
-                                            'whiteSpace': 'normal',
-                                            'height': 'auto',
-                                        },
-                                        style_header={
-                                            'backgroundColor': 'blue',
-                                            'fontWeight': 'bold',
-                                            'color': 'white',
-                                            'textAlign':'center',
-                                            'fontSize':10,
-                                            'font-family':'arial'
-                                        },),
                                 ]),
                             ]),
-                        ]),
-                    ]),
-                ]),	
-                ],
-                color='primary',
-                solid_header=True,
-                elevation=4,
-                width=12
-            ),
-        ], width=3),
+                            html.Br(),
+                            html.Label(['Variable Calculadas:'],style={'font-weight': 'bold', "text-align": "left"}),
+                            dcc.Dropdown(
+                                id='dpd-var-chart2',
+                                options=[{'label': i, 'value': i} for i in var_list],
+                                clearable=False,
+                                multi=True,
+                            ),
+                        ]),	
+                        ],
+                        color='primary',
+                        solid_header=True,
+                        elevation=4,
+                        width=12
+                    ),
+                ], width={"size": 3,"offset": 0}),
+            ]),
+            dbc.Row([
+                dbc.Col([
+                    dac.Box([
+                        dac.BoxHeader(
+                            collapsible = False,
+                            closable = False,
+                            title="Gráfico Nro 3 "
+                        ),
+                        dac.BoxBody(
+                            dbc.Spinner(
+                                dcc.Graph(id='cht-line-chart3', style={"width": "100%" }),
+                            ),
+                        ),	
+                        ],
+                        color='primary',
+                        solid_header=True,
+                        elevation=4,
+                        width=12
+                    ),
+                ], width={"size": 9,"offset": 0}),
+                dbc.Col([
+                    dac.Box([
+                        dac.BoxHeader(
+                            collapsible = False,
+                            closable = False,
+                            title="Parametros"
+                        ),
+                        dac.BoxBody([
+                            dbc.Row([
+                                dbc.Col([
+                                    html.Label(['Eje Primario:'],style={'font-weight': 'bold', "text-align": "left"}),
+                                    dcc.Dropdown(
+                                        id='dpd-column-chart3-y1',
+                                        clearable=False,
+                                        multi=True
+                                    ),
+                                ]),
+                            ]),
+                            dbc.Row([
+                                dbc.Col([
+                                    html.Label(['color:'],style={'font-weight': 'bold', "text-align": "left"}),
+                                    dbc.Input(
+                                        type="color",
+                                        id="inp-color-chart3-y1",
+                                        value="#1530E3",
+                                        style={"width": 75, "height": 50},
+                                    ),
+                                ]),
+                                dbc.Col([
+                                    html.Label(['Estilo:'],style={'font-weight': 'bold', "text-align": "left"}),
+                                    dcc.Dropdown(
+                                        id='dpd-LineStile-chart3-y1',
+                                        options=[
+                                            {'label': 'Solid', 'value': 'solid'},
+                                            {'label': 'Dash', 'value': 'dash'},
+                                            {'label': 'dot', 'value': 'dot'},
+                                            {'label': 'dot', 'value': 'dashdot'},
+                                        ],
+                                        value='solid',
+                                        clearable=False,
+                                        multi=False,
+                                    ),
+                                ]),
+                            ]),
+                            html.Br(),
+                            dbc.Row([
+                                dbc.Col([
+                                    html.Label(['Eje Secundario:'],style={'font-weight': 'bold', "text-align": "left"}),
+                                    dcc.Dropdown(
+                                        id='dpd-column-chart3-y2',
+                                        clearable=False,
+                                        multi=True
+                                    ),
+                                ]),
+                            ]),
+                            dbc.Row([
+                                dbc.Col([
+                                    html.Label(['color:'],style={'font-weight': 'bold', "text-align": "left"}),
+                                    dbc.Input(
+                                        type="color",
+                                        id="inp-color-chart3-y2",
+                                        value="#1530E3",
+                                        style={"width": 75, "height": 50},
+                                    ),
+                                ]),
+                                dbc.Col([
+                                    html.Label(['Estilo:'],style={'font-weight': 'bold', "text-align": "left"}),
+                                    dcc.Dropdown(
+                                        id='dpd-LineStile-chart3-y2',
+                                        options=[
+                                            {'label': 'Solid', 'value': 'solid'},
+                                            {'label': 'Dash', 'value': 'dash'},
+                                            {'label': 'dot', 'value': 'dot'},
+                                            {'label': 'dot', 'value': 'dashdot'},
+                                        ],
+                                        value='solid',
+                                        clearable=False,
+                                        multi=False,
+                                    ),
+                                ]),
+                            ]),
+                            html.Br(),
+                            html.Label(['Variable Calculadas:'],style={'font-weight': 'bold', "text-align": "left"}),
+                            dcc.Dropdown(
+                                id='dpd-var-chart3',
+                                options=[{'label': i, 'value': i} for i in var_list],
+                                clearable=False,
+                                multi=True,
+                            ),
+                        ]),	
+                        ],
+                        color='primary',
+                        solid_header=True,
+                        elevation=4,
+                        width=12
+                    ),
+                ], width={"size": 3,"offset": 0}),
+            ]),
+        ]),
     ]),
 ])
 
@@ -297,8 +725,10 @@ layout = html.Div([
      Input('inp-color-list-y1', 'value'),
      Input('inp-color-list-y2', 'value'),
      Input('cb_clear_data_line', 'value'),
+     Input('dpd-LineStile-y1', 'value'),
+     Input('dpd-LineStile-y2', 'value'),
      ])
-def update_line_chart(n_clicks, file_name, well_name, column_list_y1, column_list_y2, show_annot, annot_data, var_list, color_y1, color_y2, clear_data):
+def update_line_chart(n_clicks, file_name, well_name, column_list_y1, column_list_y2, show_annot, annot_data, var_list, color_y1, color_y2, clear_data, stile_y1, stile_y2):
 
     color_axis_y1 = dict(hex=color_y1)
     color_axis_y2 = dict(hex=color_y2)
@@ -323,7 +753,7 @@ def update_line_chart(n_clicks, file_name, well_name, column_list_y1, column_lis
                 df =pd.read_sql(query, con)
 
                 if well_name:
-                    df = df[df['NOMBRE'].isin(well_name)]
+                    df = df[df['NOMBRE']==well_name]
                     
                 df = df.sort_values(by="FECHA")
                 
@@ -354,7 +784,9 @@ def update_line_chart(n_clicks, file_name, well_name, column_list_y1, column_lis
                             y=df[columnas_y1],
                             name=var_name,
                             line_color=color_axis_y1["hex"],
-                            yaxis= 'y'+ str(i)),
+                            yaxis= 'y'+ str(i),
+                            line={'dash': stile_y1},
+                        ),
                         secondary_y=False,
                     )
                     i=+1
@@ -373,7 +805,9 @@ def update_line_chart(n_clicks, file_name, well_name, column_list_y1, column_lis
                             y=df[columnas_y2],
                             name=var_name,
                             line_color=color_axis_y2["hex"],
-                            yaxis= 'y'+ str(i)),
+                            yaxis= 'y'+ str(i),
+                            line={'dash': stile_y2},
+                        ),
                         secondary_y=True,
                     )
                     i=+1
@@ -474,9 +908,11 @@ def update_column_list(file_name, var_list):
     Input('dpd-var-list-chart', 'value'),
     Input('inp-color-list-y1', 'value'), 
     Input('inp-color-list-y2', 'value'),
-    Input('ts-annotation', 'value'),
+    Input('ts-annotation', 'value'), 
+    Input('dpd-LineStile-y2', 'value'),
+    Input('dpd-LineStile-y2', 'value'),
     ]) 
-def save_linechart(n_clicks, consulta, datos_y1, datos_y2, file_name, var_list, color_y1, color_y2, text_annot ):
+def save_linechart(n_clicks, consulta, datos_y1, datos_y2, file_name, var_list, color_y1, color_y2, text_annot, stile_y1, stile_y2 ):
     mensaje=''
     changed_id = [p['prop_id'] for p in dash.callback_context.triggered][0]
     if 'btn_save_linechart' in changed_id:
@@ -490,6 +926,8 @@ def save_linechart(n_clicks, consulta, datos_y1, datos_y2, file_name, var_list, 
             'color_y1': color_y1,
             'color_y2': color_y2,
             'annotation': text_annot,
+            'stile_y1' : stile_y1,
+            'stile_y2' : stile_y2,
             })
         with open(CHART_DIRECTORY+file_name, 'w') as file:
             json.dump(data, file, indent=4)
@@ -504,6 +942,8 @@ def save_linechart(n_clicks, consulta, datos_y1, datos_y2, file_name, var_list, 
                 Output('inp-color-list-y1', 'value'),
                 Output('inp-color-list-y2', 'value'),
                 Output('ts-annotation', 'value'),
+                Output('dpd-LineStile-y1', 'value'),
+                Output('dpd-LineStile-y2', 'value'),
                 ],
               [Input('btn_open_linechart', 'filename'),
               Input('btn_open_linechart', 'contents')]
@@ -517,6 +957,8 @@ def open_linechart( list_of_names, list_of_contents):
     color_y1="#1530E3"
     color_y2="#1530E3"
     text_annot=[]
+    stile_y1=[]
+    stile_y2=[]
 
     changed_id = [p['prop_id'] for p in dash.callback_context.triggered][0]
     if 'btn_open_linechart' in changed_id:
@@ -533,5 +975,7 @@ def open_linechart( list_of_names, list_of_contents):
                     color_y1 = drop_values['color_y1']
                     color_y2 = drop_values['color_y2']
                     text_annot = drop_values['annotation']
+                    stile_y1 = drop_values['stile_y1']
+                    stile_y2 = drop_values['stile_y2']
                     
-    return archivo, consulta, datos_y1, datos_y2, var_list, color_y1, color_y2, text_annot
+    return archivo, consulta, datos_y1, datos_y2, var_list, color_y1, color_y2, text_annot, stile_y1, stile_y2

@@ -8,7 +8,6 @@ from dash_table.Format import Format, Symbol
 import dash_admin_components as dac
 import plotly.graph_objects as go
 import plotly.express as px
-import plotly.express as px
 import dash_table
 import sqlite3
 import json
@@ -235,9 +234,11 @@ def update_bar_chart(n_clicks, file_name, well_name, columns_list, dtp_start_dat
             if contenido:
                 if fecha_inicio:
                     for linea in contenido:
-                        query +=  linea 
-
-                    query += " WHERE date(FECHA)>='"+fecha_inicio+"' AND  date(FECHA)<='"+fecha_fin+"' ORDER BY FECHA"
+                        query +=  linea
+                    if query.find("WHERE")>0:
+                        query += " AND date(FECHA)>='"+fecha_inicio+"' AND  date(FECHA)<='"+fecha_fin+"' ORDER BY FECHA"
+                    else:
+                        query += " WHERE date(FECHA)>='"+fecha_inicio+"' AND  date(FECHA)<='"+fecha_fin+"' ORDER BY FECHA"
                 else:
                     for linea in contenido:
                         query +=  linea 
@@ -254,9 +255,9 @@ def update_bar_chart(n_clicks, file_name, well_name, columns_list, dtp_start_dat
                 if well_name is not None and columns_list:
                     df= df[df['NOMBRE'].isin(well_name)]
                     if staked_columns=='STC':
-                        fig = px.bar(df, x="NOMBRE", y=columns_list,  height=700,  title=chart_title, barmode='stack', animation_frame="FECHA"  )
+                        fig = px.bar(df, x="NOMBRE", y=columns_list,  height=700,  title=chart_title, barmode='stack', animation_frame="FECHA" )
                     else:
-                        fig = px.bar(df, x="NOMBRE", y=columns_list,  height=700,  title=chart_title,orientation='h', barmode='group', animation_group="NOMBRE")
+                        fig = px.bar(df, x="NOMBRE", y=columns_list,  height=700,  title=chart_title, barmode='group', animation_frame="FECHA")
     return fig
 
 @app.callback(

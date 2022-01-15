@@ -61,6 +61,10 @@ query = "SELECT NOMBRE FROM VARIABLES"
 var_list =pd.read_sql(query, con)
 var_list = var_list.sort_values('NOMBRE')['NOMBRE'].unique()
 
+#Listado de unidades por variables
+query = "SELECT * FROM UNIDADES"
+unidades =pd.read_sql(query, con)
+
 #Listado de query
 pathway = './querys'
 files = [f for f in listdir(pathway) if isfile(join(pathway, f))]
@@ -99,7 +103,7 @@ layout = html.Div([
                     dbc.Col([
                         html.Br(),
                         dbc.Button(html.Span(["Exportar", html.I(className="fas fa-file-export ml-1")],style={'font-size':'1.5em','text-align':'center'}),
-                         id="btn_export_excel", color="warning", className="mr-3"),
+                         id="btn_export_excel", color="primary", className="mr-3"),
                     ], width={"size": 1, "offset": 1}),
                 ]),
                 html.Br(),
@@ -116,7 +120,7 @@ layout = html.Div([
                         html.Br(),
                         dcc.Upload(
                             dbc.Button(html.Span(["Abrir", html.I(className="fas fa-upload ml-1")],style={'font-size':'1.5em','text-align':'center'}),
-                              color="warning", className="mr-3"),
+                              color="primary", className="mr-3"),
                             id="btn_open_report",
                             multiple=False
                         ),
@@ -124,7 +128,7 @@ layout = html.Div([
                     dbc.Col([
                         html.Br(),
                         dbc.Button(html.Span(["Salvar", html.I(className="fas fa-save ml-1")],style={'font-size':'1.5em','text-align':'center'}),
-                         id="btn_save_report", color="warning", className="mr-3"),
+                         id="btn_save_report", color="primary", className="mr-3"),
                         html.Div(id="save_message_reporte"),
                     ], width={"size": 1, "offset": 1}),
                 ]),
@@ -303,6 +307,7 @@ def update_table(n_clicks, file_name, well_name, var_list, group_by, group_optio
     df = pd.DataFrame()
     data_frame = pd.DataFrame()
     changed_id = [p['prop_id'] for p in dash.callback_context.triggered][0]
+    column_list=[]
 
     if 'btn_execute_report' in changed_id:
         con = sqlite3.connect(archivo)
@@ -355,6 +360,17 @@ def update_table(n_clicks, file_name, well_name, var_list, group_by, group_optio
                     titulo = selec_var.iloc[0]['TITULO']
                     evalu = eval(ecuacion)
                     df[titulo] = evalu
+
+            selec_unit = unidades.set_index(['VARIABLE'])
+            column_list = df.columns
+            for columnas in column_list:
+                var_title = selec_unit.loc[columnas]['REPORTE']
+                var_unit = selec_unit.loc[columnas]['UNIDAD']
+                if var_unit:
+                    var_name = var_title + "_" + var_unit
+                else:
+                    var_name = var_title
+                df = df.rename(columns={columnas: var_name})
 
     columns = [{'name': i, 'id': i, "deletable": True} for i in df.columns]
     data = df.to_dict('records')

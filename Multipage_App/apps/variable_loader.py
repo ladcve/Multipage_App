@@ -225,6 +225,6 @@ def update_table_results(n_clicks, rows, row_id,file_name, data, columns):
             evalu = eval(ecuacion)
             df[titulo] = evalu 
 
-    columns = [{'name': i, 'id': i, 'renamable': True, 'deletable': True} for i in df.columns]
+    columns = [{'name': i, 'id': i} for i in df.columns]
     data = df.to_dict('records')
     return data, columns
