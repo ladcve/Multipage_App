@@ -30,6 +30,7 @@ from sklearn.linear_model import LinearRegression
 from sklearn.pipeline import make_pipeline
 
 from app import app 
+from library import reform_df
 
 #Variable con la ruta para salvar los querys
 QUERY_DIRECTORY = "./querys"
@@ -75,14 +76,7 @@ files = [f for f in listdir(pathway) if isfile(join(pathway, f))]
 file_name = ''
 tab_height = '2vh'
 
-def reform_df(dft):
-    # quick and dirty stacking of cols 2,3 on 0,1
-    dfl = dft[[0,1]]
-    dfr = dft[[2,3]]
-    dfr.columns = 0,1
-    dfout = pd.concat([dfl,dfr])
-    dfout.columns=['Parameter','Value']
-    return dfout
+
 
 layout = html.Div([
     dbc.Row([
@@ -115,7 +109,7 @@ layout = html.Div([
                     ]),
                 ]),
                 html.Br(),
-            ]),
+            ], style={"background-color": "#F9FCFC"},),
         ], width={"size": 6, "offset": 0}),
         dbc.Col([
             dbc.Card([
@@ -141,7 +135,7 @@ layout = html.Div([
                     ], width={"size": 2, "offset": 1}),
                 ]),
                 html.Br(),
-            ]),
+            ], style={"background-color": "#F9FCFC"},),
         ], width={"size": 6, "offset": 0}),
     ]),
     html.Br(),
@@ -170,7 +164,7 @@ layout = html.Div([
                 color='primary',
                 solid_header=True,
                 elevation=4,
-                width=12
+                width=12,
             ),
         ], width=9),
         dbc.Col([
@@ -208,7 +202,8 @@ layout = html.Div([
                 color='primary',
                 solid_header=True,
                 elevation=4,
-                width=12
+                width=12,
+                style={"background-color": "#F9FCFC"},
             ),
             dac.Box([
                 dac.BoxHeader(
@@ -235,7 +230,8 @@ layout = html.Div([
                 color='primary',
                 solid_header=True,
                 elevation=4,
-                width=12
+                width=12,
+                style={"background-color": "#F9FCFC"},
             ),
         ], width=3),
     ]),

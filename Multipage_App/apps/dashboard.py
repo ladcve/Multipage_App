@@ -197,7 +197,7 @@ layout = html.Div([
                     ])
                 ]),
                 html.Br(),
-            ]),
+            ], style={"background-color": "#F9FCFC"}),
         ], width={"size": 11, "offset": 0}),
     ]),
     html.Br(),

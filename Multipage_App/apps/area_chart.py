@@ -107,7 +107,7 @@ layout = html.Div([
                     ], width={"size": 1, "offset": 0}),
                 ]),
                 html.Br(),
-            ]),
+            ], style={"background-color": "#F9FCFC"},),
         ], width={"size": 8, "offset": 0}),
         dbc.Col([
             dbc.Card([
@@ -133,7 +133,7 @@ layout = html.Div([
                     ], width={"size": 1, "offset": 1}),
                 ]),
                 html.Br(),
-            ]),
+            ], style={"background-color": "#F9FCFC"},),
         ], width={"size": 4, "offset": 0}),
     ]),
     html.Br(),
@@ -187,7 +187,8 @@ layout = html.Div([
                 color='primary',
                 solid_header=True,
                 elevation=4,
-                width=12
+                width=12,
+                style={"background-color": "#F9FCFC"},
             ),
         ], width=3),
     ]),

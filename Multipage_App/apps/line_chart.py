@@ -1,4 +1,3 @@
-from ast import Return
 import dash
 import dash_bootstrap_components as dbc
 from dash_bootstrap_components._components.Row import Row
@@ -27,7 +26,8 @@ import json
 import os
 import dash_daq as daq
 
-from app import app 
+from app import app
+from library import create_chart, update_columns_list
 
 #Definir imagenes
 open_chart = '.\pictures\open_chart.png'
@@ -81,136 +81,6 @@ files = [f for f in listdir(pathway) if isfile(join(pathway, f))]
 file_name = ''
 tab_height = '2vh'
 
-def create_chart(file_name, well_name, column_list_y1, column_list_y2, show_annot, annot_data, var_list, color_y1, color_y2, clear_data, stile_y1, stile_y2):
-
-    color_axis_y1 = dict(hex=color_y1)
-    color_axis_y2 = dict(hex=color_y2)
-
-    df = pd.DataFrame()
-    query= ''
-    fig = make_subplots(specs=[[{"secondary_y": True}]])
-    
-    con = sqlite3.connect(archivo)
-    query = "SELECT * FROM VARIABLES"
-    variables =pd.read_sql(query, con)
-
-    if file_name is not None:
-        with open(os.path.join(QUERY_DIRECTORY, file_name)) as f:
-            contenido = f.readlines()
-        if contenido is not None:
-            query = ''
-            for linea in contenido:
-                query +=  linea 
-
-            df =pd.read_sql(query, con)
-
-            if well_name:
-                df = df[df['NOMBRE']==well_name]
-                
-            df = df.sort_values(by="FECHA")
-            
-            if clear_data:
-                df = df[(df!=0)]
-
-            if var_list:
-                for var in var_list:
-                    selec_var=variables.loc[variables['NOMBRE']==var]
-                    ecuacion = selec_var.iloc[0]['ECUACION']
-                    titulo = selec_var.iloc[0]['TITULO']
-                    evalu = eval(ecuacion)
-                    df[titulo] = evalu
-            i=1
-            selec_unit = unidades.set_index(['VARIABLE'])
-
-            for columnas_y1 in column_list_y1:
-                var_title = selec_unit.loc[columnas_y1]['GRAFICO']
-                var_unit = selec_unit.loc[columnas_y1]['UNIDAD']
-                var_color = selec_unit.loc[columnas_y1]['COLOR']
-                var_name = var_title + " " + var_unit
-
-                if color_axis_y1 == {'hex': '#1530E3'}:
-                    color_axis_y1 = dict(hex=var_color)
-                    
-                fig.add_trace(
-                    go.Scatter(x=df['FECHA'],
-                        y=df[columnas_y1],
-                        name=var_name,
-                        line_color=color_axis_y1["hex"],
-                        yaxis= 'y'+ str(i),
-                        line={'dash': stile_y1},
-                    ),
-                    secondary_y=False,
-                )
-                i=+1
-
-            for columnas_y2 in column_list_y2:
-                var_title = selec_unit.loc[columnas_y2]['GRAFICO']
-                var_unit = selec_unit.loc[columnas_y2]['UNIDAD']
-                var_name = var_title + " " + var_unit
-                var_color = selec_unit.loc[columnas_y2]['COLOR']
-
-                if color_axis_y2 == {'hex': '#1530E3'}:
-                    color_axis_y2 = dict(hex=var_color)
-
-                fig.add_trace(
-                    go.Scatter(x=df['FECHA'],
-                        y=df[columnas_y2],
-                        name=var_name,
-                        line_color=color_axis_y2["hex"],
-                        yaxis= 'y'+ str(i),
-                        line={'dash': stile_y2},
-                    ),
-                    secondary_y=True,
-                )
-                i=+1
-            fig.update_xaxes(title_text="Fecha",showline=True, linewidth=2, linecolor='black', showgrid=False,)
-            fig.update_yaxes(showline=True, linewidth=2, linecolor='black', showgrid=False,)
-            fig.update_layout(
-                autosize=False,
-                hovermode='x unified',
-                height=700,
-                paper_bgcolor='rgba(0,0,0,0)',
-                plot_bgcolor='rgb(240, 240, 240)',
-                margin=dict(
-                    l=50,
-                    r=50,
-                    b=100,
-                    t=100,
-                    pad=4,
-                ),
-                legend=dict(
-                    orientation="h",
-                    yanchor="bottom",
-                    y=1.02,
-                    xanchor="right",
-                    x=1
-                ),
-                )
-            fig.update_xaxes(
-            rangeslider_visible=True,
-                rangeselector=dict(
-                    buttons=list([
-                    dict(count=1, label="1m", step="month", stepmode="backward"),
-                    dict(count=6, label="6m", step="month", stepmode="backward"),
-                    dict(count=1, label="YTD", step="year", stepmode="todate"),
-                    dict(count=1, label="1y", step="year", stepmode="backward"),
-                    dict(step="all")
-                    ])
-                )
-            )
-            if show_annot:
-                dff = pd.DataFrame(annot_data)
-                for ind in dff.index:
-                    fig.add_annotation(x=dff['FECHA'][ind], y=5,
-                        text=dff['EVENTO'][ind],
-                        showarrow=False,
-                        bgcolor="#9DF5CE",
-                        textangle=-90,
-                        arrowhead=1)
-    con.close()
-
-    return fig
-
 layout = html.Div([
     dbc.Row([
         dbc.Col([
@@ -239,7 +109,7 @@ layout = html.Div([
                     ], width={"size": 4, "offset": 0}),
                 ]),
                 html.Br(),
-            ]),
+            ], style={"background-color": "#F9FCFC"},),
         ], width={"size": 6, "offset": 0}),
         #********************** Plantilla ******************
         #
@@ -283,7 +153,7 @@ layout = html.Div([
                     ]),
                 ]),
                 html.Br(),
-            ]),
+            ], style={"background-color": "#F9FCFC"},),
         ], width={"size": 6, "offset": 0}),
     ]),
     html.Br(),
@@ -324,7 +194,7 @@ layout = html.Div([
                         color='primary',
                         solid_header=True,
                         elevation=4,
-                        width=12
+                        width=12,
                     ),
                 ], width={"size": 9,"offset": 0}),
                 dbc.Col([
@@ -472,7 +342,7 @@ layout = html.Div([
                                                     'font-family':'arial'
                                                 },),
                                         ]),
-                                    ]),
+                                    ], style={"background-color": "#F9FCFC"},),
                                 ]),
                             ]),
                         ]),	
@@ -480,7 +350,8 @@ layout = html.Div([
                         color='primary',
                         solid_header=True,
                         elevation=4,
-                        width=12
+                        width=12,
+                        style={"background-color": "#F9FCFC"},
                     ),
                 ], width=3),
             ]),
@@ -621,7 +492,8 @@ layout = html.Div([
                         color='primary',
                         solid_header=True,
                         elevation=4,
-                        width=12
+                        width=12,
+                        style={"background-color": "#F9FCFC"},
                     ),
                 ], width={"size": 3,"offset": 0}),
             ]),
@@ -746,7 +618,8 @@ layout = html.Div([
                         color='primary',
                         solid_header=True,
                         elevation=4,
-                        width=12
+                        width=12,
+                        style={"background-color": "#F9FCFC"},
                     ),
                 ], width={"size": 3,"offset": 0}),
             ]),
@@ -871,7 +744,8 @@ layout = html.Div([
                         color='primary',
                         solid_header=True,
                         elevation=4,
-                        width=12
+                        width=12,
+                        style={"background-color": "#F9FCFC"},
                     ),
                 ], width={"size": 3,"offset": 0}),
             ]),
@@ -901,7 +775,7 @@ def update_line_chart(n_clicks, file_name, well_name, column_list_y1, column_lis
     fig = make_subplots(specs=[[{"secondary_y": True}]])
     
     if 'btn_show_chart' in changed_id:
-        fig = create_chart(file_name, well_name, column_list_y1, column_list_y2, show_annot, annot_data, var_list, color_y1, color_y2, clear_data, stile_y1, stile_y2)
+        fig = create_chart(archivo, unidades, file_name, well_name, column_list_y1, column_list_y2, show_annot, annot_data, var_list, color_y1, color_y2, clear_data, stile_y1, stile_y2)
     return fig
 
 @app.callback(
@@ -944,9 +818,9 @@ def update_triple_chart(n_clicks, file_name, well_name, cols_chart1_y1, cols_cha
     fig3 = {}
     
     if 'btn_show_chart' in changed_id:
-        fig1 = create_chart(file_name, well_name, cols_chart1_y1, cols_chart1_y2, False, [], var_list1, color_chart1_y1, color_chart1_y2, clear_data_chart1, stile_chart1_y1, stile_chart1_y2)
-        fig2 = create_chart(file_name, well_name, cols_chart2_y1, cols_chart2_y2, False, [], var_list2, color_chart2_y1, color_chart2_y2, clear_data_chart2, stile_chart2_y1, stile_chart2_y2)
-        fig3 = create_chart(file_name, well_name, cols_chart3_y1, cols_chart3_y2, False, [], var_list3, color_chart3_y1, color_chart3_y2, clear_data_chart3, stile_chart3_y1, stile_chart3_y2)
+        fig1 = create_chart(archivo,  unidades, file_name, well_name, cols_chart1_y1, cols_chart1_y2, False, [], var_list1, color_chart1_y1, color_chart1_y2, clear_data_chart1, stile_chart1_y1, stile_chart1_y2)
+        fig2 = create_chart(archivo,  unidades, file_name, well_name, cols_chart2_y1, cols_chart2_y2, False, [], var_list2, color_chart2_y1, color_chart2_y2, clear_data_chart2, stile_chart2_y1, stile_chart2_y2)
+        fig3 = create_chart(archivo,  unidades, file_name, well_name, cols_chart3_y1, cols_chart3_y2, False, [], var_list3, color_chart3_y1, color_chart3_y2, clear_data_chart3, stile_chart3_y1, stile_chart3_y2)
 
     return fig1, fig2, fig3
 
@@ -968,31 +842,7 @@ def update_column_list(file_name, var_list):
     query= ''
     changed_id = [p['prop_id'] for p in dash.callback_context.triggered][0]
     if 'dpd-consulta-lista' in changed_id or 'dpd-var-list-chart' in changed_id:
-        con = sqlite3.connect(archivo)
-        query = "SELECT * FROM VARIABLES"
-        variables =pd.read_sql(query, con)
-        query=''
-        if file_name:
-            with open(os.path.join(QUERY_DIRECTORY, file_name)) as f:
-                contenido = f.readlines()
-                for linea in contenido:
-                    query +=  linea
-                
-                #Filtrar solo la primera fila
-                query += " LIMIT 1"
-                
-                df =pd.read_sql(query, con)
-
-            if var_list is not None:
-                for var in var_list:
-                    selec_var=variables.loc[variables['NOMBRE']==var]
-                    ecuacion = selec_var.iloc[0]['ECUACION']
-                    titulo = selec_var.iloc[0]['TITULO']
-                    evalu = eval(ecuacion)
-                    df[titulo] = evalu
-
-            columns = [{'label': i, 'value': i} for i in df.columns]
-        con.close()
+        columns = update_columns_list(archivo, file_name, var_list)
 
     return columns, columns, columns, columns, columns, columns, columns, columns
 

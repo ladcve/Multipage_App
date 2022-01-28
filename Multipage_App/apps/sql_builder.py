@@ -20,6 +20,7 @@ import dash_ace
 import os
 
 from app import app 
+from library import prefijo_tabla, save_file
 
 #Variable con la ruta para salvar los querys
 QUERY_DIRECTORY = "./querys"
@@ -45,32 +46,6 @@ con = sqlite3.connect(archivo)
 cursor = con.execute("SELECT name FROM sqlite_master WHERE type='table';")
 tables_list = pd.DataFrame (cursor.fetchall(), columns = ['name'])
 tables_list = tables_list.sort_values('name')['name'].unique()
-
-#Seccion de funciones
-def prefijo_tabla(tabla):
-    prefijo =''
-    if tabla=='CIERRE_DIARIO_POZO':
-        prefijo='CEP'
-    if tabla=='LECTURAS_POZO':
-        prefijo='LEP'
-    if tabla=='ESTIMACIONES_POZO':
-        prefijo='ESP'
-    if tabla=='PERDIDAS_POZO':
-        prefijo='PEP'
-    if tabla=='POTENCIAL_POZO':
-        prefijo='POP'
-    if tabla=='PRUEBAS_POZO':
-        prefijo='PUP'
-    return prefijo
-
-#Salvar archivo
-def save_file(name, content):
-    """Decode and store a file uploaded with Plotly Dash."""
-    data = content.encode("utf8").split(b";base64,")[0]
-    with open(os.path.join(QUERY_DIRECTORY, name), "w") as fp:
-       # fp.write(base64.decodebytes(data))
-       fp.write(content)
-
 
 layout = html.Div([
     dbc.Tabs([
@@ -103,7 +78,7 @@ layout = html.Div([
                             ], width={"size": 1, "offset": 1}),
                         ]),
                         html.Br(),
-                    ]),
+                    ], style={"background-color": "#F9FCFC"},),
                 ], width={"size": 6, "offset": 0}),
             ]),
             html.Br(),

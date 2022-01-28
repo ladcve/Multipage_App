@@ -110,7 +110,7 @@ layout = html.Div([
                     ]),
                 ]),
                 html.Br(),
-            ]),
+            ], style={"background-color": "#F9FCFC"},),
         ], width={"size": 6, "offset": 0}),
     ]),
     html.Br(),
@@ -310,7 +310,8 @@ def display_dropdowns(n_clicks, _,  well, file_name, children):
                                 color='primary',
                                 solid_header=True,
                                 elevation=4,
-                                width=12
+                                width=12,
+                                style={"background-color": "#F9FCFC"},
                             ),
                         ], width={"size": 3, "offset": 0}),
                     ]),

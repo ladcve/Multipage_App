@@ -66,13 +66,13 @@ layout = html.Div([
                 dbc.Row([
                     dbc.Col([
                         dbc.Button("Crear BD", id="btn_create_db", color="primary", n_clicks=0, className="mr-1"),
-                    ], width={"size": 3, "offset": 0}),
+                    ], width={"size": 3, "offset": 1}),
                     dbc.Col([
                         dbc.Button("Actualizar BD", id="btn_udpate_db", color="success", n_clicks=0, className="mr-1"),
                     ], width={"size": 2, "offset": 0})
                 ]),
                 html.Br(),
-            ]),
+            ], style={"background-color": "#F9FCFC"},),
         ], width={"size": 3, "offset": 0}), 
     ]),
     html.Br(),

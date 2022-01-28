@@ -93,7 +93,7 @@ layout = html.Div([
                     ], width={"size": 1, "offset": 0}),
                 ]),
                 html.Br(),
-            ]),
+            ], style={"background-color": "#F9FCFC"},),
         ], width={"size": 10, "offset": 0}),
     ]),
     html.Br(),

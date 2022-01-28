@@ -92,7 +92,7 @@ layout = html.Div([
                 color='primary',
                 solid_header=True,
                 elevation=4,
-                width=12
+                width=12,
             ),
         ], width={"size": 5, "offset": 0}),
         dbc.Col([
@@ -154,7 +154,8 @@ layout = html.Div([
                 color='primary',
                 solid_header=True,
                 elevation=4,
-                width=12
+                width=12,
+                style={"background-color": "#F9FCFC"},
             ),
         ], width={"size": 4, "offset": 0}),
     ]),

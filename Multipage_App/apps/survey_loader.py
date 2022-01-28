@@ -120,7 +120,7 @@ layout = html.Div([
                     page_size= 10,),
                 ),
             ]),
-        ]),
+        ], style={"background-color": "#F9FCFC"},),
     ])
 ])
 

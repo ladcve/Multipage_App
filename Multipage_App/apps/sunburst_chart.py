@@ -118,7 +118,7 @@ layout = html.Div([
                     ], width={"size": 1, "offset": 1}),
                 ]),
                 html.Br(),
-            ]),
+            ], style={"background-color": "#F9FCFC"},),
         ], width={"size": 12, "offset": 0}),
     ]),
     html.Br(),
@@ -147,7 +147,7 @@ layout = html.Div([
                     ], width={"size": 1, "offset": 1}),
                 ]),
                 html.Br(),
-            ]),
+            ], style={"background-color": "#F9FCFC"},),
         ], width={"size": 5, "offset": 0}),
     ]),
     html.Br(),
@@ -214,7 +214,8 @@ layout = html.Div([
                 color='primary',
                 solid_header=True,
                 elevation=4,
-                width=12
+                width=12,
+                style={"background-color": "#F9FCFC"},
             ),
         ], width=3),
     ]),
@@ -338,8 +339,11 @@ def update_column_list_pie(file_name, var_list):
     Input('dpd-query-list-pie', 'value'),
     Input('dpd-column-lists-pie', 'value'),
     Input('inp-ruta-piechart', 'value'),
-    Input('dpd-var-list-piechart', 'value')]) 
-def save_piechart(n_clicks, consulta, datos_y1, file_name, var_list ):
+    Input('dpd-var-list-piechart', 'value'),
+    Input('dpd-color-lists-pie', 'value'),
+    Input('inp_piechart_name', 'value'),
+    ]) 
+def save_piechart(n_clicks, consulta, datos_y1, file_name, var_list, color, chart_title ):
     mensaje=''
     changed_id = [p['prop_id'] for p in dash.callback_context.triggered][0]
     if 'btn_save_linechart' in changed_id:
@@ -348,7 +352,10 @@ def save_piechart(n_clicks, consulta, datos_y1, file_name, var_list ):
         data['grafico'].append({
             'consulta': consulta,
             'datos_y1': datos_y1,
-            'var_list': var_list,})
+            'var_list': var_list,
+            'color': color,
+            'chart_title': chart_title,
+            })
         if file_name:
             with open(CHART_DIRECTORY+file_name, 'w') as file:
                 json.dump(data, file, indent=4)
@@ -358,7 +365,10 @@ def save_piechart(n_clicks, consulta, datos_y1, file_name, var_list ):
 @app.callback( [Output('inp-ruta-piechart', 'value'),
                 Output('dpd-query-list-pie', 'value'),
                 Output('dpd-column-lists-pie', 'value'),
-                Output('dpd-var-list-piechart', 'value'),],
+                Output('dpd-var-list-piechart', 'value'),
+                Output('dpd-color-lists-pie','value'),
+                Output('inp_piechart_name', 'value')
+                ],
               [Input('btn_open_piechart', 'filename'),
               Input('btn_open_piechart', 'contents'),]
               )
@@ -367,14 +377,20 @@ def open_piechart( list_of_names, list_of_contents):
     consulta=[]
     datos_y1=[]
     var_list=[]
+    color=[]
+    chart_title=[]
 
-    if list_of_names is not None:
-        print(list_of_names)
-        archivo = list_of_names
-        with open(CHART_DIRECTORY+archivo) as file:
-            data = json.load(file)
-            for drop_values   in data['grafico']:
-                consulta = str(drop_values['consulta'])
-                datos_y1 = drop_values['datos_y1']
-                var_list = drop_values['var_list']
-    return archivo, consulta, datos_y1, var_list
+    changed_id = [p['prop_id'] for p in dash.callback_context.triggered][0]
+    if 'btn_open_piechart' in changed_id:
+        if list_of_names is not None:
+            print(list_of_names)
+            archivo = list_of_names
+            with open(CHART_DIRECTORY+archivo) as file:
+                data = json.load(file)
+                for drop_values   in data['grafico']:
+                    consulta = str(drop_values['consulta'])
+                    datos_y1 = drop_values['datos_y1']
+                    var_list = drop_values['var_list']
+                    color = drop_values['color']
+                    chart_title = drop_values['chart_title']
+    return archivo, consulta, datos_y1, var_list, color, chart_title

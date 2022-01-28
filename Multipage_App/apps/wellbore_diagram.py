@@ -62,10 +62,6 @@ wells_surveys =pd.read_sql(query, con)
 query = "SELECT * FROM WELLBORE"
 wellbore_detail =pd.read_sql(query, con)
 
-#Cargando imagen del wellbore diagram
-image_filename = './pictures/wellbore.png'
-wellbore = base64.b64encode(open(image_filename, 'rb').read())
-
 
 #Define las columans de la tabla y su formato
 
@@ -73,7 +69,6 @@ layout = html.Div([
     dbc.Row([
         dbc.Col([
             dbc.Card([
-                html.Br(),
                 dbc.Row([
                     dbc.Col([
                         html.Label(['Pozo:'],style={'font-weight': 'bold', "text-align": "left"}),
@@ -91,7 +86,7 @@ layout = html.Div([
                     ], width={"size": 2, "offset": 0}),
                 ]),
                 html.Br(),
-            ]),
+            ], style={"background-color": "#F9FCFC"},),
         ], width={"size": 4, "offset": 0}),
     ]),
     html.Br(),
@@ -114,88 +109,7 @@ layout = html.Div([
                 elevation=4,
                 width=12
             ),
-        ], width=3),
-        dbc.Col([
-            dac.Box([
-                    dac.BoxHeader(
-                        collapsible = False,
-                        closable = False,
-                        title="Datos"
-                    ),
-                    dac.BoxBody([
-                        dbc.Spinner(
-                            dash_table.DataTable(id="dt-wellbore-detail", 
-                            style_as_list_view=True,
-                            style_cell={'padding': '5px'},
-                            style_header={
-                                'backgroundColor': 'blue',
-                                'fontWeight': 'bold',
-                                'color': 'white'
-                            },
-                            columns=[
-                                    dict(id='DESCRIPCION', name= 'DESCRIPCION'),
-                                    dict(id= 'ID', name=u'ID (in)', type='numeric', 
-                                    format= Format(
-                                                precision=6,
-                                                symbol=Symbol.yes,
-                                                symbol_suffix=u'in'
-                                            )),
-                                    dict(id= 'OD', name=u'OD (ft)', type='numeric', 
-                                    format= Format(
-                                                precision=6,
-                                                symbol=Symbol.yes,
-                                                symbol_suffix=u'ft'
-                                            )),
-                                    dict(id= 'MD', name=u'MD (ft)', type='numeric', 
-                                    format= Format(
-                                                precision=6,
-                                                symbol=Symbol.yes,
-                                                symbol_suffix=u'ft'
-                                            )),
-                                    dict(id= 'LONGITUD', name=  'LONGITUD (ft)', type='numeric', 
-                                    format= Format(
-                                                precision=6,
-                                                symbol=Symbol.yes,
-                                                symbol_suffix=u'ft'
-                                            )),
-                                ],
-                            dropdown = {
-                                'NOMBRE': {
-                                    'options': [
-                                        {'label': i, 'value': i}
-                                        for i in  well_list
-                                    ]
-                                },
-                                'TIPO': {    
-                                    'options': [
-                                        {'label': 'Arbol Navidad', 'value': 'XMAST'},
-                                        {'label': 'Valvula Seguridad', 'value': 'SAFEV'},
-                                        {'label': 'Tubbing', 'value': 'TUBIN'},
-                                        {'label': 'Casing 13 3/8', 'value': 'CASIN13'},
-                                        {'label': 'Casing 12', 'value': 'CASIN12'},
-                                        {'label': 'Cementacion', 'value': 'CEMEN'},
-                                        {'label': 'Perforaciones', 'value': 'PERF'},
-                                    ],
-                                }
-                            },
-                            style_cell_conditional=[
-                                {
-                                    'if': {'column_id': c},
-                                    'textAlign': 'right'
-                                } for c in ['MD', 'ID', 'OD', 'LONGITUD']
-                            ],
-                            page_action="native",
-                            page_current= 0,
-                            page_size= 10,),
-                        ),
-                    ]),	
-                ],
-                color='primary',
-                solid_header=True,
-                elevation=4,
-                width=12
-            ),
-        ], width=4),
+        ], width=5),
         dbc.Col([
             dac.Box([
                     dac.BoxHeader(
@@ -214,14 +128,13 @@ layout = html.Div([
                 elevation=4,
                 width=12
             ),
-        ], width=5),
+        ], width=7),
     ]),
 ])
 
 @app.callback(
     [Output('cht-well-survey','figure'),
-    Output('cht-wellbore-chart','figure'),
-    Output("dt-wellbore-detail", "data")],
+    Output('cht-wellbore-chart','figure')],
     [Input("btn_show_chart", "n_clicks"),
      Input('dpd-well-list', 'value'),])
 def update_survey_chart(n_clicks, well_name):
@@ -229,23 +142,29 @@ def update_survey_chart(n_clicks, well_name):
     fig2 = {}
     wellbore_table = pd.DataFrame()
     changed_id = [p['prop_id'] for p in dash.callback_context.triggered][0]
+    
     if 'btn_show_chart' in changed_id:
         if well_name is not None:
+
+            #Cargando imagen del wellbore diagram
+            image_filename = './pictures/'+well_name+'.png'
+            wellbore = base64.b64encode(open(image_filename, 'rb').read())
+            
             data_results= wells_surveys[wells_surveys['NOMBRE']==well_name]
             well = wp.load(data_results)     # LOAD WELL
             fig1 = well.plot(style={'size': 5})
-            fig1.update_layout(width=580, height=600)
+            fig1.update_layout(width=800, height=800)
 
             #Mostrar imagen de la completacion del pozo
-            img_width = 300
-            img_height = 650
-            scale_factor = 13
+            img_width = 9000
+            img_height = 800
+            scale_factor = 18
             fig2 = go.Figure()
             fig2.add_layout_image(
                     x=0,
-                    sizex=img_width* scale_factor,
+                    sizex=img_width*scale_factor,
                     y=0,
-                    sizey=img_height* scale_factor,
+                    sizey=img_height*scale_factor,
                     xref="x",
                     yref="y",   
                     opacity=1.0,
@@ -253,27 +172,27 @@ def update_survey_chart(n_clicks, well_name):
                     source='data:image/png;base64,{}'.format(wellbore.decode()),
             )
             fig2.update_xaxes(showgrid=False, showticklabels=False, range=(0, img_width))
-            fig2.update_yaxes(showgrid=True, scaleanchor='x', range=(8000, 0))
-            fig2.update_layout(margin=dict(l=0, r=0, b=0, t=0),paper_bgcolor='rgba(0,0,0,0)',plot_bgcolor='rgba(0,0,0,0)')
+            fig2.update_yaxes(showgrid=False, showticklabels=False, scaleanchor='x', range=(20000, 0))
+            fig2.update_layout(width=600, height=800, margin=dict(l=0, r=0, b=0, t=0),paper_bgcolor='rgba(0,0,0,0)',plot_bgcolor='rgba(0,0,0,0)')
 
             #Estos anotations saldran de la tabla wellbore_detail 
             #Seran cargados como un ciclo
 
             #filtra el dataframe con el pozo
-            wellbore_table = wellbore_detail[wellbore_detail['NOMBRE']==well_name]
-            wellbore_table =wellbore_table.drop(['NOMBRE'], axis=1)
-            for i in wellbore_table.index: 
-                fig2.add_annotation(
-                    x=-700,
-                    y=Decimal(wellbore_table["MD"][i]),
-                    text=wellbore_table["DESCRIPCION"][i],
-                    align="left",
-                    #xref="paper",
-                    #yref="paper",
-                    xref="x",
-                    yref="y",
-                    showarrow=False,
-                    font_size=10, font_color='blue')
+            #wellbore_table = wellbore_detail[wellbore_detail['NOMBRE']==well_name]
+            #wellbore_table =wellbore_table.drop(['NOMBRE'], axis=1)
+            #for i in wellbore_table.index: 
+            #    fig2.add_annotation(
+            #        x=-700,
+            #        y=Decimal(wellbore_table["MD"][i]),
+            #        text=wellbore_table["DESCRIPCION"][i],
+            #        align="left",
+            #        #xref="paper",
+            #        #yref="paper",
+            #        xref="x",
+            #        yref="y",
+            #        showarrow=False,
+            #        font_size=10, font_color='blue')
 
-    data = wellbore_table.to_dict('records')
-    return fig1, fig2, data
+    #data = wellbore_table.to_dict('records')
+    return fig1, fig2

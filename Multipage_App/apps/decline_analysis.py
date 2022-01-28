@@ -27,7 +27,8 @@ import os
 import datetime
 from scipy.optimize import curve_fit
 
-from app import app 
+from app import app
+from library import hyperbolic, exponential, harmonic, cumpro, listToString
 
 #Lee el archivo de configuracion
 configuracion = configparser.ConfigParser()
@@ -66,31 +67,6 @@ MAX_FECHA =daily_prod['FECHA'].max()
 
 con.close()
 
-def listToString(s): 
-    
-    # initialize an empty string
-    str1 = "" 
-    
-    # traverse in the string  
-    for ele in s: 
-        str1 += ele  
-    
-    # return string  
-    return str1 
-
-# Define las funciones de declinacion
-def hyperbolic(t, qi, di, b):
-  return qi / (np.abs((1 + b * di * t))**(1/b))
-
-def exponential(t, qi, di):
-    return qi*np.exp(-di*t)
-
-def harmonic(t, qi, di):
-    return qi/(1+di*t)
-
-# function for hyperbolic cumulative production
-def cumpro(q_forecast, qi, di, b):
-    return (((qi**b) / ((1 - b) * di)) * ((qi ** (1 - b)) - (q_forecast ** (1 - b))))  
 
 layout = html.Div([
     dbc.Row([
@@ -123,7 +99,7 @@ layout = html.Div([
                     ], width={"size": 1, "offset": 1}),
                 ]),
                 html.Br(),
-            ]),
+            ], style={"background-color": "#F9FCFC"},),
         ], width={"size": 6, "offset": 0}),
         dbc.Col([
             dbc.Card([
@@ -149,7 +125,7 @@ layout = html.Div([
                     ], width={"size": 2, "offset": 1}),
                 ]),
                 html.Br(),
-            ]),
+            ], style={"background-color": "#F9FCFC"},),
         ], width={"size": 4, "offset": 0}),
     ]),
     html.Br(),
@@ -298,7 +274,8 @@ layout = html.Div([
                     color='primary',
                     solid_header=True,
                     elevation=4,
-                    width=12
+                    width=12,
+                    style={"background-color": "#F9FCFC"},
                 ),
                 dac.Box([
                         dac.BoxHeader(
@@ -344,7 +321,8 @@ layout = html.Div([
                     color='primary',
                     solid_header=True,
                     elevation=4,
-                    width=12
+                    width=12,
+                    style={"background-color": "#F9FCFC"},
                 ),
             ]),
         ], width=3),
