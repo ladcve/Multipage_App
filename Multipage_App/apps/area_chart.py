@@ -4,6 +4,7 @@ from dash_bootstrap_components._components.Row import Row
 import dash_core_components as dcc
 import dash_html_components as html
 from dash.dependencies import Input, Output, State
+from plotly.subplots import make_subplots
 from dash_table.Format import Format, Symbol
 import dash_admin_components as dac
 import plotly.graph_objects as go
@@ -97,7 +98,7 @@ layout = html.Div([
                             id='dpd-well-list-area',
                             options=[{'label': i, 'value': i} for i in well_list],
                             clearable=False,
-                            multi=True
+                            multi=False,
                         ),
                     ], width={"size": 3, "offset": 0}),
                     dbc.Col([
@@ -168,11 +169,42 @@ layout = html.Div([
                         html.Label(['Nombre del Gráfico'],style={'font-weight': 'bold', "text-align": "left"}),
                         dbc.Input(id="inp_areachart_name", placeholder="Type something...", type="text", style={'backgroundColor':'white'}),
                         html.Br(),
-                        html.Label(['Datos eje Y:'],style={'font-weight': 'bold', "text-align": "left"}),
+                        html.Label(['Datos eje Y1:'],style={'font-weight': 'bold', "text-align": "left"}),
                         dcc.Dropdown(
-                            id='dpd-column-list-ejey-area',
+                            id='dpd-column-list-ejey1-area',
                             clearable=False,
                             multi=True
+                        ),
+                        html.Label(['color:'],style={'font-weight': 'bold', "text-align": "left"}),
+                        dbc.Input(
+                            type="color",
+                            id="inp-color-y1",
+                            value="#1530E3",
+                            style={"width": 75, "height": 50},
+                        ),
+                        html.Br(),
+                        html.Label(['Datos eje Y2:'],style={'font-weight': 'bold', "text-align": "left"}),
+                        dcc.Dropdown(
+                            id='dpd-column-list-ejey2-area',
+                            clearable=False,
+                            multi=True
+                        ),
+                        html.Label(['color:'],style={'font-weight': 'bold', "text-align": "left"}),
+                        dbc.Input(
+                            type="color",
+                            id="inp-color-y2",
+                            value="#1530E3",
+                            style={"width": 75, "height": 50},
+                        ),
+                        html.Br(),
+                        html.Label(['Modo:'],style={'font-weight': 'bold', "text-align": "left"}),
+                        dcc.Dropdown(
+                            id='dpd-mode',
+                            options=[
+                                {'label': 'Línea', 'value': 'lines'},
+                                {'label': 'Nada', 'value': 'none'},
+                            ],
+                            value='lines'
                         ),
                         html.Br(),
                         html.Label(['Variable Calculadas:'],style={'font-weight': 'bold', "text-align": "left"}),
@@ -199,14 +231,20 @@ layout = html.Div([
     [Input("btn_show_areachart", "n_clicks"),
      Input('dpd-query-list-area', 'value'), 
      Input('dpd-well-list-area', 'value'),
-     Input('dpd-column-list-ejey-area', 'value'),
+     Input('dpd-column-list-ejey1-area', 'value'),
+     Input('dpd-column-list-ejey2-area', 'value'),
      Input('inp_areachart_name', 'date'),
+     Input('dpd-mode', 'value'),
+     Input('inp-color-y1', 'value'),
+     Input('inp-color-y2', 'value'),
      Input('dpd-var-list-areachart', 'value')])
-def update_bar_chart(n_clicks, file_name, well_name, columns_list, chart_title, var_list):
+def update_bar_chart(n_clicks, file_name, well_name, columns_list_y1, columns_list_y2, chart_title, type_mode, color_y1, color_y2, var_list):
 
+    color_axis_y1 = dict(hex=color_y1)
+    color_axis_y2 = dict(hex=color_y2)
     df = pd.DataFrame()
     changed_id = [p['prop_id'] for p in dash.callback_context.triggered][0]
-    fig = go.Figure()
+    fig = make_subplots(specs=[[{"secondary_y": True}]])
 
     if 'btn_show_areachart' in changed_id:
         con = sqlite3.connect(archivo)
@@ -232,21 +270,45 @@ def update_bar_chart(n_clicks, file_name, well_name, columns_list, chart_title, 
                         df[titulo] = evalu
                 
                 if well_name is not None:
-                    df= df[df['NOMBRE'].isin(well_name)]
+                    df= df[df['NOMBRE']==well_name]
 
+                i=1
                 selec_unit = unidades.set_index(['VARIABLE'])
-                for columnas_y in columns_list:
-                    var_title = selec_unit.loc[columnas_y]['GRAFICO']
-                    var_unit = selec_unit.loc[columnas_y]['UNIDAD']
+
+                for columnas_y1 in columns_list_y1:
+                    var_title = selec_unit.loc[columnas_y1]['GRAFICO']
+                    var_unit = selec_unit.loc[columnas_y1]['UNIDAD']
                     var_name = var_title + " " + var_unit
 
                     fig.add_trace(
-                        go.Scatter( x=df["FECHA"],
-                            y=df[columnas_y],
-                            fill='tozeroy',
+                        go.Scatter(x=df['FECHA'],
+                            y=df[columnas_y1],
                             name=var_name,
+                            mode=type_mode,
+                            line_color=color_axis_y1["hex"],
+                            yaxis= 'y'+ str(i),
+                            fill='tozeroy'
                         ),
+                        secondary_y=False,
                     )
+                    i=+1
+                for columnas_y2 in columns_list_y2:
+                    var_title = selec_unit.loc[columnas_y2]['GRAFICO']
+                    var_unit = selec_unit.loc[columnas_y2]['UNIDAD']
+                    var_name = var_title + " " + var_unit
+
+                    fig.add_trace(
+                        go.Scatter(x=df['FECHA'],
+                            y=df[columnas_y2],
+                            name=var_name,
+                            mode=type_mode,
+                            fill='tonexty',
+                            line_color=color_axis_y2["hex"],
+                            yaxis= 'y'+ str(i),
+                        ),
+                        secondary_y=True,
+                    )
+                    i=+1
 
                 fig.update_layout(
                     autosize=False,
@@ -285,7 +347,8 @@ def update_bar_chart(n_clicks, file_name, well_name, columns_list, chart_title, 
     return fig
 
 @app.callback(
-    Output('dpd-column-list-ejey-area','options'),
+    [Output('dpd-column-list-ejey1-area','options'),
+    Output('dpd-column-list-ejey2-area','options')],
     [Input('dpd-query-list-area', 'value'),
     Input('dpd-var-list-areachart', 'value')])
 def update_column_list(file_name, var_list):
@@ -319,35 +382,47 @@ def update_column_list(file_name, var_list):
                 columns = [{'label': i, 'value': i} for i in df.columns]
         con.close()
         
-    return columns
+    return columns, columns
 
 @app.callback(
     Output('save_message_areachart','children'),
     [Input('btn_save_areachart', 'n_clicks'),
     Input('dpd-query-list-area', 'value'),
-    Input('dpd-column-list-ejey-area', 'value'),
+    Input('dpd-column-list-ejey1-area', 'value'),
+    Input('dpd-column-list-ejey2-area', 'value'),
     Input('inp-ruta-areachart', 'value'),
+    Input('dpd-mode', 'value'),
+    Input('inp-color-y1', 'value'),
+    Input('inp-color-y2', 'value'),
     Input('dpd-var-list-areachart', 'value')]) 
-def save_area_chart(n_clicks, consulta, datos_y1, file_name, var_list ):
+def save_area_chart(n_clicks, consulta, datos_y1,datos_y2, file_name, type_mode, color_y1, color_y2, var_list ):
     mensaje=''
     changed_id = [p['prop_id'] for p in dash.callback_context.triggered][0]
-    if 'btn_save_linechart' in changed_id:
+    if 'btn_save_areachart' in changed_id:
         data = {}
         data['grafico'] = []
         data['grafico'].append({
             'consulta': consulta,
             'datos_y1': datos_y1,
-            'var_list': var_list,})
+            'datos_y2': datos_y2,
+            'var_list': var_list,
+            'type_mode': type_mode,
+            'color_y1': color_y1,
+            'color_y2': color_y2})
         if file_name:
             with open(TEMPLATE_DIRECTORY+file_name, 'w') as file:
                 json.dump(data, file, indent=4)
-            mensaje = 'Archivo guardado'
+            mensaje = 'Guardado'
     return mensaje
 
 @app.callback( [Output('inp-ruta-areachart', 'value'),
                 Output('dpd-query-list-area', 'value'),
-                Output('dpd-column-list-ejey-area', 'value'),
-                Output('dpd-var-list-areachart', 'value')],
+                Output('dpd-column-list-ejey1-area', 'value'),
+                Output('dpd-column-list-ejey2-area', 'value'),
+                Output('dpd-var-list-areachart', 'value'),
+                Output('dpd-mode', 'value'),
+                Output('inp-color-y1', 'value'),
+                Output('inp-color-y2', 'value'),],
               [Input('btn_open_areachart', 'filename'),
               Input('btn_open_areachart', 'contents')]
               )
@@ -355,7 +430,11 @@ def open_area_chart( list_of_names, list_of_contents):
     archivo = list_of_names
     consulta=[]
     datos_y1=[]
+    datos_y2=[]
     var_list=[]
+    type_mode='lines'
+    color_y1="#1530E3"
+    color_y2="#1530E3"
 
     if list_of_names is not None:
         print(list_of_names)
@@ -365,5 +444,8 @@ def open_area_chart( list_of_names, list_of_contents):
             for drop_values   in data['grafico']:
                 consulta = str(drop_values['consulta'])
                 datos_y1 = drop_values['datos_y1']
-                var_list = drop_values['var_list']
-    return archivo, consulta, datos_y1, var_list
+                datos_y2 = drop_values['datos_y2']
+                type_mode = drop_values['type_mode']
+                color_y1 = drop_values['color_y1']
+                color_y2 = drop_values['color_y2']
+    return archivo, consulta, datos_y1,datos_y2, var_list, type_mode, color_y1, color_y2

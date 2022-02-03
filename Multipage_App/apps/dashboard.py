@@ -213,18 +213,20 @@ layout = html.Div([
                         title="Comparativa"
                     ),
                 	dac.BoxBody(
-                    dash_table.DataTable(id="dt_compare_results",        
-                        style_as_list_view=True,
-                        style_cell={'padding': '5px', 'fontSize':15, 'font-family':'arial'},
-                        style_header={
-                            'backgroundColor': 'blue',
-                            'fontWeight': 'bold',
-                            'color': 'white',
-                            'font-family':'arial'
-                        },
-                        style_table={'overflowX': 'auto'},
-                        editable=False,),
-                    )		
+                        dbc.Spinner(
+                            dash_table.DataTable(id="dt_compare_results",        
+                                style_as_list_view=True,
+                                style_cell={'padding': '5px', 'fontSize':15, 'font-family':'arial'},
+                                style_header={
+                                    'backgroundColor': 'blue',
+                                    'fontWeight': 'bold',
+                                    'color': 'white',
+                                    'font-family':'arial'
+                                },
+                                style_table={'overflowX': 'auto'},
+                                editable=False,),
+                            )	
+                    ),
                 ],
                 color='primary',
                 solid_header=True,
@@ -483,7 +485,7 @@ def update_table_compare(n_clicks, report_date, file_name):
                     query +=  linea
 
                 df =pd.read_sql(query, con)
-                df =df.drop(['index'], axis=1)
+                #df =df.drop(['index'], axis=1)
                 df = df.loc[df['FECHA'] == report_date+" 00:00:00"]
 
     columns = [{'name': i, 'id': i, "deletable": True} for i in df.columns]

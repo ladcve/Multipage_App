@@ -58,7 +58,7 @@ well_list =pd.read_sql(query, con)
 well_list = well_list.sort_values('NOMBRE')['NOMBRE'].unique()
 
 #Crea dataframe con datos de produccion
-query = "SELECT NOMBRE, FECHA, TASA_GAS, ACUM_GAS FROM CIERRE_DIARIO_POZO WHERE TASA_GAS>0 ORDER BY FECHA "
+query = "SELECT NOMBRE, FECHA, TASA_GAS, ACUM_GAS, TASA_CONDENSADO, ACUM_CONDESADO FROM CIERRE_DIARIO_POZO WHERE TASA_GAS>0 ORDER BY FECHA "
 daily_prod =pd.read_sql(query, con)
 daily_prod['FECHA'] =  pd.to_datetime(daily_prod['FECHA'], format='%Y-%m-%d') 
 
@@ -96,7 +96,7 @@ layout = html.Div([
                         dbc.Button(html.Span(["Grabar ", html.I(className="fas fa-save ml-1")],style={'font-size':'1.5em','text-align':'center'}),
                          id="btn_save_forecast", color="success", className="mr-3"),
                         html.Div(id="save_message_forecast"),
-                    ], width={"size": 1, "offset": 1}),
+                    ], width={"size": 1, "offset": 2}),
                 ]),
                 html.Br(),
             ], style={"background-color": "#F9FCFC"},),
@@ -230,6 +230,16 @@ layout = html.Div([
                                         ],
                                         value='HYP',
                                         clearable=False,
+                                    ),                                    
+                                    html.Label(['Fase:'],style={'font-weight': 'bold', "text-align": "left"}),
+                                    dcc.Dropdown(
+                                        id='dpd-decline-data',
+                                        options=[
+                                            {'label': 'GAS', 'value': 'TASA_GAS'},
+                                            {'label': 'CONDENSADO', 'value': 'TASA_CONDENSADO'},
+                                        ],
+                                        value='TASA_GAS',
+                                        clearable=False,
                                     ),
                                     html.Br(),
                                     html.Label(['Periodo Estable: '],style={'font-weight': 'bold', "text-align": "left"}),
@@ -244,6 +254,28 @@ layout = html.Div([
                                         display_format='YYYY-MM-DD',
                                     ),
                                     html.Br(),
+                                    daq.ToggleSwitch(
+                                        id='ts-value-filter',
+                                        value=False,
+                                        label='Filtrar valores',
+                                        labelPosition='top'
+                                    ),
+                                ]),
+                            ]),	
+                            dbc.Row([
+                                dbc.Col([
+                                    html.Label(['Minimo:'],style={'font-weight': 'bold', "text-align": "left"}),
+                                    dbc.Input(id="inp-minimo", type="number", step=1, style={'backgroundColor':'white'}),
+                                    html.Br(),
+                                ]),
+                                dbc.Col([
+                                    html.Label(['Maximo:'],style={'font-weight': 'bold', "text-align": "left"}),
+                                    dbc.Input(id="inp-maximo", type="number", step=1, style={'backgroundColor':'white'}),
+                                    html.Br(),
+                                ]),
+                            ]),
+                            dbc.Row([
+                                dbc.Col([
                                     html.Br(),
                                     daq.ToggleSwitch(
                                         id='ts-end-days',
@@ -351,11 +383,15 @@ layout = html.Div([
      Input('dtp-end-date', 'date'),
      Input('ts-end-days', 'value'),
      Input('dtp_max_date', 'date'),
-     Input('inp-total-days', 'value')]) 
-def update_line_chart(n_clicks1, n_clicks2, well_name, decline_type, total_days,start_date, end_date, ts_days, decl_end_date, decl_days):
+     Input('dpd-decline-data', 'value'),
+     Input('inp-total-days', 'value'),
+     Input('ts-value-filter','value'),
+     Input('inp-minimo','value'),
+     Input('inp-maximo','value')]) 
+def update_line_chart(n_clicks1, n_clicks2, well_name, decline_type, total_days,start_date, end_date, ts_days, decl_end_date, decl_data, decl_days, filter_data, minimo, maximo):
 
     data_results = pd.DataFrame()
-    quer= ''
+    query= ''
     changed_id = [p['prop_id'] for p in dash.callback_context.triggered][0]
     fig1 = go.Figure()
     fig2 = go.Figure()
@@ -372,6 +408,13 @@ def update_line_chart(n_clicks1, n_clicks2, well_name, decline_type, total_days,
     max_decl_date = ''
     table_results = pd.DataFrame()
 
+   
+    #Listado de unidades por variables
+    con = sqlite3.connect(archivo)
+    query = "SELECT * FROM UNIDADES"
+    unidades =pd.read_sql(query, con)
+    selec_unit = unidades.set_index(['VARIABLE'])
+
 
     if 'btn_show_data_prod' in changed_id:
         decl_end_date = decl_end_date.replace("T00:00:00","")
@@ -381,21 +424,34 @@ def update_line_chart(n_clicks1, n_clicks2, well_name, decline_type, total_days,
         daily_prod_well = daily_prod[daily_prod['NOMBRE']==well_name]
         daily_prod_well.drop('NOMBRE', inplace=True, axis=1)
 
+        #Filtrado por rango de valores
+        if filter_data and minimo and maximo:
+            daily_prod_well = daily_prod_well[(daily_prod_well[decl_data] >= minimo) & (daily_prod_well[decl_data] <= maximo)]
+
+
         #daily_prod_well.set_index('FECHA', inplace=True)
         #daily_prod_well.index = pd.to_datetime(daily_prod_well.index)
         #daily_prod_well = daily_prod_well.resample('1M').sum()
         #daily_prod_well.reset_index(inplace=True)
 
+        var_title = selec_unit.loc[decl_data]['GRAFICO']
+        var_unit = selec_unit.loc[decl_data]['UNIDAD']
+        var_color = selec_unit.loc[decl_data]['COLOR']
+        var_name = var_title + " " + var_unit
+        color_axis = dict(hex=var_color)
+ 
         #Construye grafico de declinacion
         fig1.add_trace(
             go.Scatter(x=daily_prod_well['FECHA'],
-                y=daily_prod_well['TASA_GAS'],
+                y=daily_prod_well[decl_data],
                 mode='lines',
+                line_color=color_axis["hex"],
                 name='Datos de Produccion',
             ),
         ),
+
         fig1.update_xaxes(title_text="Fecha"),
-        fig1.update_yaxes(title_text="Tasa (SCF/d)", type="log"),
+        fig1.update_yaxes(title_text=var_name),
         fig1.update_layout(legend=dict(
                     orientation="h",
                     yanchor="bottom",
@@ -427,13 +483,20 @@ def update_line_chart(n_clicks1, n_clicks2, well_name, decline_type, total_days,
             #Filtrado por perido estable
             df_filter = daily_prod_well[(daily_prod_well['FECHA'] > start_date) & (daily_prod_well['FECHA'] < end_date)]
 
-            raw_q = daily_prod_well['TASA_GAS']
+            #Filtrado por rango de valores
+            if filter_data and minimo and maximo:
+                df_filter = df_filter[(df_filter[decl_data] >= minimo) & (df_filter[decl_data] <= maximo)]
+
+            raw_q = daily_prod_well[decl_data]
             ti = df_filter['FECHA'].min()
 
             t = df_filter['FECHA']
-            q = df_filter['TASA_GAS']
-            acum_gas = daily_prod_well["ACUM_GAS"].max()
+            q = df_filter[decl_data]
 
+            if decl_data=='TASA_GAS':
+                acum_gas = daily_prod_well["ACUM_GAS"].max()
+            if decl_data=='TASA_CONDENSADO':
+                acum_gas = daily_prod_well["ACUM_CONDESADO"].max()
 
             #Define fix variables
             if ts_days:
@@ -506,8 +569,7 @@ def update_line_chart(n_clicks1, n_clicks2, well_name, decline_type, total_days,
             elif (decline_type=="ARM"):
                 table_results['DECLINACION']="ARMONICA"     
 
-            table_results['FECHA']=timedelta(days=t_forecast)+MAX_FECHA
-
+            #table_results['FECHA']=timedelta(days=t_forecast)+MAX_FECHA
 
             #Construye grafico de declinacion
             fig1.add_trace(
@@ -614,7 +676,7 @@ def save_decline(n_clicks, tipo_decl, start_date, end_date, file_name, decl_days
               )
 def open_decline( n_clicks, list_of_names, list_of_contents):
     archivo = list_of_names
-    declinacion=['HYP']
+    declinacion='HYP'
     start_date=MAX_FECHA - timedelta(days=30)
     end_date=MAX_FECHA
     decl_days=3000

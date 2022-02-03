@@ -82,11 +82,11 @@ file_name = ''
 tab_height = '2vh'
 
 layout = html.Div([
-    dbc.Row([
-        dbc.Col([
+    dbc.Navbar(
+        [
+            dbc.Col([
             #********************** Cabecera ******************
             #
-            dbc.Card([
                 dbc.Row([
                     dbc.Col([
                         html.Label(['Consulta:'],style={'font-weight': 'bold', "text-align": "left"}),
@@ -108,20 +108,15 @@ layout = html.Div([
                         ),
                     ], width={"size": 4, "offset": 0}),
                 ]),
-                html.Br(),
-            ], style={"background-color": "#F9FCFC"},),
-        ], width={"size": 6, "offset": 0}),
-        #********************** Plantilla ******************
-        #
-        dbc.Col([
-            dbc.Card([
+            ], width={"size": 6, "offset": 0}),
+            dbc.Col([
                 dbc.Row([
                     dbc.Col([
                         html.Label(['Nombre Plantilla:'],style={'font-weight': 'bold', "text-align": "left"}),
                         dbc.Input(id="inp-ruta-linechart", placeholder="Type something...", type="text", style={'backgroundColor':'white'}),
                     ], width={"size": 3, "offset": 1}),
                      dbc.Col([
-                        html.Br(),
+                        html.Label(['Grafico Simple:'],style={'font-weight': 'bold', "text-align": "left"}),
                         dcc.Upload(
                             dbc.Button(
                                 html.Span(["Abrir ", html.I(className="fas fa-upload ml-1")],style={'font-size':'1.5em','text-align':'center'}),
@@ -130,32 +125,43 @@ layout = html.Div([
                             id='btn_open_linechart',
                             multiple=False
                         ),
-                    ], width={"size": 3, "offset": 0}),
+                    ], width={"size": 2, "offset": 0}),
                     dbc.Col([
                         html.Br(),
-                        dbc.Button(html.Span(["simple ", html.I(className="fas fa-save ml-1")],style={'font-size':'1.5em','text-align':'center'}),
+                        dbc.Button(html.Span(["Guardar ", html.I(className="fas fa-save ml-1")],style={'font-size':'1.5em','text-align':'center'}),
                             id="btn_save_linechart", 
                             n_clicks=0, 
                             color="primary", 
                             className="mr-3"
                         ),
                         html.Div(id="save_message_linechart"),
-                    ]),
+                    ], width={"size": 2, "offset": 0}),
+                    dbc.Col([
+                        html.Label(['Grafico Triple:'],style={'font-weight': 'bold', "text-align": "left"}),
+                        dbc.Button(html.Span(["Abrir ", html.I(className="fas fa-save ml-1")],style={'font-size':'1.5em','text-align':'center'}),
+                            id="btn_open_triplechart", 
+                            n_clicks=0, 
+                            color="primary", 
+                            className="mr-3"
+                        ),
+                    ], width={"size": 2, "offset": 0}),
                     dbc.Col([
                         html.Br(),
-                        dbc.Button(html.Span(["Triple ", html.I(className="fas fa-save ml-1")],style={'font-size':'1.5em','text-align':'center'}),
+                        dbc.Button(html.Span(["Guardar ", html.I(className="fas fa-save ml-1")],style={'font-size':'1.5em','text-align':'center'}),
                             id="btn_save_Triplechart", 
                             n_clicks=0, 
                             color="primary", 
                             className="mr-3"
                         ),
                         html.Div(id="save_message_Triplechart"),
-                    ]),
+                    ], width={"size": 1, "offset": 0}),
                 ]),
                 html.Br(),
-            ], style={"background-color": "#F9FCFC"},),
-        ], width={"size": 6, "offset": 0}),
-    ]),
+            ], width={"size": 6, "offset": 0}),
+        ],
+        color="#F9FCFC",
+        dark=True,
+    ),
     html.Br(),
     dcc.Tabs(style={
         'width': '50%',
@@ -220,7 +226,7 @@ layout = html.Div([
                                     ),
                                     html.Br(),
                                     dbc.Card([
-                                        dbc.CardHeader(html.Label(['Eje Primario'],style={'font-weight': 'bold', "text-align": "left"})),
+                                        dbc.CardHeader(html.Label(['Eje Y Primario'],style={'font-weight': 'bold', "text-align": "left"})),
                                         dbc.CardBody([
                                             dbc.Row([
                                                 dbc.Col([
@@ -261,7 +267,7 @@ layout = html.Div([
                                         ]),
                                     ]),
                                     dbc.Card([
-                                        dbc.CardHeader(html.Label(['Eje Secundario'],style={'font-weight': 'bold', "text-align": "left"})),
+                                        dbc.CardHeader(html.Label(['Eje Y Secundario'],style={'font-weight': 'bold', "text-align": "left"})),
                                         dbc.CardBody([
                                             dbc.Row([
                                                 dbc.Col([
@@ -317,9 +323,18 @@ layout = html.Div([
                                     dbc.Card([
                                         dbc.CardHeader(html.Label(['Eventos'],style={'font-weight': 'bold', "text-align": "left"})),
                                         dbc.CardBody([
+                                            dbc.Col([
+                                                    html.Label(['color fondo:'],style={'font-weight': 'bold', "text-align": "left"}),
+                                                    dbc.Input(
+                                                        type="color",
+                                                        id="inp-color-annotation",
+                                                        value="#ecebda",
+                                                        style={"width": 75, "height": 50},
+                                                    ),
+                                                ]),
                                             daq.ToggleSwitch(
                                                 id='ts-annotation',
-                                                value=False,
+                                                value=True,
                                                 label='Mostrar Anotaciones',
                                                 labelPosition='top'
                                             ),
@@ -768,14 +783,16 @@ layout = html.Div([
      Input('cb_clear_data_line', 'value'),
      Input('dpd-LineStile-y1', 'value'),
      Input('dpd-LineStile-y2', 'value'),
+     Input('inp-color-annotation', 'value')
      ])
-def update_line_chart(n_clicks, file_name, well_name, column_list_y1, column_list_y2, show_annot, annot_data, var_list, color_y1, color_y2, clear_data, stile_y1, stile_y2):
+def update_line_chart(n_clicks, file_name, well_name, column_list_y1, column_list_y2, show_annot, annot_data, var_list, color_y1, color_y2, clear_data, stile_y1, stile_y2, anno_color):
 
     changed_id = [p['prop_id'] for p in dash.callback_context.triggered][0]
     fig = make_subplots(specs=[[{"secondary_y": True}]])
     
     if 'btn_show_chart' in changed_id:
-        fig = create_chart(archivo, unidades, file_name, well_name, column_list_y1, column_list_y2, show_annot, annot_data, var_list, color_y1, color_y2, clear_data, stile_y1, stile_y2)
+        if column_list_y1 or column_list_y2:
+            fig = create_chart(archivo, unidades, file_name, well_name, column_list_y1, column_list_y2, show_annot, annot_data, var_list, color_y1, color_y2, clear_data, stile_y1, stile_y2, anno_color)
     return fig
 
 @app.callback(
@@ -818,9 +835,9 @@ def update_triple_chart(n_clicks, file_name, well_name, cols_chart1_y1, cols_cha
     fig3 = {}
     
     if 'btn_show_chart' in changed_id:
-        fig1 = create_chart(archivo,  unidades, file_name, well_name, cols_chart1_y1, cols_chart1_y2, False, [], var_list1, color_chart1_y1, color_chart1_y2, clear_data_chart1, stile_chart1_y1, stile_chart1_y2)
-        fig2 = create_chart(archivo,  unidades, file_name, well_name, cols_chart2_y1, cols_chart2_y2, False, [], var_list2, color_chart2_y1, color_chart2_y2, clear_data_chart2, stile_chart2_y1, stile_chart2_y2)
-        fig3 = create_chart(archivo,  unidades, file_name, well_name, cols_chart3_y1, cols_chart3_y2, False, [], var_list3, color_chart3_y1, color_chart3_y2, clear_data_chart3, stile_chart3_y1, stile_chart3_y2)
+        fig1 = create_chart(archivo,  unidades, file_name, well_name, cols_chart1_y1, cols_chart1_y2, False, [], var_list1, color_chart1_y1, color_chart1_y2, clear_data_chart1, stile_chart1_y1, stile_chart1_y2, '#ecebda')
+        fig2 = create_chart(archivo,  unidades, file_name, well_name, cols_chart2_y1, cols_chart2_y2, False, [], var_list2, color_chart2_y1, color_chart2_y2, clear_data_chart2, stile_chart2_y1, stile_chart2_y2, '#ecebda')
+        fig3 = create_chart(archivo,  unidades, file_name, well_name, cols_chart3_y1, cols_chart3_y2, False, [], var_list3, color_chart3_y1, color_chart3_y2, clear_data_chart3, stile_chart3_y1, stile_chart3_y2, '#ecebda')
 
     return fig1, fig2, fig3
 
@@ -904,9 +921,9 @@ def open_linechart( list_of_names, list_of_contents):
     var_list=[]
     color_y1="#1530E3"
     color_y2="#1530E3"
-    text_annot=[]
-    stile_y1=[]
-    stile_y2=[]
+    text_annot=False
+    stile_y1='solid'
+    stile_y2='solid'
 
     changed_id = [p['prop_id'] for p in dash.callback_context.triggered][0]
     if 'btn_open_linechart' in changed_id:

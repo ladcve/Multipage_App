@@ -253,12 +253,15 @@ def update_bar_chart(n_clicks, file_name, well_name, columns_list, dtp_start_dat
                         evalu = eval(ecuacion)
                         df[titulo] = evalu
                 
+                print(df)
                 if well_name is not None and columns_list:
                     df= df[df['NOMBRE'].isin(well_name)]
-                    if staked_columns=='STC':
-                        fig = px.bar(df, x="NOMBRE", y=columns_list,  height=700,  title=chart_title, barmode='stack', animation_frame="FECHA" )
-                    else:
-                        fig = px.bar(df, x="NOMBRE", y=columns_list,  height=700,  title=chart_title, barmode='group', animation_frame="FECHA")
+                    #Se asegura que el dataframe tenga datos
+                    if len(df)>0:
+                        if staked_columns=='STC':
+                            fig = px.bar(df, x="NOMBRE", y=columns_list,  height=700,  title=chart_title, barmode='stack', animation_frame="FECHA" )
+                        else:
+                            fig = px.bar(df, x="NOMBRE", y=columns_list,  height=700,  title=chart_title, barmode='group', animation_frame="FECHA")
     return fig
 
 @app.callback(
@@ -282,7 +285,7 @@ def update_column_list(file_name, var_list):
                 for linea in contenido:
                     query +=  linea
                 df =pd.read_sql(query, con)
-                df =df.drop(['index', 'NOMBRE', 'FECHA'], axis=1)
+                #df =df.drop(['NOMBRE', 'FECHA'], axis=1)
 
             if var_list is not None:
                 for var in var_list:
