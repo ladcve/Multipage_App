@@ -347,9 +347,12 @@ def display_dropdowns(n_clicks, _, clear_data, file_name,  children):
 
                 query += " ORDER BY FECHA"
                 df =pd.read_sql(query, con)
+                df.reset_index(drop=True, inplace=True)
                 
-                default_column_y = df.columns[3]
-                
+                if  df.columns[2]=='FECHA':
+                    default_column_y = df.columns[3]
+                else:
+                    default_column_y = df.columns[2]
 
             default_well = well_list[0]
             new_element = html.Div(
@@ -412,11 +415,21 @@ def display_output(well, column_y, y_options, clear_data, file_name):
             for linea in contenido:
                 query +=  linea 
 
+            #Filtrar solo la primera fila para obtener los nombre de column
+            query += " LIMIT 1"
+
             df =pd.read_sql(query, con)
-            options=[{'label': i, 'value': i} for i in df.columns]
+            if  df.columns[2]=='FECHA':
+                options=[{'label': i, 'value': i} for i in df.columns[3:]]
+            else:
+                options=[{'label': i, 'value': i} for i in df.columns[2:]]
 
         if column_y not in df.columns:
-            column_y = df.columns[3]
+            if  df.columns[2]=='FECHA':
+                column_y = df.columns[3]
+            else:
+                column_y = df.columns[2]
+            
          
     return create_figure(well, column_y, clear_data, file_name), options
 
@@ -485,8 +498,18 @@ def update_table_compare(n_clicks, report_date, file_name):
                     query +=  linea
 
                 df =pd.read_sql(query, con)
-                #df =df.drop(['index'], axis=1)
-                df = df.loc[df['FECHA'] == report_date+" 00:00:00"]
+
+                #Busca el index como columna en el dataframe
+                #si existe lo borra
+                index_cols = [col for col in df.columns if 'index' in col]
+                if index_cols:
+                    df =df.drop(['index'], axis=1)
+                    
+                if query.find("PRUEBAS_POZO")>-1:
+                    df = df[df['FECHA']<= report_date+" 00:00:00"]
+                    df = df.groupby('NOMBRE').nth(-1)
+                else:
+                    df = df.loc[df['FECHA'] == report_date+" 00:00:00"]
 
     columns = [{'name': i, 'id': i, "deletable": True} for i in df.columns]
     data = df.to_dict('records')

@@ -27,12 +27,8 @@ archivo = ruta +  basededatos
 con = sqlite3.connect(archivo)
 
 #Listado de pozos activos
-query = "SELECT FECHA, PRESION_FONDO_A FROM LECTURAS_POZO WHERE NOMBRE='Perla-10'"
+query = "SELECT NOMBRE, FECHA, TASA_GAS FROM PRUEBAS_POZO"
 data =pd.read_sql(query, con)
-print(data)
-
-data.set_index('FECHA', inplace=True)
-data.index = pd.to_datetime(data.index)
-data = data.resample('1M').sum()
-
-print(data)
+#print(data.groupby('NOMBRE')['PRESION_FONDO_A'].agg(['last']))
+results = data[data['FECHA']<='2021-11-01 00:00:00']
+print(results.groupby('NOMBRE').nth(-1))

@@ -777,7 +777,7 @@ layout = html.Div([
      Input('dpd-column-list-y2', 'value'),
      Input('ts-annotation', 'value'), 
      Input('dt_table_event', 'data'),
-     Input('dpd-var-list-chart', 'data'),
+     Input('dpd-var-list-chart', 'value'),
      Input('inp-color-list-y1', 'value'),
      Input('inp-color-list-y2', 'value'),
      Input('cb_clear_data_line', 'value'),
