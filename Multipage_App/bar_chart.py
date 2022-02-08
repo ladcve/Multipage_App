@@ -4,9 +4,9 @@ from dash_bootstrap_components._components.Row import Row
 import dash_core_components as dcc
 import dash_html_components as html
 from dash.dependencies import Input, Output, State
-from dash_html_components.Br import Br
+from dash_table.Format import Format, Symbol
+import dash_admin_components as dac
 import plotly.graph_objects as go
-import plotly.express as px
 import plotly.express as px
 import dash_table
 import sqlite3
@@ -25,6 +25,7 @@ import base64
 import os
 
 from app import app 
+from library import search_unit, search_list, search_calcv
 
 #Variable con la ruta para salvar los querys
 QUERY_DIRECTORY = "./querys"
@@ -78,7 +79,7 @@ layout = html.Div([
                             clearable=False,
                             multi=False,
                         ),
-                    ], width={"size": 3, "offset": 0}),
+                    ], width={"size": 2, "offset": 1}),
                     dbc.Col([
                         html.Label(['Pozo:'],style={'font-weight': 'bold', "text-align": "left"}),
                         dcc.Dropdown(
@@ -87,7 +88,7 @@ layout = html.Div([
                             clearable=False,
                             multi=True
                         ),
-                    ], width={"size": 4, "offset": 0}),
+                    ], width={"size": 3, "offset": 0}),
                     dbc.Col([
                         html.Label(['Fecha: '],style={'font-weight': 'bold', "text-align": "left"}),
                         dcc.DatePickerRange(
@@ -99,26 +100,16 @@ layout = html.Div([
                             display_format='YYYY-MM-DD',
                             style={'backgroundColor':'white'},
                         )
-                    ]),
-                ]),
-                html.Br(),
-            ]),
-        ], width={"size": 8, "offset": 0}),
-        dbc.Col([
-            dbc.Card([
-                dbc.Row([
+                    ], width={"size": 3, "offset": 0}),
                     dbc.Col([
                         html.Br(),
-                        dbc.Button("Mostrar Gráfico", id="btn_show_barchart", color="success", className="mr-3"),
-                    ], width={"size": 1, "offset": 1}),
-                    dbc.Col([
-                        html.Br(),
-                        dbc.Button("Exportar Imagen", id="btn_export_img", color="warning", className="mr-3"),
-                    ], width={"size": 1, "offset": 3}),
+                        dbc.Button(html.Span(["Mostrar ", html.I(className="fas fa-chart-bar ml-1")],style={'font-size':'1.5em','text-align':'center'}),
+                         id="btn_show_barchart", color="success", className="mr-3"),
+                    ], width={"size": 1, "offset": 0}),
                 ]),
                 html.Br(),
-            ]),
-        ]),
+            ], style={"background-color": "#F9FCFC"},),
+        ], width={"size": 12, "offset": 0}),
     ]),
     html.Br(),
     dbc.Row([
@@ -126,43 +117,58 @@ layout = html.Div([
             dbc.Card([
                 dbc.Row([
                     dbc.Col([
-                        html.Label(['Nombre Archivo:'],style={'font-weight': 'bold', "text-align": "left"}),
+                        html.Label(['Nombre Plantilla:'],style={'font-weight': 'bold', "text-align": "left"}),
                         dbc.Input(id="inp-ruta-barchart", placeholder="Type something...", type="text", style={'backgroundColor':'white'}),
                     ], width={"size": 3, "offset": 1}),
                      dbc.Col([
                         html.Br(),
                         dcc.Upload(
-                            dbc.Button("Cargar Template", n_clicks=0, color="warning", className="mr-3"),
+                            dbc.Button(html.Span(["Abrir ", html.I(className="fas fa-upload ml-1")],style={'font-size':'1.5em','text-align':'center'}),
+                             n_clicks=0, color="primary", className="mr-3"),
                             id='btn_open_barchart',
                             multiple=False
                         ),
                     ], width={"size": 3, "offset": 0}),
                     dbc.Col([
                         html.Br(),
-                        dbc.Button("Grabar Template", id="btn_save_barchart", n_clicks=0, color="warning", className="mr-3"),
+                        dbc.Button(html.Span(["Grabar ", html.I(className="fas fa-save ml-1")],style={'font-size':'1.5em','text-align':'center'}),
+                         id="btn_save_barchart", n_clicks=0, color="primary", className="mr-3"),
                         html.Div(id="save_message_barchart"),
                     ]),
                 ]),
                 html.Br(),
-            ]),
+            ], style={"background-color": "#F9FCFC"},),
         ], width={"size": 6, "offset": 0}),
     ]),
     html.Br(),
     dbc.Row([
         dbc.Col([
-            dbc.Card([
-                dbc.CardHeader(html.Label(['Gráfico de Barras'],style={'font-weight': 'bold', "text-align": "left"})),
-                dbc.CardBody([
+            dac.Box([
+                dac.BoxHeader(
+                    collapsible = False,
+                    closable = False,
+                    title="Gráfico de Barra"
+                ),
+                dac.BoxBody(
                     dbc.Spinner(
-                        dcc.Graph(id='cht-bar-chart',style={"height": 600, "width":1000}),
+                        dcc.Graph(id='cht-bar-chart', style={"width": "100%"}),
                     ),
-                ])
-            ]),
+                ),	
+                ],
+                color='primary',
+                solid_header=True,
+                elevation=4,
+                width=12
+            ),
         ], width=9),
         dbc.Col([
-            dbc.Card([
-                dbc.CardHeader(html.Label(['Opciones'],style={'font-weight': 'bold', "text-align": "left"})),
-                dbc.CardBody([
+            dac.Box([
+                dac.BoxHeader(
+                    collapsible = False,
+                    closable = False,
+                    title="Opciones"
+                ),
+                dac.BoxBody([
                     html.Label(['Nombre del Gráfico'],style={'font-weight': 'bold', "text-align": "left"}),
                     dbc.Input(id="inp_barchart_name", placeholder="Type something...", type="text", style={'backgroundColor':'white'}),
                     html.Br(),
@@ -181,19 +187,21 @@ layout = html.Div([
                         clearable=False,
                         multi=True
                     ),
-                ]),
-                dbc.Card([
-                    dbc.CardBody([
-                        html.Label(['Variable Calculadas:'],style={'font-weight': 'bold', "text-align": "left"}),
-                        dcc.Dropdown(
-                            id='dpd-var-list-barchart',
-                            options=[{'label': i, 'value': i} for i in var_list],
-                            clearable=False,
-                            multi=True,
-                        ),
-                    ])
-                ]),
-            ]),
+                    html.Label(['Variable Calculadas:'],style={'font-weight': 'bold', "text-align": "left"}),
+                    dcc.Dropdown(
+                        id='dpd-var-list-barchart',
+                        options=[{'label': i, 'value': i} for i in var_list],
+                        clearable=False,
+                        multi=True,
+                    ),
+                ]),	
+                ],
+                color='primary',
+                solid_header=True,
+                elevation=4,
+                width=12,
+                style={"background-color": "#F9FCFC"},
+            ),
         ], width=3),
     ]),
 ])
@@ -219,34 +227,40 @@ def update_bar_chart(n_clicks, file_name, well_name, columns_list, dtp_start_dat
     fig = {}
     if 'btn_show_barchart' in changed_id:
         con = sqlite3.connect(archivo)
-        query = "SELECT * FROM VARIABLES"
-        variables =pd.read_sql(query, con)
-        if file_name is not None:
+        query= ''
+        if file_name:
             with open(os.path.join(QUERY_DIRECTORY, file_name)) as f:
                 contenido = f.readlines()
-            if contenido is not None:
-                if fecha_inicio is not None:
+            if contenido:
+                if fecha_inicio:
                     for linea in contenido:
-                        query =  linea + " WHERE date(FECHA)>='"+fecha_inicio+"' AND  date(FECHA)<='"+fecha_fin+"' ORDER BY FECHA"
+                        query +=  linea
+                    if query.find("WHERE")>0:
+                        query += " AND date(FECHA)>='"+fecha_inicio+"' AND  date(FECHA)<='"+fecha_fin+"' ORDER BY FECHA"
+                    else:
+                        query += " WHERE date(FECHA)>='"+fecha_inicio+"' AND  date(FECHA)<='"+fecha_fin+"' ORDER BY FECHA"
                 else:
                     for linea in contenido:
                         query +=  linea 
                 df =pd.read_sql(query, con)
                 df =df.sort_values("FECHA")
-                if var_list is not None:
+                if var_list:
                     for var in var_list:
-                        selec_var=variables.loc[variables['NOMBRE']==var]
-                        ecuacion = selec_var.iloc[0]['ECUACION']
-                        titulo = selec_var.iloc[0]['TITULO']
-                        evalu = eval(ecuacion)
-                        df[titulo] = evalu
-                
+                        requisitos_list, titulo, ecuacion = search_calcv( archivo, var)
+                        if search_list(requisitos_list, df.columns.tolist()):
+                            df[titulo] =eval(ecuacion)
+                            var_name = titulo
+
                 if well_name is not None and columns_list:
                     df= df[df['NOMBRE'].isin(well_name)]
-                    if staked_columns=='STC':
-                        fig = px.bar(df, x="NOMBRE", y=columns_list, title=chart_title, animation_frame="FECHA", animation_group="NOMBRE")
-                    else:
-                        fig = px.bar(df, x="NOMBRE", y=columns_list, title=chart_title,  barmode="group",animation_frame="FECHA", animation_group="NOMBRE")
+                    #Se asegura que el dataframe tenga datos
+                    if len(df)>0:
+                        if staked_columns=='STC':
+                            fig = px.bar(df, x="NOMBRE", y=columns_list,  height=700,  
+                            title=chart_title, barmode='stack', animation_frame="FECHA" )
+                        else:
+                            fig = px.bar(df, x="NOMBRE", y=columns_list,  height=700,  
+                            title=chart_title, barmode='group', animation_frame="FECHA")
     return fig
 
 @app.callback(
@@ -256,30 +270,29 @@ def update_bar_chart(n_clicks, file_name, well_name, columns_list, dtp_start_dat
 def update_column_list(file_name, var_list):
 
     df = pd.DataFrame()
+    con = sqlite3.connect(archivo)
     columns = [{'label': i, 'value': i} for i in []]
-    quer= ''
     changed_id = [p['prop_id'] for p in dash.callback_context.triggered][0]
-    if 'dpd-query-list' in changed_id:
-        con = sqlite3.connect(archivo)
-        query = "SELECT * FROM VARIABLES"
-        variables =pd.read_sql(query, con)
+    if 'dpd-query-list-bar' in changed_id or 'dpd-var-list-barchart' in changed_id:
+        query= ''
         if file_name:
             with open(os.path.join(QUERY_DIRECTORY, file_name)) as f:
                 contenido = f.readlines()
                 for linea in contenido:
-                    query =  linea
+                    query +=  linea
                 df =pd.read_sql(query, con)
-                df =df.drop(['index', 'NOMBRE', 'FECHA'], axis=1)
+                #df =df.drop(['NOMBRE', 'FECHA'], axis=1)
 
             if var_list is not None:
                 for var in var_list:
-                    selec_var=variables.loc[variables['NOMBRE']==var]
-                    ecuacion = selec_var.iloc[0]['ECUACION']
-                    titulo = selec_var.iloc[0]['TITULO']
-                    evalu = eval(ecuacion)
-                    df[titulo] = evalu
+                    requisitos_list, titulo, ecuacion = search_calcv( archivo, var)
+                    if search_list(requisitos_list, df.columns.tolist()):
+                        df[titulo] =eval(ecuacion)
+                        var_name = titulo
 
             columns = [{'label': i, 'value': i} for i in df.columns]
+
+    con.close()
 
     return columns
 
@@ -289,17 +302,19 @@ def update_column_list(file_name, var_list):
     Input('dpd-query-list-bar', 'value'),
     Input('dpd-column-list', 'value'),
     Input('inp-ruta-barchart', 'value'),
-    Input('dpd-var-list-barchart', 'value')]) 
-def save_barchart(n_clicks, consulta, datos_y1, file_name, var_list ):
+    Input('dpd-var-list-barchart', 'value'),
+    Input('inp_barchart_name', 'value')]) 
+def save_bar_chart(n_clicks, consulta, datos_y1, file_name, var_list, chart_title ):
     mensaje=''
     changed_id = [p['prop_id'] for p in dash.callback_context.triggered][0]
-    if 'btn_save_linechart' in changed_id:
+    if 'btn_save_barchart' in changed_id:
         data = {}
         data['grafico'] = []
         data['grafico'].append({
             'consulta': consulta,
             'datos_y1': datos_y1,
-            'var_list': var_list,})
+            'var_list': var_list,
+            'chart_title': chart_title,})
         if file_name:
             with open(CHART_DIRECTORY+file_name, 'w') as file:
                 json.dump(data, file, indent=4)
@@ -309,23 +324,28 @@ def save_barchart(n_clicks, consulta, datos_y1, file_name, var_list ):
 @app.callback( [Output('inp-ruta-barchart', 'value'),
                 Output('dpd-query-list-bar', 'value'),
                 Output('dpd-column-list', 'value'),
-                Output('dpd-var-list-barchart', 'value')],
+                Output('dpd-var-list-barchart', 'value'),
+                Output('inp_barchart_name', 'value')],
               [Input('btn_open_barchart', 'filename'),
               Input('btn_open_barchart', 'contents')]
               )
-def open_barchart( list_of_names, list_of_contents):
+def open_bar_chart( list_of_names, list_of_contents):
     archivo = list_of_names
     consulta=[]
     datos_y1=[]
     var_list=[]
+    chart_title=[]
 
-    if list_of_names is not None:
-        print(list_of_names)
-        archivo = list_of_names
-        with open(CHART_DIRECTORY+archivo) as file:
-            data = json.load(file)
-            for drop_values   in data['grafico']:
-                consulta = str(drop_values['consulta'])
-                datos_y1 = drop_values['datos_y1']
-                var_list = drop_values['var_list']
-    return archivo, consulta, datos_y1, var_list
+    changed_id = [p['prop_id'] for p in dash.callback_context.triggered][0]
+    if 'btn_open_barchart' in changed_id:
+        if list_of_names is not None:
+            print(list_of_names)
+            archivo = list_of_names
+            with open(CHART_DIRECTORY+archivo) as file:
+                data = json.load(file)
+                for drop_values   in data['grafico']:
+                    consulta = str(drop_values['consulta'])
+                    datos_y1 = drop_values['datos_y1']
+                    var_list = drop_values['var_list']
+                    chart_title = drop_values['chart_title']
+    return archivo, consulta, datos_y1, var_list, chart_title   

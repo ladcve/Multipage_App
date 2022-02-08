@@ -156,7 +156,7 @@ def create_figure(column_x, column_y1, column_y2, well, file_name, color_y1, col
             color_axis_y1 = dict(hex=var_color)
             
         fig.add_trace(
-            go.Scatter(x=df['FECHA'],
+            go.Scatter(x=df[column_x],
                 y=df[column_y1],
                 name=var_name,
                 line_color=color_axis_y1["hex"],
@@ -171,7 +171,7 @@ def create_figure(column_x, column_y1, column_y2, well, file_name, color_y1, col
             color_axis_y2 = dict(hex=var_color)
 
         fig.add_trace(
-            go.Scatter(x=df['FECHA'],
+            go.Scatter(x=df[column_x],
                 y=df[column_y2],
                 name=var_name,
                 line_color=color_axis_y2["hex"],
@@ -222,8 +222,7 @@ def display_dropdowns(n_clicks, _,  well, file_name, children):
                 df = df.query("NOMBRE == '{}'".format(well))
                 df =df.sort_values("FECHA")
             column_name_list = df.columns.values.tolist()
-            #default_column_y1 = column_name_list[3]
-            #default_column_y2 = column_name_list[4]
+
             default_color = "#1530E3"
             if  df.columns[2]=='FECHA':
                 default_column_y1=column_name_list[3]

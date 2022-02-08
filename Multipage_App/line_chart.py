@@ -854,9 +854,7 @@ def update_triple_chart(n_clicks, file_name, well_name, cols_chart1_y1, cols_cha
      Input('dpd-var-list-chart', 'value')])
 def update_column_list(file_name, var_list):
 
-    df = pd.DataFrame()
     columns = [{'label': i, 'value': i} for i in []]
-    query= ''
     changed_id = [p['prop_id'] for p in dash.callback_context.triggered][0]
     if 'dpd-consulta-lista' in changed_id or 'dpd-var-list-chart' in changed_id:
         columns = update_columns_list(archivo, file_name, var_list)
