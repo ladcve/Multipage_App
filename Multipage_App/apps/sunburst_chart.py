@@ -25,6 +25,7 @@ import base64
 import os
 
 from app import app 
+from library import search_unit, search_list, search_calcv
 
 #Variable con la ruta para salvar los querys
 QUERY_DIRECTORY = "./querys"
@@ -240,8 +241,6 @@ def update_pie_chart(n_clicks, file_name, well_name, columns_list, dtp_fecha, ch
     fig = go.Figure()
     if 'btn_show_piechart' in changed_id:
         con = sqlite3.connect(archivo)
-        query = "SELECT * FROM VARIABLES"
-        variables =pd.read_sql(query, con)
         query=''
         if file_name is not None:
             with open(os.path.join(QUERY_DIRECTORY, file_name)) as f:
@@ -250,7 +249,11 @@ def update_pie_chart(n_clicks, file_name, well_name, columns_list, dtp_fecha, ch
                 if fecha is not None:
                     for linea in contenido:
                         query +=  linea 
-                    query += " WHERE date(FECHA)='"+fecha+"'"
+
+                    if query.find("WHERE")>-1 or query.find("where")>-1:
+                        query += " AND date(FECHA)='"+fecha+"'"
+                    else:
+                        query += " WHERE date(FECHA)='"+fecha+"'"
                 else:
                     for linea in contenido:
                         query +=  linea
@@ -258,13 +261,14 @@ def update_pie_chart(n_clicks, file_name, well_name, columns_list, dtp_fecha, ch
                 df =df.sort_values("FECHA")
                 if well_name is not None:
                     df= df[df['NOMBRE'].isin(well_name)]
+
+            if columns_list:
                 if var_list is not None:
                     for var in var_list:
-                        selec_var=variables.loc[variables['NOMBRE']==var]
-                        ecuacion = selec_var.iloc[0]['ECUACION']
-                        titulo = selec_var.iloc[0]['TITULO']
-                        evalu = eval(ecuacion)
-                        df[titulo] = evalu
+                        requisitos_list, titulo, ecuacion = search_calcv( archivo, var)
+                        if search_list(requisitos_list, df.columns.tolist()):
+                            df[titulo] =eval(ecuacion)
+                            var_name = titulo
 
                 df3 = pd.DataFrame()
                 for columna in columns_list:
@@ -306,10 +310,8 @@ def update_column_list_pie(file_name, var_list):
     columns = [{'label': i, 'value': i} for i in []]
     query= ''
     changed_id = [p['prop_id'] for p in dash.callback_context.triggered][0]
-    if 'dpd-query-list' in changed_id:
+    if 'dpd-query-list-pie' in changed_id or 'dpd-var-list-piechart' in changed_id:
         con = sqlite3.connect(archivo)
-        query = "SELECT * FROM VARIABLES"
-        variables =pd.read_sql(query, con)
         query= ''
         if file_name:
             with open(os.path.join(QUERY_DIRECTORY, file_name)) as f:
@@ -317,17 +319,22 @@ def update_column_list_pie(file_name, var_list):
                 for linea in contenido:
                     query +=  linea
 
+            #Filtrar solo la primera fila
+            query += " LIMIT 1"
+            df =pd.read_sql(query, con)
+
             if var_list is not None:
                 for var in var_list:
-                    selec_var=variables.loc[variables['NOMBRE']==var]
-                    ecuacion = selec_var.iloc[0]['ECUACION']
-                    titulo = selec_var.iloc[0]['TITULO']
-                    evalu = eval(ecuacion)
-                    df[titulo] = evalu
+                    requisitos_list, titulo, ecuacion = search_calcv( archivo, var)
 
-            df =pd.read_sql(query, con)
-            df =df.drop(['index', 'NOMBRE', 'FECHA'], axis=1)
-            columns = [{'label': i, 'value': i} for i in df.columns]
+                    if search_list(requisitos_list, df.columns.tolist()):
+                        evalu = eval(ecuacion)
+                        df[titulo] = evalu
+
+            if  df.columns[2]=='FECHA':
+                columns=[{'label': i, 'value': i} for i in df.columns[3:]]
+            else:
+                columns=[{'label': i, 'value': i} for i in df.columns[2:]]
 
         con.close()
 

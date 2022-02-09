@@ -27,6 +27,7 @@ import base64
 import os
 
 from app import app 
+from library import reform_df, search_unit, search_calcv, search_list
 
 #Variable con la ruta para salvar los querys
 QUERY_DIRECTORY = "./querys"
@@ -62,7 +63,6 @@ well_list = well_list.sort_values('NOMBRE')['NOMBRE'].unique()
 query = "SELECT NOMBRE FROM VARIABLES"
 var_list =pd.read_sql(query, con)
 var_list = var_list.sort_values('NOMBRE')['NOMBRE'].unique()
-
 
 #Listado de unidades por variables
 query = "SELECT * FROM UNIDADES"
@@ -263,22 +263,21 @@ def update_bar_chart(n_clicks, file_name, well_name, columns_list_y1, columns_li
 
                 if var_list is not None:
                     for var in var_list:
-                        selec_var=variables.loc[variables['NOMBRE']==var]
-                        ecuacion = selec_var.iloc[0]['ECUACION']
-                        titulo = selec_var.iloc[0]['TITULO']
-                        evalu = eval(ecuacion)
-                        df[titulo] = evalu
+                        requisitos_list, titulo, ecuacion = search_calcv( archivo, var)
+                        if search_list(requisitos_list, df.columns.tolist()):
+                            df[titulo] =eval(ecuacion)
+                            var_name = titulo
                 
                 if well_name is not None:
                     df= df[df['NOMBRE']==well_name]
 
                 i=1
-                selec_unit = unidades.set_index(['VARIABLE'])
 
                 for columnas_y1 in columns_list_y1:
-                    var_title = selec_unit.loc[columnas_y1]['GRAFICO']
-                    var_unit = selec_unit.loc[columnas_y1]['UNIDAD']
-                    var_name = var_title + " " + var_unit
+                    var_name, var_color = search_unit(unidades, columnas_y1)
+
+                    if color_axis_y1 == {'hex': '#1530E3'} and var_color:
+                        color_axis_y1 = dict(hex=var_color)
 
                     fig.add_trace(
                         go.Scatter(x=df['FECHA'],
@@ -293,9 +292,10 @@ def update_bar_chart(n_clicks, file_name, well_name, columns_list_y1, columns_li
                     )
                     i=+1
                 for columnas_y2 in columns_list_y2:
-                    var_title = selec_unit.loc[columnas_y2]['GRAFICO']
-                    var_unit = selec_unit.loc[columnas_y2]['UNIDAD']
-                    var_name = var_title + " " + var_unit
+                    var_name, var_color = search_unit(unidades, columnas_y2)
+
+                    if color_axis_y2 == {'hex': '#1530E3'} and var_color:
+                        color_axis_y2 = dict(hex=var_color)
 
                     fig.add_trace(
                         go.Scatter(x=df['FECHA'],
@@ -357,10 +357,8 @@ def update_column_list(file_name, var_list):
     columns = [{'label': i, 'value': i} for i in []]
     query= ''
     changed_id = [p['prop_id'] for p in dash.callback_context.triggered][0]
-    if 'dpd-query-list' in changed_id:
+    if 'dpd-query-list-area' in changed_id or 'dpd-var-list-areachart' in changed_id:
         con = sqlite3.connect(archivo)
-        query = "SELECT * FROM VARIABLES"
-        variables =pd.read_sql(query, con)
         query= ''
         if file_name:
             with open(os.path.join(QUERY_DIRECTORY, file_name)) as f:
@@ -368,18 +366,20 @@ def update_column_list(file_name, var_list):
                 for linea in contenido:
                     query +=  linea
                 df =pd.read_sql(query, con)
-                df =df.drop(['index', 'NOMBRE', 'FECHA'], axis=1)
 
                 if var_list is not None:
                     for var in var_list:
-                        selec_var=variables.loc[variables['NOMBRE']==var]
-                        ecuacion = selec_var.iloc[0]['ECUACION']
-                        titulo = selec_var.iloc[0]['TITULO']
-                        evalu = eval(ecuacion)
-                        df[titulo] = evalu
+                        requisitos_list, titulo, ecuacion = search_calcv( archivo, var)
+
+                        if search_list(requisitos_list, df.columns.tolist()):
+                            evalu = eval(ecuacion)
+                            df[titulo] = evalu
 
 
-                columns = [{'label': i, 'value': i} for i in df.columns]
+                if  df.columns[2]=='FECHA':
+                    columns=[{'label': i, 'value': i} for i in df.columns[3:]]
+                else:
+                    columns=[{'label': i, 'value': i} for i in df.columns[2:]]
         con.close()
         
     return columns, columns

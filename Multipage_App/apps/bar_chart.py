@@ -25,6 +25,7 @@ import base64
 import os
 
 from app import app 
+from library import search_unit, search_list, search_calcv
 
 #Variable con la ruta para salvar los querys
 QUERY_DIRECTORY = "./querys"
@@ -226,8 +227,6 @@ def update_bar_chart(n_clicks, file_name, well_name, columns_list, dtp_start_dat
     fig = {}
     if 'btn_show_barchart' in changed_id:
         con = sqlite3.connect(archivo)
-        query = "SELECT * FROM VARIABLES"
-        variables =pd.read_sql(query, con)
         query= ''
         if file_name:
             with open(os.path.join(QUERY_DIRECTORY, file_name)) as f:
@@ -247,21 +246,21 @@ def update_bar_chart(n_clicks, file_name, well_name, columns_list, dtp_start_dat
                 df =df.sort_values("FECHA")
                 if var_list:
                     for var in var_list:
-                        selec_var=variables.loc[variables['NOMBRE']==var]
-                        ecuacion = selec_var.iloc[0]['ECUACION']
-                        titulo = selec_var.iloc[0]['TITULO']
-                        evalu = eval(ecuacion)
-                        df[titulo] = evalu
-                
-                print(df)
+                        requisitos_list, titulo, ecuacion = search_calcv( archivo, var)
+                        if search_list(requisitos_list, df.columns.tolist()):
+                            df[titulo] =eval(ecuacion)
+                            var_name = titulo
+
                 if well_name is not None and columns_list:
                     df= df[df['NOMBRE'].isin(well_name)]
                     #Se asegura que el dataframe tenga datos
                     if len(df)>0:
                         if staked_columns=='STC':
-                            fig = px.bar(df, x="NOMBRE", y=columns_list,  height=700,  title=chart_title, barmode='stack', animation_frame="FECHA" )
+                            fig = px.bar(df, x="NOMBRE", y=columns_list,  height=700,  
+                            title=chart_title, barmode='stack', animation_frame="FECHA" )
                         else:
-                            fig = px.bar(df, x="NOMBRE", y=columns_list,  height=700,  title=chart_title, barmode='group', animation_frame="FECHA")
+                            fig = px.bar(df, x="NOMBRE", y=columns_list,  height=700,  
+                            title=chart_title, barmode='group', animation_frame="FECHA")
     return fig
 
 @app.callback(
@@ -271,31 +270,36 @@ def update_bar_chart(n_clicks, file_name, well_name, columns_list, dtp_start_dat
 def update_column_list(file_name, var_list):
 
     df = pd.DataFrame()
+    con = sqlite3.connect(archivo)
     columns = [{'label': i, 'value': i} for i in []]
-    quer= ''
     changed_id = [p['prop_id'] for p in dash.callback_context.triggered][0]
-    if 'dpd-query-list' in changed_id:
-        con = sqlite3.connect(archivo)
-        query = "SELECT * FROM VARIABLES"
-        variables =pd.read_sql(query, con)
+    if 'dpd-query-list-bar' in changed_id or 'dpd-var-list-barchart' in changed_id:
         query= ''
         if file_name:
             with open(os.path.join(QUERY_DIRECTORY, file_name)) as f:
                 contenido = f.readlines()
                 for linea in contenido:
                     query +=  linea
+
+                #Filtrar solo la primera fila
+                query += " LIMIT 1"
+
                 df =pd.read_sql(query, con)
                 #df =df.drop(['NOMBRE', 'FECHA'], axis=1)
 
             if var_list is not None:
                 for var in var_list:
-                    selec_var=variables.loc[variables['NOMBRE']==var]
-                    ecuacion = selec_var.iloc[0]['ECUACION']
-                    titulo = selec_var.iloc[0]['TITULO']
-                    evalu = eval(ecuacion)
-                    df[titulo] = evalu
+                    requisitos_list, titulo, ecuacion = search_calcv( archivo, var)
+                    if search_list(requisitos_list, df.columns.tolist()):
+                        df[titulo] =eval(ecuacion)
+                        var_name = titulo
 
-            columns = [{'label': i, 'value': i} for i in df.columns]
+            if  df.columns[2]=='FECHA':
+                columns=[{'label': i, 'value': i} for i in df.columns[3:]]
+            else:
+                columns=[{'label': i, 'value': i} for i in df.columns[2:]]
+
+    con.close()
 
     return columns
 
@@ -351,4 +355,4 @@ def open_bar_chart( list_of_names, list_of_contents):
                     datos_y1 = drop_values['datos_y1']
                     var_list = drop_values['var_list']
                     chart_title = drop_values['chart_title']
-    return archivo, consulta, datos_y1, var_list, chart_title
+    return archivo, consulta, datos_y1, var_list, chart_title   

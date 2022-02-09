@@ -25,6 +25,7 @@ import json
 import os
 
 from app import app 
+from library import reform_df, search_unit, search_calcv, search_list
 
 #Variable con la ruta para salvar los querys
 QUERY_DIRECTORY = "./querys"
@@ -188,6 +189,7 @@ layout = html.Div([
                             options=[
                                 {'label': ' Aplicar agrupación por: ', 'value': 'GBY'},
                             ],
+                            value=[]
                         ),
                         dcc.Dropdown(
                             id='dpd-group-by',
@@ -196,6 +198,7 @@ layout = html.Div([
                                 {'label': 'FECHA', 'value': 'FECHA'},
                             ],
                             multi=True,
+                            value='NOMBRE',
                         ),
                         dcc.RadioItems(
                             id='rb-aggregation',
@@ -312,8 +315,6 @@ def update_table(n_clicks, file_name, well_name, var_list, group_by, group_optio
 
     if 'btn_execute_report' in changed_id:
         con = sqlite3.connect(archivo)
-        query = "SELECT * FROM VARIABLES"
-        variables =pd.read_sql(query, con)
         query=''
         if file_name is not None:
             with open(os.path.join(QUERY_DIRECTORY, file_name)) as f:
@@ -324,7 +325,10 @@ def update_table(n_clicks, file_name, well_name, var_list, group_by, group_optio
             
                 #Filtra el dataframe en un rango de fechas
                 if filter_date_type == 'RANGE' and start_date and end_date:
-                    query += " WHERE DATE(FECHA)>='"+start_date+"' AND DATE(FECHA)<='"+end_date+"'"
+                    if query.find("WHERE") or query.find("where"):
+                        query += " AND DATE(FECHA)>='"+start_date+"' AND DATE(FECHA)<='"+end_date+"'"
+                    else:
+                        query += " WHERE DATE(FECHA)>='"+start_date+"' AND DATE(FECHA)<='"+end_date+"'"
 
                 df =pd.read_sql(query, con)
 
@@ -335,7 +339,7 @@ def update_table(n_clicks, file_name, well_name, var_list, group_by, group_optio
                 data_frame['FECHA'] = pd.to_datetime(df['FECHA'])
                 last_date = str(data_frame['FECHA'].max())
                 time_last_date = last_date[-9:]
-                
+
                 #Filtra el dataframe a una fecha determinada
                 if filter_date_type == 'ATDATE' and at_date:
                     df= df.loc[df['FECHA']==at_date+time_last_date]
@@ -347,7 +351,8 @@ def update_table(n_clicks, file_name, well_name, var_list, group_by, group_optio
                 if well_name:
                     df= df.loc[df['NOMBRE'].isin(well_name)]
 
-                df = df.drop(['index'], axis=1)
+                if 'index' in df:
+                    df = df.drop(['index'], axis=1)
 
                 if group_by:
                     if agregation_fun == 'SUM':
@@ -356,22 +361,16 @@ def update_table(n_clicks, file_name, well_name, var_list, group_by, group_optio
                         df =df.groupby(group_options, as_index=True).mean().reset_index()
             if var_list:
                 for var in var_list:
-                    selec_var=variables.loc[variables['NOMBRE']==var]
-                    ecuacion = selec_var.iloc[0]['ECUACION']
-                    titulo = selec_var.iloc[0]['TITULO']
-                    evalu = eval(ecuacion)
-                    df[titulo] = evalu
+                    requisitos_list, titulo, ecuacion = search_calcv( archivo, var)
+                    if search_list(requisitos_list, df.columns.tolist()):
+                        df[titulo] =eval(ecuacion)
+                        var_name = titulo
 
-            selec_unit = unidades.set_index(['VARIABLE'])
             column_list = df.columns
             for columnas in column_list:
-                var_title = selec_unit.loc[columnas]['REPORTE']
-                var_unit = selec_unit.loc[columnas]['UNIDAD']
-                if var_unit:
-                    var_name = var_title + "_" + var_unit
-                else:
-                    var_name = var_title
-                df = df.rename(columns={columnas: var_name})
+                if columnas != 'NOMBRE' and columnas != 'FECHA':
+                    var_name, var_color = search_unit(unidades, columnas)
+                    df = df.rename(columns={columnas: var_name})
 
     columns = [{'name': i, 'id': i, "deletable": True} for i in df.columns]
     data = df.to_dict('records')

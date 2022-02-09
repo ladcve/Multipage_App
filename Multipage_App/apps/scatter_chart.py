@@ -30,7 +30,7 @@ from sklearn.linear_model import LinearRegression
 from sklearn.pipeline import make_pipeline
 
 from app import app 
-from library import reform_df
+from library import reform_df, search_unit, search_calcv, search_list
 
 #Variable con la ruta para salvar los querys
 QUERY_DIRECTORY = "./querys"
@@ -66,6 +66,10 @@ well_list = well_list.sort_values('NOMBRE')['NOMBRE'].unique()
 query = "SELECT NOMBRE FROM VARIABLES"
 var_list =pd.read_sql(query, con)
 var_list = var_list.sort_values('NOMBRE')['NOMBRE'].unique()
+
+#Listado de unidades por variables
+query = "SELECT * FROM UNIDADES"
+unidades =pd.read_sql(query, con)
 
 con.close()
 
@@ -152,14 +156,6 @@ layout = html.Div([
                             dcc.Graph(id='cht-scatter-chart', style={"width": "100%"}),
                         ),
                     ),
-                    html.Br(),
-                    html.Label(['Grado del Polinomio:'],style={'font-weight': 'bold', "text-align": "center"}),
-                    dcc.Slider(id='PolyFeat',
-                        min=1,
-                        max=6,
-                        marks={i: '{}'.format(i) for i in range(10)},
-                        value=1,
-                    ) 
                 ],
                 color='primary',
                 solid_header=True,
@@ -212,6 +208,7 @@ layout = html.Div([
                     title="Estadísticas"
                 ),
                 dac.BoxBody([
+                        
                         html.Br(),
                         html.Label(['Regresión:'],style={'font-weight': 'bold', "text-align": "left"}),
                         daq.ToggleSwitch(
@@ -219,6 +216,14 @@ layout = html.Div([
                             value=False,
                             label='Mostrar Linea Tendencia',
                             labelPosition='top'
+                        ),
+                        html.Br(),
+                        html.Label(['Grado del Polinomio:'],style={'font-weight': 'bold', "text-align": "center"}),
+                        dcc.Slider(id='PolyFeat',
+                            min=1,
+                            max=6,
+                            marks={i: '{}'.format(i) for i in range(10)},
+                            value=1,
                         ),
                         html.Br(),
                         html.Label(['Resultados:'],style={'font-weight': 'bold', "text-align": "left"}),
@@ -280,20 +285,24 @@ def update_scatter_chart(n_clicks, file_name, well_name, column_list_x, column_l
                     df =pd.read_sql(query, con)
                     df =df.sort_values("FECHA")
                     df = df[df['NOMBRE']==well_name]
+
+                    xaxis_name, var_color = search_unit(unidades, column_list_x)
+                    yaxis_name, var_color = search_unit(unidades, column_list_y)
+                if column_list_x and column_list_y:
                     if var_list is not None:
                         for var in var_list:
-                            selec_var=variables.loc[variables['NOMBRE']==var]
-                            ecuacion = selec_var.iloc[0]['ECUACION']
-                            titulo = selec_var.iloc[0]['TITULO']
-                            evalu = eval(ecuacion)
-                            df[titulo] = evalu
+                            requisitos_list, titulo, ecuacion = search_calcv( archivo, var)
+
+                            if search_list(requisitos_list, df.columns.tolist()):
+                                evalu = eval(ecuacion)
+                                df[titulo] = evalu
 
                     fig = px.scatter(x=df[column_list_x],
                             y=df[column_list_y])
         
 
-                    fig.update_xaxes(title_text=column_list_x,showline=True, linewidth=2, linecolor='black', showgrid=False,)
-                    fig.update_yaxes(title_text=column_list_y,showline=True, linewidth=2, linecolor='black', showgrid=False,)
+                    fig.update_xaxes(title_text=xaxis_name,showline=True, linewidth=2, linecolor='black', showgrid=False,)
+                    fig.update_yaxes(title_text=yaxis_name,showline=True, linewidth=2, linecolor='black', showgrid=False,)
                     fig.update_layout(
                         autosize=False,
                         paper_bgcolor='rgba(0,0,0,0)',
@@ -349,10 +358,8 @@ def update_column_list(file_name, var_list):
     columns = [{'label': i, 'value': i} for i in []]
 
     changed_id = [p['prop_id'] for p in dash.callback_context.triggered][0]
-    if 'dpd-query-list-scatter' in changed_id:
+    if 'dpd-query-list-scatter' in changed_id or 'dpd-var-list-scatterchart' in changed_id:
         con = sqlite3.connect(archivo)
-        query = "SELECT * FROM VARIABLES"
-        variables =pd.read_sql(query, con)
         query= ''
         if file_name:
             with open(os.path.join(QUERY_DIRECTORY, file_name)) as f:
@@ -365,12 +372,15 @@ def update_column_list(file_name, var_list):
                 df =pd.read_sql(query, con)
                 if var_list is not None:
                     for var in var_list:
-                        selec_var=variables.loc[variables['NOMBRE']==var]
-                        ecuacion = selec_var.iloc[0]['ECUACION']
-                        titulo = selec_var.iloc[0]['TITULO']
-                        evalu = eval(ecuacion)
-                        df[titulo] = evalu
-                columns = [{'label': i, 'value': i} for i in df.columns]
+                        requisitos_list, titulo, ecuacion = search_calcv( archivo, var)
+
+                        if search_list(requisitos_list, df.columns.tolist()):
+                            evalu = eval(ecuacion)
+                            df[titulo] = evalu
+                if  df.columns[2]=='FECHA':
+                    columns=[{'label': i, 'value': i} for i in df.columns[3:]]
+                else:
+                    columns=[{'label': i, 'value': i} for i in df.columns[2:]]
 
         con.close()
 
