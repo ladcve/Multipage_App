@@ -227,6 +227,7 @@ layout = html.Div([
                                     options=[
                                         {'label': ' Limpiar valores cero', 'value': 'CERO'},
                                     ],
+                                    value=[],
                                 ),
                                 html.Br(),
                             ]),
@@ -304,10 +305,11 @@ layout = html.Div([
      Input('dtp_fecha_filter_range_report', 'start_date'),
      Input('dtp_fecha_filter_range_report', 'end_date'), 
      Input('dpd-order-by', 'value'),
-    Input('bs-order-by', 'on')], 
+     Input('bs-order-by', 'on'),
+     Input('ckl-clear-report-data','value')], 
     [State('dt_report_results', 'data'), State('dt_report_results', 'columns')]
 )
-def update_table(n_clicks, file_name, well_name, var_list, group_by, group_options, agregation_fun, filter_date_type, at_date,start_date, end_date, order_by, ascendente, data, columns):
+def update_table(n_clicks, file_name, well_name, var_list, group_by, group_options, agregation_fun, filter_date_type, at_date,start_date, end_date, order_by, ascendente, data, columns, cls_data):
     df = pd.DataFrame()
     data_frame = pd.DataFrame()
     changed_id = [p['prop_id'] for p in dash.callback_context.triggered][0]
@@ -325,15 +327,18 @@ def update_table(n_clicks, file_name, well_name, var_list, group_by, group_optio
             
                 #Filtra el dataframe en un rango de fechas
                 if filter_date_type == 'RANGE' and start_date and end_date:
-                    if query.find("WHERE") or query.find("where"):
+                    if query.find("WHERE")>-1 or query.find("where")>-1:
                         query += " AND DATE(FECHA)>='"+start_date+"' AND DATE(FECHA)<='"+end_date+"'"
                     else:
-                        query += " WHERE DATE(FECHA)>='"+start_date+"' AND DATE(FECHA)<='"+end_date+"'"
+                        query += " WHERE DATE(FECHA)>='"+start_date+" ' AND DATE(FECHA)<='"+end_date+"'"
 
                 df =pd.read_sql(query, con)
 
-                if order_by:
-                    df = df.sort_values(by=order_by, ascending=ascendente)
+                if cls_data:
+                    df = df[(df!=0)]
+
+                if 'index' in df:
+                    df = df.drop(['index'], axis=1)
 
                 #Extrae la maxima fecha
                 data_frame['FECHA'] = pd.to_datetime(df['FECHA'])
@@ -351,21 +356,24 @@ def update_table(n_clicks, file_name, well_name, var_list, group_by, group_optio
                 if well_name:
                     df= df.loc[df['NOMBRE'].isin(well_name)]
 
-                if 'index' in df:
-                    df = df.drop(['index'], axis=1)
+                if order_by:
+                    df = df.sort_values(by=order_by, ascending=ascendente)
 
                 if group_by:
                     if agregation_fun == 'SUM':
                         df =df.groupby(group_options, as_index=True).sum().reset_index()
                     else:
                         df =df.groupby(group_options, as_index=True).mean().reset_index()
+
+            #Agrega las variables calculadas
             if var_list:
                 for var in var_list:
                     requisitos_list, titulo, ecuacion = search_calcv( archivo, var)
                     if search_list(requisitos_list, df.columns.tolist()):
-                        df[titulo] =eval(ecuacion)
-                        var_name = titulo
+                        df[var] =eval(ecuacion)
 
+            #Traduce los nombre de las columnas tomando en cuenta lo contenido en 
+            # en la tabla de unidades
             column_list = df.columns
             for columnas in column_list:
                 if columnas != 'NOMBRE' and columnas != 'FECHA':

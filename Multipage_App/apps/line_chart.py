@@ -27,7 +27,7 @@ import os
 import dash_daq as daq
 
 from app import app
-from library import create_chart, update_columns_list
+from library import create_chart, update_columns_list, search_unit
 
 #Definir imagenes
 open_chart = '.\pictures\open_chart.png'
@@ -223,6 +223,20 @@ layout = html.Div([
                                         options=[{"label": "  Limpiar valores Ceros", "value": "YES"}],
                                         value=[],
                                         labelStyle={"display": "inline-block"},
+                                    ),
+                                    dcc.Checklist(
+                                        id="cb_group_by",
+                                        options=[{"label": "  Aplicar agrupacion por fecha:", "value": "YES"}],
+                                        value=[],
+                                        labelStyle={"display": "inline-block"},
+                                    ),
+                                    dcc.RadioItems(
+                                        id='rb-func-aggregation',
+                                        options=[
+                                            {'label': ' Sumatoria  ', 'value': 'SUM'},
+                                            {'label': ' Media', 'value': 'MEAN'},
+                                        ],
+                                        value='SUM',
                                     ),
                                     html.Br(),
                                     dbc.Card([
@@ -783,16 +797,18 @@ layout = html.Div([
      Input('cb_clear_data_line', 'value'),
      Input('dpd-LineStile-y1', 'value'),
      Input('dpd-LineStile-y2', 'value'),
-     Input('inp-color-annotation', 'value')
+     Input('inp-color-annotation', 'value'),
+     Input('cb_group_by', 'value'),
+     Input('rb-func-aggregation','value')
      ])
-def update_line_chart(n_clicks, file_name, well_name, column_list_y1, column_list_y2, show_annot, annot_data, var_list, color_y1, color_y2, clear_data, stile_y1, stile_y2, anno_color):
+def update_line_chart(n_clicks, file_name, well_name, column_list_y1, column_list_y2, show_annot, annot_data, var_list, color_y1, color_y2, clear_data, stile_y1, stile_y2, anno_color, group_by, aggregation_func):
 
     changed_id = [p['prop_id'] for p in dash.callback_context.triggered][0]
     fig = make_subplots(specs=[[{"secondary_y": True}]])
     
     if 'btn_show_chart' in changed_id:
         if column_list_y1 or column_list_y2:
-            fig = create_chart(archivo, unidades, file_name, well_name, column_list_y1, column_list_y2, show_annot, annot_data, var_list, color_y1, color_y2, clear_data, stile_y1, stile_y2, anno_color)
+            fig = create_chart(archivo, unidades, file_name, well_name, column_list_y1, column_list_y2, show_annot, annot_data, var_list, color_y1, color_y2, clear_data, stile_y1, stile_y2, anno_color, group_by, aggregation_func)
     return fig
 
 @app.callback(
@@ -835,9 +851,9 @@ def update_triple_chart(n_clicks, file_name, well_name, cols_chart1_y1, cols_cha
     fig3 = {}
     
     if 'btn_show_chart' in changed_id:
-        fig1 = create_chart(archivo,  unidades, file_name, well_name, cols_chart1_y1, cols_chart1_y2, False, [], var_list1, color_chart1_y1, color_chart1_y2, clear_data_chart1, stile_chart1_y1, stile_chart1_y2, '#ecebda')
-        fig2 = create_chart(archivo,  unidades, file_name, well_name, cols_chart2_y1, cols_chart2_y2, False, [], var_list2, color_chart2_y1, color_chart2_y2, clear_data_chart2, stile_chart2_y1, stile_chart2_y2, '#ecebda')
-        fig3 = create_chart(archivo,  unidades, file_name, well_name, cols_chart3_y1, cols_chart3_y2, False, [], var_list3, color_chart3_y1, color_chart3_y2, clear_data_chart3, stile_chart3_y1, stile_chart3_y2, '#ecebda')
+        fig1 = create_chart(archivo,  unidades, file_name, well_name, cols_chart1_y1, cols_chart1_y2, False, [], var_list1, color_chart1_y1, color_chart1_y2, clear_data_chart1, stile_chart1_y1, stile_chart1_y2, '#ecebda', [], [])
+        fig2 = create_chart(archivo,  unidades, file_name, well_name, cols_chart2_y1, cols_chart2_y2, False, [], var_list2, color_chart2_y1, color_chart2_y2, clear_data_chart2, stile_chart2_y1, stile_chart2_y2, '#ecebda', [], [])
+        fig3 = create_chart(archivo,  unidades, file_name, well_name, cols_chart3_y1, cols_chart3_y2, False, [], var_list3, color_chart3_y1, color_chart3_y2, clear_data_chart3, stile_chart3_y1, stile_chart3_y2, '#ecebda', [], [])
 
     return fig1, fig2, fig3
 
@@ -854,9 +870,7 @@ def update_triple_chart(n_clicks, file_name, well_name, cols_chart1_y1, cols_cha
      Input('dpd-var-list-chart', 'value')])
 def update_column_list(file_name, var_list):
 
-    df = pd.DataFrame()
     columns = [{'label': i, 'value': i} for i in []]
-    query= ''
     changed_id = [p['prop_id'] for p in dash.callback_context.triggered][0]
     if 'dpd-consulta-lista' in changed_id or 'dpd-var-list-chart' in changed_id:
         columns = update_columns_list(archivo, file_name, var_list)

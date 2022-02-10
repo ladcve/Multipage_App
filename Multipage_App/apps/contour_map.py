@@ -26,6 +26,7 @@ import base64
 import os
 
 from app import app 
+from library import search_unit, search_list, search_calcv
 
 #Variable con la ruta para salvar los querys
 QUERY_DIRECTORY = "./querys"
@@ -92,11 +93,6 @@ layout = html.Div([
                         html.Br(),
                         dbc.Button(html.Span(["Mostrar ", html.I(className="fas fa-map ml-1")],style={'font-size':'1.5em','text-align':'center'}), 
                         id="btn_show_chart", color="success", className="mr-3"),
-                    ], width={"size": 1, "offset": 1}),
-                    dbc.Col([
-                        html.Br(),
-                        dbc.Button(html.Span(["Imagen ", html.I(className="fas fa-file-export ml-1")],style={'font-size':'1.5em','text-align':'center'}),
-                         id="btn_export_img", color="warning", className="mr-3"),
                     ], width={"size": 1, "offset": 1}),
                 ]),
                 html.Br(),
@@ -235,8 +231,6 @@ def update_contour_map(n_clicks, file_name, columns_list, dtp_fecha, chart_title
     fig = go.Figure()
     if 'btn_show_chart' in changed_id:
         con = sqlite3.connect(archivo)
-        query = "SELECT * FROM VARIABLES"
-        variables =pd.read_sql(query, con)
         query= ''
         if file_name is not None:
             with open(os.path.join(QUERY_DIRECTORY, file_name)) as f:
@@ -244,17 +238,20 @@ def update_contour_map(n_clicks, file_name, columns_list, dtp_fecha, chart_title
             if contenido is not None:
                 if fecha is not None:
                     for linea in contenido:
-                        query +=  linea 
+                        query +=  linea
 
-                query += " WHERE date(FECHA)='"+fecha+"' ORDER BY FECHA"
+                    if query.find("WHERE")>-1 or query.find("where")>-1:
+                        query += " AND date(FECHA)='"+fecha+"' ORDER BY FECHA"
+                    else:
+                        query += " WHERE date(FECHA)='"+fecha+"' ORDER BY FECHA"
+                
                 df =pd.read_sql(query, con)
+
                 if var_list:
                     for var in var_list:
-                        selec_var=variables.loc[variables['NOMBRE']==var]
-                        ecuacion = selec_var.iloc[0]['ECUACION']
-                        titulo = selec_var.iloc[0]['TITULO']
-                        evalu = eval(ecuacion)
-                        df[titulo] = evalu
+                        requisitos_list, titulo, ecuacion = search_calcv( archivo, var)
+                        if search_list(requisitos_list, df.columns.tolist()):
+                            df[titulo] =eval(ecuacion)
 
                 z = df[columns_list]
                 if len(df)>0:
@@ -382,25 +379,30 @@ def update_column_list(file_name, var_list):
     changed_id = [p['prop_id'] for p in dash.callback_context.triggered][0]
     if 'dpd-query-list-contour' in changed_id or 'dpd-var-list-contour' in changed_id:
         con = sqlite3.connect(archivo)
-        query = "SELECT * FROM VARIABLES"
-        variables =pd.read_sql(query, con)
         query=''
         if file_name:
             with open(os.path.join(QUERY_DIRECTORY, file_name)) as f:
                 contenido = f.readlines()
                 for linea in contenido:
                     query +=  linea
+
+                #Filtrar solo la primera fila
+                query += " LIMIT 1"
+
                 df =pd.read_sql(query, con)
 
             if var_list:
                 for var in var_list:
-                    selec_var=variables.loc[variables['NOMBRE']==var]
-                    ecuacion = selec_var.iloc[0]['ECUACION']
-                    titulo = selec_var.iloc[0]['TITULO']
-                    evalu = eval(ecuacion)
-                    df[titulo] = evalu
+                    requisitos_list, titulo, ecuacion = search_calcv( archivo, var)
+                    if search_list(requisitos_list, df.columns.tolist()):
+                        df[titulo] =eval(ecuacion)
 
-            df =df.drop(['index', 'NOMBRE', 'FECHA'], axis=1)
+            #Valilda si la columna index existe en el dataframe
+            if 'index' in df:
+                df =df.drop(['index', 'NOMBRE', 'FECHA'], axis=1)
+            else:
+                df =df.drop(['NOMBRE', 'FECHA'], axis=1)
+
             columns = [{'label': i, 'value': i} for i in df.columns]
 
         con.close()

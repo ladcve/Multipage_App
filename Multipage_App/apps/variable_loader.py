@@ -206,7 +206,7 @@ def update_table_variables(n_clicks, dataset):
     Input('dpd-query-lista', 'value')], 
     [State('tab_resultados', 'data'), State('tab_resultados', 'columns')]
 )
-def update_table_results(n_clicks, rows, row_id,file_name, data, columns):
+def update_table_results(n_clicks, rows, row_id, file_name, data, columns):
     data_results = pd.DataFrame()
     changed_id = [p['prop_id'] for p in dash.callback_context.triggered][0]
     df = pd.DataFrame()
