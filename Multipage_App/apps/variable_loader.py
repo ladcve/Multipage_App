@@ -20,6 +20,7 @@ import base64
 import os
 
 from app import app 
+from library import search_list, days_month
 
 #Lee el archivo de configuracion
 configuracion = configparser.ConfigParser()
@@ -115,7 +116,7 @@ layout = html.Div([
                                 },
                                 sort_action="native",
                                 sort_mode="multi",
-                                row_selectable="single",
+                                row_selectable="multi",
                                 row_deletable=True,
                                 selected_columns=[],
                                 selected_rows=[],
@@ -141,22 +142,24 @@ layout = html.Div([
                         title="Resultados"
                     ),
                     dac.BoxBody([
-                        dash_table.DataTable(
-                            id='tab_resultados',
-                                editable=False,
-                                style_header={
-                                    'backgroundColor': 'blue',
-                                    'fontWeight': 'bold',
-                                    'color': 'white'
-                                },
-                                filter_action="native",
-                                sort_action="native",  # give user capability to sort columns
-                                sort_mode="single",  # sort across 'multi' or 'single' columns
-                                page_action="native",
-                                page_current= 0,
-                                page_size= 13,
-                                style_table={'height': '500px', 'overflowY': 'auto'},
-                                style_cell={'textAlign': 'left', 'minWidth': '100px', 'width': '200px', 'maxWidth': '300px'},
+                        dbc.Spinner(
+                            dash_table.DataTable(
+                                id='tab_resultados',
+                                    editable=False,
+                                    style_header={
+                                        'backgroundColor': 'blue',
+                                        'fontWeight': 'bold',
+                                        'color': 'white'
+                                    },
+                                    filter_action="native",
+                                    sort_action="native",  # give user capability to sort columns
+                                    sort_mode="single",  # sort across 'multi' or 'single' columns
+                                    page_action="native",
+                                    page_current= 0,
+                                    page_size= 13,
+                                    style_table={'height': '500px', 'overflowY': 'auto'},
+                                    style_cell={'textAlign': 'left', 'minWidth': '100px', 'width': '200px', 'maxWidth': '300px'},
+                            ),
                         ),
                     ]),	
                 ],
@@ -166,6 +169,10 @@ layout = html.Div([
                 width=12
             ),
         ], width={"size": 6, "offset": 0}),
+        dcc.ConfirmDialog(
+            id='confirm-execution',
+            message='La consulta no cumple con los requisitos.',
+        ),
     ]),
 ])
 
@@ -199,22 +206,21 @@ def update_table_variables(n_clicks, dataset):
     return mensaje
 
 @app.callback(
-    [Output("tab_resultados", "data"), Output("tab_resultados", "columns")],
+    [Output("tab_resultados", "data"), Output("tab_resultados", "columns"),
+     Output('confirm-execution', 'displayed')],
     [Input("btn_run_var", "n_clicks"),
     Input('tab_variables', 'data'),
     Input('tab_variables', 'derived_virtual_selected_rows'),
     Input('dpd-query-lista', 'value')], 
     [State('tab_resultados', 'data'), State('tab_resultados', 'columns')]
 )
-def update_table_results(n_clicks, rows, row_id, file_name, data, columns):
-    data_results = pd.DataFrame()
-    changed_id = [p['prop_id'] for p in dash.callback_context.triggered][0]
+def update_table_results(n_clicks, rows, row_ids, file_name, data, columns):  
     df = pd.DataFrame()
     query = ''
+    display_message = False
+
+    changed_id = [p['prop_id'] for p in dash.callback_context.triggered][0]
     if 'btn_run_var' in changed_id:
-        indice = row_id[0]
-        ecuacion = rows[indice]['ECUACION']
-        titulo = rows[indice]['TITULO']
         con = sqlite3.connect(archivo)
         if file_name is not None:
             with open(os.path.join(QUERY_DIRECTORY, file_name)) as f:
@@ -222,9 +228,18 @@ def update_table_results(n_clicks, rows, row_id, file_name, data, columns):
                 for linea in contenido:
                     query +=  linea
                 df =pd.read_sql(query, con)
-            evalu = eval(ecuacion)
-            df[titulo] = evalu 
+
+        for num_id in row_ids:
+            ecuacion = rows[num_id]['ECUACION']
+            nombre = rows[num_id]['NOMBRE']
+            requisitos = rows[num_id]['REQUISITO']
+            requisitos_list=list(requisitos.split(","))
+            if search_list(requisitos_list, df.columns.tolist()):
+                evalu = eval(ecuacion)
+                df[nombre] = evalu
+            else:
+                display_message = True
 
     columns = [{'name': i, 'id': i} for i in df.columns]
     data = df.to_dict('records')
-    return data, columns
+    return data, columns, display_message

@@ -192,13 +192,14 @@ def save_user_globals(user_globals, path='user_globals.txt'):
     Input("dpd-query-data", "value")
 )
 def save_initial_data(file_name):
+    query = ''
     con = sqlite3.connect(archivo)
     df = pd.DataFrame()
     if file_name:
         with open(os.path.join(QUERY_DIRECTORY, file_name)) as f:
             contenido = f.readlines()
             for linea in contenido:
-                query =  linea
+                query +=  linea
             df =pd.read_sql(query, con)
         con.close()
         df.to_csv("./datasets/read_data.csv")
