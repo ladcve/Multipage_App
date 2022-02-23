@@ -7,16 +7,18 @@ import dash_bootstrap_components as dbc
 import dash_core_components as dcc
 import dash_html_components as html
 from dash.dependencies import Input, Output, State
+import sys
 import base64
 import datetime
 import webbrowser
+
 
 
 # Connect to main app.py file
 from app import app
 
 # Connect to your app pages
-from apps import report_builder, multi_line_chart, line_chart, bar_chart, sunburst_chart, events_loader, survey_loader, dashboard, sql_builder, decline_analysis, contour_map, scatter_chart, area_chart, wellbore_diagram, wellbore_loader, LAS_chart, cross_section, items_loader, db_creation_update, variable_loader, python_interprete, export_data, nodal
+from apps import report_builder, multi_line_chart, line_chart, bar_chart, sunburst_chart, events_loader, survey_loader, dashboard, sql_builder2, decline_analysis, contour_map, scatter_chart, area_chart, wellbore_diagram, wellbore_loader, LAS_chart, cross_section, items_loader, db_creation_update, variable_loader, python_interprete, export_data, nodal, markers_loader, units_loader, mdt_loader
 
 app.css.config.serve_locally = True
 app.scripts.config.serve_locally = True
@@ -38,7 +40,7 @@ navbar = dbc.Navbar(
                     dbc.Col(dbc.NavbarBrand(html.Div(id="screen_name"), className="ml-2", style={'font-weight': 'bold', "text-align": "left"})),
                 ],
                 align="center",
-                no_gutters=True,
+                #no_gutters=True,
             ),
         ),
     ],
@@ -48,13 +50,15 @@ navbar = dbc.Navbar(
 
 SIDEBAR_STYLE = {
     "position": "fixed",
-    "top": 60,
+    "top": 59,
     "left": 0,
     "bottom": 0,
-    "width": "16rem",
+    "width": "18rem",
     "padding": "2rem 1rem",
-    "background-color": "#133c65",
+    "background-color": "#D5DBDB",
+    "font-weight": "bold",
     "overflow": "scroll",
+    "font-size": "32px; ",
 }
 
 # padding for the page content
@@ -110,7 +114,7 @@ submenu_mapas = [
     # we use the Collapse component to hide and reveal the navigation links
     dbc.Collapse(
         [
-            dbc.NavLink("Contorno", href="/apps/contour_map", active="exact"),
+            dbc.NavLink("Contorno y Estructural", href="/apps/contour_map", active="exact"),
             
         ],
         id="submenu-3-collapse",
@@ -130,8 +134,8 @@ submenu_datos = [
             dbc.NavLink("Wellbore Diagram", href="/apps/wellbore_loader", active="exact"),
             dbc.NavLink("Survey", href="/apps/survey_loader", active="exact"),
             dbc.NavLink("Items", href="/apps/items_loader", active="exact"),
-            dbc.NavLink("Puntos de Presión", href="/apps/survey_loader", active="exact"),
-            dbc.NavLink("Analisis Nodal", href="/apps/nodal", active="exact"),
+            dbc.NavLink("Puntos de Presión", href="/apps/mdt_loader", active="exact"),
+            dbc.NavLink("Estratigráfia", href="/apps/markers_loader", active="exact"),
         ],
         id="submenu-4-collapse",
     ),
@@ -147,7 +151,6 @@ submenu_ingenieria = [
     dbc.Collapse(
         [
             dbc.NavLink("Curva de Declinacion", href="/apps/decline_analysis", active="exact"),
-            dbc.NavLink("Prueba Build-Up", href="/apps/decline_analysis", active="exact"),
             dbc.NavLink("Cross Section", href="/apps/cross_section", active="exact"),
             dbc.NavLink("Esquematico del Pozo", href="/apps/wellbore_diagram", active="exact"),
             dbc.NavLink("LAS", href="/apps/LAS_chart", active="exact"),
@@ -168,10 +171,10 @@ submenu_admin = [
     dbc.Collapse(
         [
             dbc.NavLink("Variables Calculadas", href="/apps/variable_loader", active="exact"),    
-            dbc.NavLink("SQL Builder", href="/apps/sql_builder", active="exact"),
-            dbc.NavLink("Crear BD", href="/apps/db_creation_update", active="exact"),
+            dbc.NavLink("SQL Builder", href="/apps/sql_builder2", active="exact"),
+            dbc.NavLink("Actualizar BD", href="/apps/db_creation_update", active="exact"),
             dbc.NavLink("Exportar Datos", href="/apps/export_data", active="exact"),
-           
+            dbc.NavLink("Unidades", href="/apps/units_loader", active="exact"),
         ],
         id="submenu-6-collapse",
     ),
@@ -198,7 +201,7 @@ app.layout = html.Div([
     dcc.Store(id='side_click'),
     navbar,
     sidebar,
-    html.Div(content, style=dict(maxHeight=1000, overflowX='scroll')),
+    html.Div(content, style=dict(maxHeight=1200, overflowX='scroll')),
 ])
 
 # this function is used to toggle the is_open property of each Collapse
@@ -213,7 +216,6 @@ def set_navitem_class(is_open):
     if is_open:
         return "open"
     return ""
-
 
 for i in [1, 2, 3, 4, 5, 6]:
     app.callback(
@@ -247,8 +249,8 @@ def display_page(pathname):
         return events_loader.layout, 'Cargador de eventos'
     if pathname == '/':
         return dashboard.layout, 'Dashboard'
-    if pathname == '/apps/sql_builder':
-        return sql_builder.layout, 'SQL Builder'
+    if pathname == '/apps/sql_builder2':
+        return sql_builder2.layout, 'SQL Builder'
     if pathname == '/apps/decline_analysis':
         return decline_analysis.layout, 'Análisis de Declinación'
     if pathname == '/apps/contour_map': 
@@ -260,28 +262,35 @@ def display_page(pathname):
     if pathname == '/apps/wellbore_diagram': 
         return wellbore_diagram.layout, 'Diagrama Mecanico'
     if pathname == '/apps/wellbore_loader': 
-        return wellbore_loader.layout, 'Cargador de Drigrama Mecanico'
+        return wellbore_loader.layout, 'Cargador de Diagrama Mecánico'
     if pathname == '/apps/LAS_chart': 
         return LAS_chart.layout, 'Visualziador de Archivos LAS'
     if pathname == '/apps/cross_section': 
         return cross_section.layout, 'Generador de Cross Section'
     if pathname == '/apps/items_loader': 
-        return items_loader.layout, 'Generador de Reportes'
+        return items_loader.layout, 'Actualizacion Items'
     if pathname == '/apps/db_creation_update': 
-        return db_creation_update.layout, 'Creación y Actualizacion de la BD'
+        return db_creation_update.layout, 'Creación y Actualizacián de la BD'
     if pathname == '/apps/variable_loader': 
         return variable_loader.layout, 'Cargador de Variables Calculadas'
     if pathname == '/apps/python_interprete': 
         return python_interprete.layout, 'Interprete de Python'
     if pathname == '/apps/export_data': 
-        return export_data.layout, 'Exportar Datos'
+        return export_data.layout, 'Exportar Datos' 
     if pathname == '/apps/nodal': 
         return nodal.layout, 'Análisis Nodal'
+    if pathname == '/apps/markers_loader': 
+        return markers_loader.layout, 'Marcadores Estatigráficos'
+    if pathname == '/apps/units_loader': 
+        return units_loader.layout, 'Unidades'
+    if pathname == '/apps/mdt_loader': 
+        return mdt_loader.layout, 'Punto de Presión'     
+        return None, 'Bye'
     else:
         return "404 Page Error! Please choose a link" , ""
 
-#webbrowser.open('http://127.0.0.1:8050/', new=2)
+webbrowser.open_new_tab('http://127.0.0.1:8050/')
 
 if __name__ == '__main__':
-    app.run_server(debug=True)
+    app.run_server(debug=True, use_reloader=False)
    
