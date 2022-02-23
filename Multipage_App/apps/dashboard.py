@@ -75,10 +75,6 @@ query = "SELECT NOMBRE FROM VARIABLES"
 var_list =pd.read_sql(query, con)
 var_list = var_list.sort_values('NOMBRE')['NOMBRE'].unique()
 
-#Maxima fecha de produccion
-query = "SELECT FECHA FROM CIERRE_DIARIO_POZO WHERE TASA_GAS>0"
-daily_prod = pd.read_sql(query, con)
-MAX_FECHA =daily_prod['FECHA'].max()
 
 #Listado de unidades por variables
 query = "SELECT * FROM UNIDADES"
@@ -160,7 +156,7 @@ layout = html.Div([
                         html.Label(['Fecha: '],style={'font-weight': 'bold', "text-align": "left"}),
                         dcc.DatePickerSingle(
                             id='dtp_fecha_dashboard',
-                            date=MAX_FECHA,
+                            date=pd.to_datetime("today"),
                             display_format='YYYY-MM-DD',
                             style={'backgroundColor':'white'},
                         )
@@ -272,8 +268,9 @@ def create_figure(well, column_y, clear_data, file_name):
             for linea in contenido:
                 query +=  linea 
 
-            query +=" ORDER BY FECHA"
             df =pd.read_sql(query, con)
+            df = df.sort_values(by=['FECHA'])
+
         if clear_data:
             df = df.loc[df[column_y] >0]
 
@@ -345,10 +342,9 @@ def display_dropdowns(n_clicks, _, clear_data, file_name,  children):
                 for linea in contenido:
                     query +=  linea 
 
-                query += " ORDER BY FECHA"
                 df =pd.read_sql(query, con)
                 df.reset_index(drop=True, inplace=True)
-                
+
                 if  df.columns[2]=='FECHA':
                     default_column_y = df.columns[3]
                 else:
@@ -448,12 +444,16 @@ def update_table_compare(n_clicks, report_date, file_name):
     df = pd.DataFrame()
     query= ''
     con = sqlite3.connect(archivo)
+    filter = True
     
     cursor = con.execute("SELECT ROUND(SUM(TASA_GAS),6) FROM CIERRE_DIARIO_POZO WHERE FECHA='"+report_date+" 00:00:00'")
     valor= cursor.fetchall()
     if valor:
         for data in valor:
-            valor_prodgas = ' {} MMPCD'.format(data[0])
+            if data[0] is None:
+                valor_prodgas = ' {} MMPCD'.format(0)
+            else:
+                valor_prodgas = ' {} MMPCD'.format(data[0])
     else:
         valor_prodgas = ""
     
@@ -461,20 +461,32 @@ def update_table_compare(n_clicks, report_date, file_name):
     valor= cursor.fetchall()
     if valor:
         for data in valor:
-            valor_prodcond = ' {} BLS'.format(data[0])
+            if data[0] is None:
+                valor_prodcond = ' {} BLS'.format(0)
+            else:
+                valor_prodcond = ' {} BLS'.format(data[0])
     else:
         valor_prodcond = ""
     
     cursor = con.execute("SELECT ROUND(SUM(TASA_AGUA),2) FROM CIERRE_DIARIO_POZO WHERE FECHA='"+report_date+" 00:00:00'")
     valor= cursor.fetchall()
-    for data in valor:
-        valor_prodwat = ' {} BLS'.format(data[0])
+    if valor:
+        for data in valor:
+            if data[0] is None:
+                valor_prodwat = ' {} BLS'.format(0)
+            else:
+                valor_prodwat = ' {} BLS'.format(data[0])
+    else:
+         valor_prodwat = ''
 
     cursor = con.execute("SELECT ROUND(SUM(DIFERIDA_ALTA_GAS),6) FROM PERDIDAS_POZO WHERE FECHA='"+report_date+" 00:00:00'")
     valor= cursor.fetchall()
     if valor:
         for data in valor:
-            valor_perdidas = ' {} MMPCD'.format(data[0])
+            if data[0] is None:
+                valor_perdidas = ' {} BLS'.format(0)
+            else:
+                valor_perdidas = ' {} BLS'.format(data[0])
     else:
         valor_perdidas = ""
     
@@ -483,7 +495,10 @@ def update_table_compare(n_clicks, report_date, file_name):
 
     if valor:
         for data in valor:
-            valor_potencial = ' {} MMPCD'.format(data[0])
+            if data[0] is None:
+                valor_potencial = ' {} BLS'.format(0)
+            else:
+                valor_potencial = ' {} BLS'.format(data[0])
     else:
         valor_potencial = ""
 
@@ -504,8 +519,8 @@ def update_table_compare(n_clicks, report_date, file_name):
                 index_cols = [col for col in df.columns if 'index' in col]
                 if index_cols:
                     df =df.drop(['index'], axis=1)
-                    
-                if query.find("PRUEBAS_POZO")>-1:
+
+                if query.find("PRUEBAS_POZO")>-1 or query.find("POTENCIAL_POZO")>-1:
                     df = df[df['FECHA']<= report_date+" 00:00:00"]
                     df = df.groupby('NOMBRE').nth(-1)
                 else:

@@ -103,7 +103,7 @@ layout = html.Div([
                         dcc.Dropdown(
                             id='dpd-pozo-lista',
                             options=[{'label': i, 'value': i} for i in well_list],
-                            clearable=False,
+                            clearable=True,
                             multi=False,
                         ),
                     ], width={"size": 4, "offset": 0}),

@@ -24,6 +24,7 @@ import json
 import os
 
 from app import app 
+from library import search_unit
 
 #https://community.plotly.com/t/pattern-call-backs-regarding-adding-dynamic-graphs/40724/4
 
@@ -57,7 +58,9 @@ if os.path.isfile('config.ini'):
 
 #Ruta de la BD
 archivo = ruta +  basededatos
-con = sqlite3.connect(archivo)
+con = sqlite3.connect(archivo, check_same_thread=False)
+dest = sqlite3.connect(':memory:')
+con.backup(dest)
 
 #Listado de pozos activos
 query = "SELECT NOMBRE FROM ITEMS WHERE ESTATUS=1 "
@@ -68,7 +71,7 @@ well_list = well_list.sort_values('NOMBRE')['NOMBRE'].unique()
 query = "SELECT * FROM UNIDADES"
 unidades =pd.read_sql(query, con)
 
-con.close()
+#con.close()
 
 #Listado de query
 pathway = './querys'
@@ -135,7 +138,7 @@ def create_figure(column_x, column_y1, column_y2, well, file_name, color_y1, col
     color_axis_y2 = dict(hex=color_y2)
 
     query= ''
-    con = sqlite3.connect(archivo)
+    #con = sqlite3.connect(archivo)
     fig = make_subplots(specs=[[{"secondary_y": True}]])
     if file_name:
         with open(os.path.join(QUERY_DIRECTORY, file_name)) as f:
@@ -145,20 +148,17 @@ def create_figure(column_x, column_y1, column_y2, well, file_name, color_y1, col
             df =pd.read_sql(query, con)
             df = df.query("NOMBRE == '{}'".format(well))
             df = df.sort_values(by='FECHA')
-        con.close()
+        #con.close()
         i=1
-        selec_unit = unidades.set_index(['VARIABLE'])
 
-        var_title = selec_unit.loc[column_y1]['GRAFICO']
-        var_unit = selec_unit.loc[column_y1]['UNIDAD']
-        var_color = selec_unit.loc[column_y1]['COLOR']
-        var_name = var_title + " " + var_unit
+        #Busca el nombre de la variable y el color
+        var_name, var_color = search_unit(unidades, column_y1)
 
         if color_axis_y1 == {'hex': '#1530E3'}:
             color_axis_y1 = dict(hex=var_color)
             
         fig.add_trace(
-            go.Scatter(x=df['FECHA'],
+            go.Scatter(x=df[column_x],
                 y=df[column_y1],
                 name=var_name,
                 line_color=color_axis_y1["hex"],
@@ -166,16 +166,14 @@ def create_figure(column_x, column_y1, column_y2, well, file_name, color_y1, col
             secondary_y=False,
         )
 
-        var_title = selec_unit.loc[column_y2]['GRAFICO']
-        var_unit = selec_unit.loc[column_y2]['UNIDAD']
-        var_name = var_title + " " + var_unit
-        var_color = selec_unit.loc[column_y2]['COLOR']
+        #Busca el nombre de la variable y el color        
+        var_name, var_color = search_unit(unidades, column_y2)
 
         if color_axis_y2 == {'hex': '#1530E3'}:
             color_axis_y2 = dict(hex=var_color)
 
         fig.add_trace(
-            go.Scatter(x=df['FECHA'],
+            go.Scatter(x=df[column_x],
                 y=df[column_y2],
                 name=var_name,
                 line_color=color_axis_y2["hex"],
@@ -216,19 +214,32 @@ def display_dropdowns(n_clicks, _,  well, file_name, children):
         default_column_x = "FECHA" 
         default_column_y1 = ""
         default_column_y2 = ""
-        con = sqlite3.connect(archivo)
+        #con = sqlite3.connect(archivo)
+
         if file_name:
             with open(os.path.join(QUERY_DIRECTORY, file_name)) as f:
                 contenido = f.readlines()
                 for linea in contenido:
                     query +=  linea 
+
+                query += " LIMIT 1"
+
                 df =pd.read_sql(query, con)
-                df = df.query("NOMBRE == '{}'".format(well))
-                df =df.sort_values("FECHA")
+
+            index_cols = [col for col in df.columns if 'index' in col]
+            if index_cols:
+                df =df.drop(['index'], axis=1)
+
+            nombre_cols = [col for col in df.columns if 'NOMBRE' in col]
+            if nombre_cols:
+                df =df.drop(['NOMBRE'], axis=1)
+
             column_name_list = df.columns.values.tolist()
-            default_column_y1 = column_name_list[3]
-            default_column_y2 = column_name_list[4]
+
             default_color = "#1530E3"
+
+            default_column_y1=column_name_list[1]
+            default_column_y2=column_name_list[1]
             
             new_element = html.Div([
                     dbc.Row([
@@ -324,7 +335,10 @@ def display_dropdowns(n_clicks, _,  well, file_name, children):
     [Output({"type": "dynamic-output", "index": MATCH}, "figure"),
     Output({"type": "dynamic-drop-x", "index": MATCH}, "options"),
     Output({"type": "dynamic-drop-y1", "index": MATCH}, "options"),
-    Output({"type": "dynamic-drop-y2", "index": MATCH}, "options")],
+    Output({"type": "dynamic-drop-y2", "index": MATCH}, "options"),
+    Output({"type": "dynamic-drop-x", "index": MATCH}, "value"),
+    Output({"type": "dynamic-drop-y1", "index": MATCH}, "value"),
+    Output({"type": "dynamic-drop-y2", "index": MATCH}, "value")],
     [
         Input({"type": "dynamic-drop-x", "index": MATCH}, "value"),
         Input({"type": "dynamic-drop-x", "index": MATCH}, "options"),
@@ -339,7 +353,10 @@ def display_dropdowns(n_clicks, _,  well, file_name, children):
     ],
 )
 def display_output(column_name_x, column_name_x_options, column_name_y1, column_name_y1_options, column_name_y2, column_name_y2_options, well, file_name, color_y1, color_y2):
-    con = sqlite3.connect(archivo)
+    #con = sqlite3.connect(archivo)
+    #dest = sqlite3.connect(':memory:')
+    #con.backup(dest)
+    
     query=''
     options_x = column_name_x_options
     options_y1 = column_name_y1_options
@@ -352,13 +369,22 @@ def display_output(column_name_x, column_name_x_options, column_name_y1, column_
                 query +=  linea 
 
             df =pd.read_sql(query, con)
+            index_cols = [col for col in df.columns if 'index' in col]
+            if index_cols:
+                df =df.drop(['index'], axis=1)
+
+            nombre_cols = [col for col in df.columns if 'NOMBRE' in col]
+            if nombre_cols:
+                df =df.drop(['NOMBRE'], axis=1)
+
             options_x=[{'label': i, 'value': i} for i in df.columns]
-            options_y=[{'label': i, 'value': i} for i in df.columns]
+            options_y1=[{'label': i, 'value': i} for i in df.columns]
+            options_y2=[{'label': i, 'value': i} for i in df.columns]
 
         if column_name_y1 not in df.columns:
-            column_name_y1 = df.columns[3]
+            column_name_y1 = df.columns[1]
         if column_name_y2 not in df.columns:
-            column_name_y2 = df.columns[3]
+            column_name_y2 = df.columns[2]
         if column_name_x not in df.columns:
-            column_name_x = df.columns[4]
-    return create_figure(column_name_x, column_name_y1, column_name_y2, well, file_name, color_y1, color_y2), options_x, options_y1, options_y2
+            column_name_x = df.columns[0]
+    return create_figure(column_name_x, column_name_y1, column_name_y2, well, file_name, color_y1, color_y2), options_x, options_y1, options_y2, column_name_x, column_name_y1, column_name_y2

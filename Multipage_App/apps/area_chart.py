@@ -262,8 +262,13 @@ def update_bar_chart(n_clicks, file_name, well_name, columns_list_y1, columns_li
                 df =df.sort_values("FECHA")
 
                 if var_list is not None:
+                    for columna in df.columns:
+                        if columna != 'FECHA' and columna != 'NOMBRE':
+                            df[columna] = pd.to_numeric(df[columna])
+
                     for var in var_list:
                         requisitos_list, titulo, ecuacion = search_calcv( archivo, var)
+
                         if search_list(requisitos_list, df.columns.tolist()):
                             df[titulo] =eval(ecuacion)
                             var_name = titulo
@@ -368,6 +373,10 @@ def update_column_list(file_name, var_list):
                 df =pd.read_sql(query, con)
 
                 if var_list is not None:
+                    for columna in df.columns:
+                        if columna != 'FECHA' and columna != 'NOMBRE':
+                            df[columna] = pd.to_numeric(df[columna])
+
                     for var in var_list:
                         requisitos_list, titulo, ecuacion = search_calcv( archivo, var)
 

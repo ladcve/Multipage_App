@@ -264,6 +264,10 @@ def update_pie_chart(n_clicks, file_name, well_name, columns_list, dtp_fecha, ch
 
             if columns_list:
                 if var_list is not None:
+                    for columna in df.columns:
+                        if columna != 'FECHA' and columna != 'NOMBRE':
+                            df[columna] = pd.to_numeric(df[columna])
+
                     for var in var_list:
                         requisitos_list, titulo, ecuacion = search_calcv( archivo, var)
                         if search_list(requisitos_list, df.columns.tolist()):
@@ -324,6 +328,10 @@ def update_column_list_pie(file_name, var_list):
             df =pd.read_sql(query, con)
 
             if var_list is not None:
+                for columna in df.columns:
+                    if columna != 'FECHA' and columna != 'NOMBRE':
+                        df[columna] = pd.to_numeric(df[columna])
+
                 for var in var_list:
                     requisitos_list, titulo, ecuacion = search_calcv( archivo, var)
 

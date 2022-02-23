@@ -367,6 +367,10 @@ def update_table(n_clicks, file_name, well_name, var_list, group_by, group_optio
 
             #Agrega las variables calculadas
             if var_list:
+                for columna in df.columns:
+                    if columna != 'FECHA' and columna != 'NOMBRE':
+                        df[columna] = pd.to_numeric(df[columna])
+
                 for var in var_list:
                     requisitos_list, titulo, ecuacion = search_calcv( archivo, var)
                     if search_list(requisitos_list, df.columns.tolist()):
