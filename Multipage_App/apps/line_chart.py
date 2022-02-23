@@ -780,6 +780,13 @@ layout = html.Div([
             ]),
         ]),
     ]),
+    dbc.Modal(
+        [
+            dbc.ModalHeader("Plantilla Salvada"),
+        ],
+        id="modal_line",
+        is_open=False,
+    ),
 ])
 
 @app.callback(
@@ -878,7 +885,7 @@ def update_column_list(file_name, var_list):
     return columns, columns, columns, columns, columns, columns, columns, columns
 
 @app.callback(
-    Output('save_message_linechart','children'),
+    Output('modal_line','is_open'),
     [Input('btn_save_linechart', 'n_clicks'),
     Input('dpd-consulta-lista', 'value'),
     Input('dpd-column-list-y1', 'value'),
@@ -890,8 +897,9 @@ def update_column_list(file_name, var_list):
     Input('ts-annotation', 'value'), 
     Input('dpd-LineStile-y2', 'value'),
     Input('dpd-LineStile-y2', 'value'),
+    State('modal_line', 'is_open')
     ]) 
-def save_linechart(n_clicks, consulta, datos_y1, datos_y2, file_name, var_list, color_y1, color_y2, text_annot, stile_y1, stile_y2 ):
+def save_linechart(n_clicks, consulta, datos_y1, datos_y2, file_name, var_list, color_y1, color_y2, text_annot, stile_y1, stile_y2, is_open ):
     mensaje=''
     changed_id = [p['prop_id'] for p in dash.callback_context.triggered][0]
     if 'btn_save_linechart' in changed_id:
@@ -910,8 +918,8 @@ def save_linechart(n_clicks, consulta, datos_y1, datos_y2, file_name, var_list, 
             })
         with open(CHART_DIRECTORY+file_name, 'w') as file:
             json.dump(data, file, indent=4)
-        mensaje = 'Archivo guardado'
-    return mensaje
+        is_open = True
+    return is_open
 
 @app.callback( [Output('inp-ruta-linechart', 'value'),
                 Output('dpd-consulta-lista', 'value'),

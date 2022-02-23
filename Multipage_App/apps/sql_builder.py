@@ -301,6 +301,13 @@ layout = html.Div([
             ]),
         ], label="Creacion de Consulta")
     ]),
+    dbc.Modal(
+        [
+            dbc.ModalHeader("Consulta guardada"),
+        ],
+        id="modal",
+        is_open=False,
+    ),
 ])
 
 @app.callback(
@@ -373,22 +380,23 @@ def update_table(n_clicks, textarea_fields, textarea_tables, textarea_where, dat
 
 
 @app.callback(
-    Output("loading-sql-message", "children"),
+    Output("modal", "is_open"),
     [Input("btn_save_file", "n_clicks"),
      Input('textarea-fields', 'value'), 
      Input('textarea-tables', 'value'),
      Input('textarea-where', 'value'),
-     Input('inp-ruta-sql', 'value')],
+     Input('inp-ruta-sql', 'value'),
+     State('modal','is_open')],
 )
-def func(n_clicks, textarea_fields, textarea_tables, textarea_where, file_name):
+def func(n_clicks, textarea_fields, textarea_tables, textarea_where, file_name, is_open):
     changed_id = [p['prop_id'] for p in dash.callback_context.triggered][0]
     query =  textarea_fields+' '+ textarea_tables+' '+ textarea_where
     mensaje = ''
     if 'btn_save_file' in changed_id:
          if file_name  and query: 
             save_file(file_name, query)
-            mensaje='Archivo Salvado'
-    return mensaje
+            is_open=True
+    return is_open
 
 @app.callback([Output('inp-ruta-edit', 'value'),
                 Output('textarea-edit', 'value')],

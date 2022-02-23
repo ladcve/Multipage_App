@@ -240,6 +240,13 @@ layout = html.Div([
             ),
         ], width=3),
     ]),
+    dbc.Modal(
+        [
+            dbc.ModalHeader("Plantilla guardada"),
+        ],
+        id="modal_scatter",
+        is_open=False,
+    ),
 ])
 
 @app.callback(
@@ -395,7 +402,7 @@ def update_column_list(file_name, var_list):
     return columns, columns
 
 @app.callback(
-    Output('save_message_scatter','children'),
+    Output('modal_scatter','is_open'),
     [Input('btn_save_scatterchart', 'n_clicks'),
     Input('dpd-query-list-scatter', 'value'),
     Input('dpd-column-list-x-scatter', 'value'),
@@ -403,8 +410,9 @@ def update_column_list(file_name, var_list):
     Input('inp-ruta-scatterchart', 'value'),
     Input('dpd-var-list-scatterchart', 'value'),
     Input('ts-statistic','value'),
-    Input("PolyFeat", "value"),]) 
-def save_scatterchart(n_clicks, consulta, datos_y1, datos_y2, file_name, var_list, trend_type, nFeatures ):
+    Input("PolyFeat", "value"),
+    State('modal_scatter','is_open')]) 
+def save_scatterchart(n_clicks, consulta, datos_y1, datos_y2, file_name, var_list, trend_type, nFeatures, is_open ):
     mensaje=''
     changed_id = [p['prop_id'] for p in dash.callback_context.triggered][0]
     if 'btn_save_scatterchart' in changed_id:
@@ -420,8 +428,8 @@ def save_scatterchart(n_clicks, consulta, datos_y1, datos_y2, file_name, var_lis
             })
         with open(CHART_DIRECTORY+file_name, 'w') as file:
             json.dump(data, file, indent=4)
-        mensaje = 'Archivo guardado'
-    return mensaje
+        is_open =True
+    return is_open
 
 @app.callback( [Output('inp-ruta-scatterchart', 'value'),
                 Output('dpd-query-list-scatter', 'value'),

@@ -204,6 +204,13 @@ layout = html.Div([
             ),
         ], width=3),
     ]),
+    dbc.Modal(
+        [
+            dbc.ModalHeader("Plantilla Salvada"),
+        ],
+        id="modal_bar",
+        is_open=False,
+    ),
 ])
 
 @app.callback(
@@ -243,7 +250,7 @@ def update_bar_chart(n_clicks, file_name, well_name, columns_list, dtp_start_dat
                     for linea in contenido:
                         query +=  linea 
                 df =pd.read_sql(query, con)
-                df =df.sort_values("FECHA")
+
                 if var_list:
                     for columna in df.columns:
                         if columna != 'FECHA' and columna != 'NOMBRE':
@@ -262,10 +269,10 @@ def update_bar_chart(n_clicks, file_name, well_name, columns_list, dtp_start_dat
                     if len(df)>0:
                         if staked_columns=='STC':
                             fig = px.bar(df, x="NOMBRE", y=columns_list,  height=700,  
-                            title=chart_title, barmode='stack', animation_frame="FECHA" )
+                            title=chart_title, animation_group="NOMBRE", barmode='stack', animation_frame="FECHA" )
                         else:
                             fig = px.bar(df, x="NOMBRE", y=columns_list,  height=700,  
-                            title=chart_title, barmode='group', animation_frame="FECHA")
+                            title=chart_title,  animation_group="NOMBRE", barmode='group', animation_frame="FECHA")
     return fig
 
 @app.callback(
@@ -313,14 +320,16 @@ def update_column_list(file_name, var_list):
     return columns
 
 @app.callback(
-    Output('save_message_barchart','children'),
+    Output('modal_bar','is_open'),
     [Input('btn_save_barchart', 'n_clicks'),
     Input('dpd-query-list-bar', 'value'),
     Input('dpd-column-list', 'value'),
     Input('inp-ruta-barchart', 'value'),
     Input('dpd-var-list-barchart', 'value'),
-    Input('inp_barchart_name', 'value')]) 
-def save_bar_chart(n_clicks, consulta, datos_y1, file_name, var_list, chart_title ):
+    Input('inp_barchart_name', 'value'),
+    State("modal_bar", "is_open")
+    ]) 
+def save_bar_chart(n_clicks, consulta, datos_y1, file_name, var_list, chart_title, is_open ):
     mensaje=''
     changed_id = [p['prop_id'] for p in dash.callback_context.triggered][0]
     if 'btn_save_barchart' in changed_id:
@@ -334,8 +343,8 @@ def save_bar_chart(n_clicks, consulta, datos_y1, file_name, var_list, chart_titl
         if file_name:
             with open(CHART_DIRECTORY+file_name, 'w') as file:
                 json.dump(data, file, indent=4)
-            mensaje = 'Archivo guardado'
-    return mensaje
+            is_open = True
+    return is_open
 
 @app.callback( [Output('inp-ruta-barchart', 'value'),
                 Output('dpd-query-list-bar', 'value'),

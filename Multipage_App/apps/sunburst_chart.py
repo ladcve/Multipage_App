@@ -145,7 +145,7 @@ layout = html.Div([
                         dbc.Button(html.Span(["Grabar  ", html.I(className="fas fa-save ml-1")],style={'font-size':'1.5em','text-align':'center'}),
                          id="btn_save_piechart", n_clicks=0, color="primary", className="mr-3"),
                         html.Div(id="save_message_piechart"),
-                    ], width={"size": 1, "offset": 1}),
+                    ], width={"size": 2, "offset": 1}),
                 ]),
                 html.Br(),
             ], style={"background-color": "#F9FCFC"},),
@@ -220,6 +220,13 @@ layout = html.Div([
             ),
         ], width=3),
     ]),
+    dbc.Modal(
+        [
+            dbc.ModalHeader("Plantilla Salvada"),
+        ],
+        id="modal_pie",
+        is_open=False,
+    ),
 ])
 
 @app.callback(
@@ -349,7 +356,7 @@ def update_column_list_pie(file_name, var_list):
     return columns
 
 @app.callback(
-    Output('save_message_piechart','children'),
+     Output("modal_pie", "is_open"),
     [Input('btn_save_piechart', 'n_clicks'),
     Input('dpd-query-list-pie', 'value'),
     Input('dpd-column-lists-pie', 'value'),
@@ -357,11 +364,12 @@ def update_column_list_pie(file_name, var_list):
     Input('dpd-var-list-piechart', 'value'),
     Input('dpd-color-lists-pie', 'value'),
     Input('inp_piechart_name', 'value'),
+    State("modal_pie", "is_open")
     ]) 
-def save_piechart(n_clicks, consulta, datos_y1, file_name, var_list, color, chart_title ):
+def save_piechart(n_clicks, consulta, datos_y1, file_name, var_list, color, chart_title, is_open ):
     mensaje=''
     changed_id = [p['prop_id'] for p in dash.callback_context.triggered][0]
-    if 'btn_save_linechart' in changed_id:
+    if 'btn_save_piechart' in changed_id:
         data = {}
         data['grafico'] = []
         data['grafico'].append({
@@ -374,8 +382,8 @@ def save_piechart(n_clicks, consulta, datos_y1, file_name, var_list, color, char
         if file_name:
             with open(CHART_DIRECTORY+file_name, 'w') as file:
                 json.dump(data, file, indent=4)
-            mensaje = 'Archivo guardado'
-    return mensaje
+            is_open = True
+    return is_open
 
 @app.callback( [Output('inp-ruta-piechart', 'value'),
                 Output('dpd-query-list-pie', 'value'),

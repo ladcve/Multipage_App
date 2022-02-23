@@ -254,10 +254,12 @@ def display_dropdowns(n_clicks, _,  well, file_name, children):
                         dbc.Col([
                             dac.Box([
                                     dac.BoxBody([
-                                        dcc.Graph(
-                                            id={"type": "dynamic-output", "index": n_clicks},
-                                            style={"width": "100%"},
-                                            figure=create_figure(default_column_x, default_column_y1, default_column_y2, well, file_name, default_color, default_color),
+                                        dbc.Spinner(
+                                            dcc.Graph(
+                                                id={"type": "dynamic-output", "index": n_clicks},
+                                                style={"width": "100%"},
+                                                figure=create_figure(default_column_x, default_column_y1, default_column_y2, well, file_name, default_color, default_color),
+                                            ),
                                         ),
                                     ]),	
                                 ],
@@ -280,7 +282,7 @@ def display_dropdowns(n_clicks, _,  well, file_name, children):
                                         html.Label(['Eje X:'],style={'font-weight': 'bold', "text-align": "left"}),
                                         dcc.Dropdown(
                                             id={"type": "dynamic-drop-x", "index": n_clicks},
-                                            options=[{"label": i, "value": i} for i in df.columns],
+                                            options=[{"label": i, "value": i} for i in df.columns[:1]],
                                             value=default_column_x,
                                             clearable=False,
                                         ), 
@@ -288,7 +290,7 @@ def display_dropdowns(n_clicks, _,  well, file_name, children):
                                         html.Label(['Eje Y1:'],style={'font-weight': 'bold', "text-align": "left"}),
                                         dcc.Dropdown(
                                             id={"type": "dynamic-drop-y1", "index": n_clicks},
-                                            options=[{"label": i, "value": i} for i in df.columns],
+                                            options=[{"label": i, "value": i} for i in df.columns[1:]],
                                             value=default_column_y1,
                                             clearable=False,
                                         ),
@@ -304,7 +306,7 @@ def display_dropdowns(n_clicks, _,  well, file_name, children):
                                         html.Label(['Eje Y2:'],style={'font-weight': 'bold', "text-align": "left"}),
                                         dcc.Dropdown(
                                             id={"type": "dynamic-drop-y2", "index": n_clicks},
-                                            options=[{"label": i, "value": i} for i in df.columns],
+                                            options=[{"label": i, "value": i} for i in df.columns[1:]],
                                             value=default_column_y2,
                                             clearable=False,
                                         ),
@@ -377,9 +379,9 @@ def display_output(column_name_x, column_name_x_options, column_name_y1, column_
             if nombre_cols:
                 df =df.drop(['NOMBRE'], axis=1)
 
-            options_x=[{'label': i, 'value': i} for i in df.columns]
-            options_y1=[{'label': i, 'value': i} for i in df.columns]
-            options_y2=[{'label': i, 'value': i} for i in df.columns]
+            options_x=[{'label': i, 'value': i} for i in df.columns[:1]]
+            options_y1=[{'label': i, 'value': i} for i in df.columns[1:]]
+            options_y2=[{'label': i, 'value': i} for i in df.columns[1:]]
 
         if column_name_y1 not in df.columns:
             column_name_y1 = df.columns[1]

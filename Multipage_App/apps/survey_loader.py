@@ -121,7 +121,14 @@ layout = html.Div([
                 ),
             ]),
         ], style={"background-color": "#F9FCFC"},),
-    ])
+    ]),
+    dbc.Modal(
+        [
+            dbc.ModalHeader("Plantilla Salvada"),
+        ],
+        id="modal_survey",
+        is_open=False,
+    ),
 ])
 
 @app.callback(Output('inp-ruta-excel', 'value'),
@@ -158,11 +165,11 @@ def update_table_excel(n_clicks, excel_name, sheet_excel_name, well_name, data, 
     return data, columns
 
 @app.callback(
-    Output("save_message_excel", "children"),
+    Output("modal_survey", "children"),
     Input("btn_save_excel_data", "n_clicks"),
-    [State('query_results_excel', 'data')]
+    [State('query_results_excel', 'data'),State('modal_survey','is_open')]
 )
-def fupdate_table(n_clicks, dataset):
+def fupdate_table(n_clicks, dataset, is_open):
     changed_id = [p['prop_id'] for p in dash.callback_context.triggered][0]
     mensaje = ''
     pg = pd.DataFrame(dataset)
@@ -171,5 +178,5 @@ def fupdate_table(n_clicks, dataset):
         pg.to_sql('SURVEY', con, if_exists='append', index=False)
         con.commit()
         con.close()
-        mensaje='Datos guardados'
-    return mensaje
+        is_open=True
+    return is_open

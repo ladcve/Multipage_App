@@ -140,6 +140,13 @@ layout = html.Div([
             width=12
         ),
     ]),
+    dbc.Modal(
+        [
+            dbc.ModalHeader("Datos guardados"),
+        ],
+        id="modal_mdt",
+        is_open=False,
+    ),
 ])
 
 @app.callback(
@@ -153,11 +160,11 @@ def add_unit(n_clicks, rows, columns):
     return rows
 
 @app.callback(
-    Output("save_messages_mdt", "children"),
+    Output("modal_mdt", "is_open"),
     Input("btn_save_mdt", "n_clicks"),
-    [State('tb_mdt', 'data')]
+    [State('tb_mdt', 'data'),State('modal_mdt','is_open')]
 )
-def update_table_unitsvariables(n_clicks, dataset):
+def update_table_unitsvariables(n_clicks, dataset, is_open):
     changed_id = [p['prop_id'] for p in dash.callback_context.triggered][0]
     mensaje = ''
     pg = pd.DataFrame(dataset)
@@ -166,5 +173,5 @@ def update_table_unitsvariables(n_clicks, dataset):
         pg.to_sql('MDT', con, if_exists='replace', index=False)
         con.commit()
         con.close()
-        mensaje='Datos guardados'
-    return mensaje
+        is_open=True
+    return is_open

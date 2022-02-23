@@ -134,6 +134,13 @@ layout = html.Div([
             width=12
         ),
     ]),
+    dbc.Modal(
+        [
+            dbc.ModalHeader("Datos guardados"),
+        ],
+        id="modal_marker",
+        is_open=False,
+    ),
 ])
 
 
@@ -149,11 +156,11 @@ def add_row(n_clicks, rows, columns):
 
 
 @app.callback(
-    Output("save_messages", "children"),
+    Output("modal_marker", "is_open"),
     Input("btn_save_changes", "n_clicks"),
-    [State('tab_data_markers', 'data')]
+    [State('tab_data_markers', 'data'), State('modal_marker','is_open')]
 )
-def fupdate_table(n_clicks, dataset):
+def fupdate_table(n_clicks, dataset, is_open):
     changed_id = [p['prop_id'] for p in dash.callback_context.triggered][0]
     mensaje = ''
     pg = pd.DataFrame(dataset)
@@ -162,5 +169,5 @@ def fupdate_table(n_clicks, dataset):
         pg.to_sql('MARCADORES', con, if_exists='replace', index=False)
         con.commit()
         con.close()
-        mensaje='Datos guardados'
-    return mensaje
+        is_open=True
+    return is_open

@@ -118,18 +118,26 @@ layout = html.Div([
             width=4
         ),
     ]),
+    dbc.Modal(
+        [
+            dbc.ModalHeader("BD Actualizada"),
+        ],
+        id="modal_db_update",
+        is_open=False,
+    ),
 ])
 
 @app.callback(
-    [Output('save_db_messages', 'children'),
+    [Output('mdoal_db_update', 'is_open'),
      Output('txt-last-update', 'children'),
      Output('error-connect-pdms', 'displayed'),
      Output('error-connect-sqlite', 'displayed')
      ],
     [Input('btn_udpate_db', 'n_clicks'),
-    Input('ckl-tables', 'value')],
+    Input('ckl-tables', 'value'),
+    State('modal_db_update','is_open')],
     )
-def add_items_rows(n_clicks, tables_selected):
+def add_items_rows(n_clicks, tables_selected, is_open):
 
     changed_id = [p['prop_id'] for p in dash.callback_context.triggered][0]
     mensaje=''
@@ -182,7 +190,7 @@ def add_items_rows(n_clicks, tables_selected):
                     df_pruebas=pd.read_sql_query(read_pruebas.format(dstart),SQLPd)
                     df_pruebas.to_sql(sqlite_table, con, if_exists='replace')
  
-                mensaje = 'Datos actualizados'
+                is_open = True
                 con.commit()
 
                 temp=pd.read_sql(query, con)
@@ -194,4 +202,4 @@ def add_items_rows(n_clicks, tables_selected):
                 mensaje = e
                 error_sqlite = True
 
-    return mensaje, last_update, error_pdms, error_sqlite
+    return is_open, last_update, error_pdms, error_sqlite

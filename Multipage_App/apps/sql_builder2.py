@@ -311,6 +311,13 @@ layout = html.Div([
             ]),
         ], width={"size": 9, "offset": 0}),
     ]),
+    dbc.Modal(
+        [
+            dbc.ModalHeader("Consulta guardada"),
+        ],
+        id="modal_sql",
+        is_open=False,
+    ),
 ])
 
 @app.callback(
@@ -411,19 +418,20 @@ def execute_query(n_clicks, query):
 
 
 @app.callback(
-    Output('save_message_query', 'children'),
+    Output('modal_sql', 'is_open'),
     [Input('btn_save_query', 'n_clicks'),
      Input('textarea-edit', 'value'),
-     Input('inp-query-edit', 'value')],
+     Input('inp-query-edit', 'value'),
+     State('modal_sql','is_open')],
 )
-def save_query_file(n_clicks, textarea_query, file_name):
+def save_query_file(n_clicks, textarea_query, file_name, is_open):
     changed_id = [p['prop_id'] for p in dash.callback_context.triggered][0]
     mensaje = ''
     if 'btn_save_query' in changed_id:
          if file_name  and textarea_query: 
             save_file(file_name, textarea_query)
-            mensaje='Salvado'
-    return mensaje
+            is_open=True
+    return is_open
 
  
 @app.callback(

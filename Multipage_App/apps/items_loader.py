@@ -161,7 +161,14 @@ layout = html.Div([
             width=12
         ),
     ]),
-    html.Div(id='table-items-container')
+    html.Div(id='table-items-container'),
+    dbc.Modal(
+        [
+            dbc.ModalHeader("Datos guardados"),
+        ],
+        id="modal_items",
+        is_open=False,
+    ),
 ])
 
 @app.callback(
@@ -175,11 +182,12 @@ def add_items_rows(n_clicks, rows, columns):
     return rows
 
 @app.callback(
-    Output("save_item_messages", "children"),
+    Output("modal_items", "is_open"),
     Input("btn_save_items", "n_clicks"),
-    [State('table-items', 'data')]
+    [State('table-items', 'data'),
+    State('modal_items', 'is_open')]
 )
-def update_table_item(n_clicks, dataset):
+def update_table_item(n_clicks, dataset, is_open):
     mensaje = ''
     pg = pd.DataFrame(dataset)
     pg["GRADIENTE"] = pd.to_numeric(pg["GRADIENTE"])
@@ -192,5 +200,5 @@ def update_table_item(n_clicks, dataset):
         pg.to_sql('ITEMS', con, if_exists='replace', index=False)
         #con.commit()
         con.close()
-        mensaje='Datos guardados'
-    return mensaje
+        is_open=True
+    return is_open

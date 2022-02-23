@@ -224,6 +224,13 @@ layout = html.Div([
             ),
         ], width=3),
     ]),
+    dbc.Modal(
+        [
+            dbc.ModalHeader("Plantilla Salvada"),
+        ],
+        id="modal_area",
+        is_open=False,
+    ),
 ])
 
 @app.callback(
@@ -394,7 +401,7 @@ def update_column_list(file_name, var_list):
     return columns, columns
 
 @app.callback(
-    Output('save_message_areachart','children'),
+    Output("modal_area", "is_open"),
     [Input('btn_save_areachart', 'n_clicks'),
     Input('dpd-query-list-area', 'value'),
     Input('dpd-column-list-ejey1-area', 'value'),
@@ -403,8 +410,10 @@ def update_column_list(file_name, var_list):
     Input('dpd-mode', 'value'),
     Input('inp-color-y1', 'value'),
     Input('inp-color-y2', 'value'),
-    Input('dpd-var-list-areachart', 'value')]) 
-def save_area_chart(n_clicks, consulta, datos_y1,datos_y2, file_name, type_mode, color_y1, color_y2, var_list ):
+    Input('dpd-var-list-areachart', 'value'),
+    State("modal_area", "is_open")
+    ]) 
+def save_area_chart(n_clicks, consulta, datos_y1,datos_y2, file_name, type_mode, color_y1, color_y2, var_list, is_open ):
     mensaje=''
     changed_id = [p['prop_id'] for p in dash.callback_context.triggered][0]
     if 'btn_save_areachart' in changed_id:
@@ -421,8 +430,8 @@ def save_area_chart(n_clicks, consulta, datos_y1,datos_y2, file_name, type_mode,
         if file_name:
             with open(TEMPLATE_DIRECTORY+file_name, 'w') as file:
                 json.dump(data, file, indent=4)
-            mensaje = 'Guardado'
-    return mensaje
+            is_open = True
+    return is_open
 
 @app.callback( [Output('inp-ruta-areachart', 'value'),
                 Output('dpd-query-list-area', 'value'),

@@ -200,11 +200,17 @@ layout = html.Div([
     ]),
     html.Br(),
     html.Br(),
-
+    dbc.Modal(
+        [
+            dbc.ModalHeader("Datos exportados"),
+        ],
+        id="modal_export",
+        is_open=False,
+    ),
 ])
 
 @app.callback(
-    Output("save_export_message", "children"),
+    Output("modal_export", "is_open"),
     Input("btn_export_data", "n_clicks"),
     Input("dt_tables_data", "data"),
     Input("dt_tables_data", "derived_virtual_selected_rows"),
@@ -214,26 +220,40 @@ layout = html.Div([
     Input('ts-date-filter', 'value'), 
     Input('dtp_fecha', 'start_date'),
     Input('dtp_fecha', 'end_date'),
+    State('modal_export', 'is_open')
 )
-def fupdate_table(n_clicks, table_data, table_id, query_data, query_id, formato, filter,dtp_start_date, dtp_end_date, ):
+def fupdate_table(n_clicks, table_data, table_id, query_data, query_id, formato, filter,dtp_start_date, dtp_end_date, is_open):
     changed_id = [p['prop_id'] for p in dash.callback_context.triggered][0]
     mensaje = ''
     query=''
     fecha_inicio = str(dtp_start_date)
     fecha_fin = str(dtp_end_date)
+    table_list = ['SURVEY', 'VARIABLE', 'NODAL', 'UNIDADES','WELLBORE','MARCADORES','ITEMS']
     if 'btn_export_data' in changed_id:
         con = sqlite3.connect(archivo)
         if table_id is not None:
             for row_id in table_id:
                 table_name =  table_data[row_id]['name']
                 query = "SELECT * FROM "+table_name
-                if filter:
+                if filter and table_name not in table_list:
                     query += " WHERE date(FECHA)>='"+fecha_inicio+"' AND  date(FECHA)<='"+fecha_fin+"' ORDER BY FECHA"
                 
                 df =pd.read_sql(query, con)
-                if formato == 'EXCEL': df.to_excel(EXPORT_DIRECTORY+table_name+".xlsx") 
-                if formato == 'CSV': df.to_csv(EXPORT_DIRECTORY+table_name+".csv", index=False) 
-                if formato == 'JSON': df.to_json (EXPORT_DIRECTORY+table_name+".json")
+                if formato == 'EXCEL': 
+                    if os.path.isfile(EXPORT_DIRECTORY+table_name+".xlsx"):
+                        df.to_excel(EXPORT_DIRECTORY+table_name+"(1).xlsx")
+                    else:
+                        df.to_excel(EXPORT_DIRECTORY+table_name+".xlsx")
+                if formato == 'CSV': 
+                    if os.path.isfile(EXPORT_DIRECTORY+table_name+".csv"):
+                        df.to_csv(EXPORT_DIRECTORY+table_name+".csv")
+                    else:
+                        df.to_csv(EXPORT_DIRECTORY+table_name+"(1).csv")
+                if formato == 'JSON':
+                    if os.path.isfile(EXPORT_DIRECTORY+table_name+".json"):
+                        df.to_json (EXPORT_DIRECTORY+table_name+"(1).json")
+                    else:
+                        df.to_json (EXPORT_DIRECTORY+table_name+".json")
         if query_id is not None:
             query=''
             for row_id in query_id:
@@ -242,13 +262,31 @@ def fupdate_table(n_clicks, table_data, table_id, query_data, query_id, formato,
                     contenido = f.readlines()
                 for linea in contenido:
                     query +=  linea
+                if filter and table_name not in table_list:
+                    if query.find("WHERE")>-1 or query.find("where")>-1:
+                        query += " AND date(FECHA)>='"+fecha_inicio+"' AND  date(FECHA)<='"+fecha_fin+"' ORDER BY FECHA"
+                    else:
+                        query += " WHERE date(FECHA)>='"+fecha_inicio+"' AND  date(FECHA)<='"+fecha_fin+"' ORDER BY FECHA"
                 df =pd.read_sql(query, con)
-                if formato == 'EXCEL': df.to_excel(EXPORT_DIRECTORY+query_name+".xlsx") 
-                if formato == 'CSV': df.to_csv(EXPORT_DIRECTORY+query_name+".csv") 
-                if formato == 'JSON': df.to_json (EXPORT_DIRECTORY+query_name+".json")
+
+                if formato == 'EXCEL': 
+                    if os.path.isfile(EXPORT_DIRECTORY+query_name+".xlsx"):
+                        df.to_excel(EXPORT_DIRECTORY+query_name+"(1).xlsx")
+                    else:
+                        df.to_excel(EXPORT_DIRECTORY+query_name+".xlsx")
+                if formato == 'CSV': 
+                    if os.path.isfile(EXPORT_DIRECTORY+query_name+".csv"):
+                        df.to_csv(EXPORT_DIRECTORY+query_name+".csv")
+                    else:
+                        df.to_csv(EXPORT_DIRECTORY+query_name+"(1).csv")
+                if formato == 'JSON':
+                    if os.path.isfile(EXPORT_DIRECTORY+query_name+".json"):
+                        df.to_json (EXPORT_DIRECTORY+query_name+"(1).json")
+                    else:
+                        df.to_json (EXPORT_DIRECTORY+query_name+".json")
         con.close()
-        mensaje='Datos guardados'
-    return mensaje
+        is_open=True
+    return is_open
 
 
 if __name__ == '__main__':

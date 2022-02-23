@@ -198,6 +198,13 @@ layout = html.Div([
             ),
         ], width=3),
     ]),
+    dbc.Modal(
+        [
+            dbc.ModalHeader("Plantilla Salvada"),
+        ],
+        id="modal_map",
+        is_open=False,
+    ),
 ])
 
 @app.callback(
@@ -241,9 +248,15 @@ def update_contour_map(n_clicks, file_name, columns_list, dtp_fecha, chart_title
                         query +=  linea
 
                     if query.find("WHERE")>-1 or query.find("where")>-1:
-                        query += " AND date(FECHA)='"+fecha+"' ORDER BY FECHA"
+                        if query.find("A.")>-1:
+                            query += " AND date(A.FECHA)='"+fecha+"' ORDER BY A.FECHA"
+                        else:
+                            query += " AND date(FECHA)='"+fecha+"' ORDER BY FECHA"
                     else:
-                        query += " WHERE date(FECHA)='"+fecha+"' ORDER BY FECHA"
+                        if query.find("A.")>-1:
+                            query += " WHERE date(A.FECHA)='"+fecha+"' ORDER BY A.FECHA"
+                        else:
+                             query += " WHERE date(FECHA)='"+fecha+"' ORDER BY FECHA"
                 
                 df =pd.read_sql(query, con)
 
@@ -271,10 +284,10 @@ def update_contour_map(n_clicks, file_name, columns_list, dtp_fecha, chart_title
                                 ))))
                     # Update plot sizing
                     fig.update_layout(
-                        width=1000,
+                        width=1200,
                         height=750,
                         autosize=False,
-                        margin=dict(t=0, b=0, l=0, r=0),
+                        margin=dict(t=0, b=0, l=0, r=150),
                     )
 
                     # Update 3D scene options
@@ -284,7 +297,7 @@ def update_contour_map(n_clicks, file_name, columns_list, dtp_fecha, chart_title
                     )
                     # button_layer_1_height = 1.08
                     button_layer_1_height = 1.12
-                    button_layer_2_height = 1.065
+                    button_layer_2_height = 1.1
 
                     fig.update_layout(
                         updatemenus=[
@@ -359,7 +372,7 @@ def update_contour_map(n_clicks, file_name, columns_list, dtp_fecha, chart_title
                             ),
                         ]
                     )
-
+                    fig.update_layout(modebar_orientation="v"),
                     fig.update_layout(
                         annotations=[
                             dict(text="Escala<br>Colores", x=0, xref="paper", y=1.1, yref="paper",
@@ -418,15 +431,16 @@ def update_column_list(file_name, var_list):
     return columns
 
 @app.callback(
-    Output('save_message_contour','children'),
+    Output('modal_map','is_open'),
     [Input('btn_save_map', 'n_clicks'),
     Input('dpd-query-list-contour', 'value'),
     Input('dpd-data-lists', 'value'),
     Input('inp-ruta-map', 'value'),
     Input('dpd-var-list-contour', 'value'),
     Input('inp_sample','value'),
-    Input('ts-emtpyspace', 'value')]) 
-def save_contour(n_clicks, consulta, datos_y1, file_name, var_list, sample, emptyspace ):
+    Input('ts-emtpyspace', 'value'),
+    State('modal_map', 'is_open')]) 
+def save_contour(n_clicks, consulta, datos_y1, file_name, var_list, sample, emptyspace, is_open ):
     mensaje=''
     changed_id = [p['prop_id'] for p in dash.callback_context.triggered][0]
     if 'btn_save_map' in changed_id:
@@ -441,8 +455,8 @@ def save_contour(n_clicks, consulta, datos_y1, file_name, var_list, sample, empt
         if file_name:
             with open(CHART_DIRECTORY+file_name, 'w') as file:
                 json.dump(data, file, indent=4)
-            mensaje = 'Archivo guardado'
-    return mensaje
+            is_open = True
+    return is_open
 
 @app.callback( [Output('inp_map_name', 'value'),
                 Output('dpd-query-list-contour', 'value'),

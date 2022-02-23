@@ -289,6 +289,13 @@ layout = html.Div([
             ),
         ], width=3),
     ]),
+    dbc.Modal(
+        [
+            dbc.ModalHeader("Plantilla guardada"),
+        ],
+        id="modal_report",
+        is_open=False,
+    ),
 ])
 
 @app.callback(
@@ -318,7 +325,7 @@ def update_table(n_clicks, file_name, well_name, var_list, group_by, group_optio
     if 'btn_execute_report' in changed_id:
         con = sqlite3.connect(archivo)
         query=''
-        if file_name is not None:
+        if file_name:
             with open(os.path.join(QUERY_DIRECTORY, file_name)) as f:
                 contenido = f.readlines()
             if contenido is not None:
@@ -359,7 +366,7 @@ def update_table(n_clicks, file_name, well_name, var_list, group_by, group_optio
                 if order_by:
                     df = df.sort_values(by=order_by, ascending=ascendente)
 
-                if group_by:
+                if group_by and group_options:
                     if agregation_fun == 'SUM':
                         df =df.groupby(group_options, as_index=True).sum().reset_index()
                     else:
@@ -390,12 +397,13 @@ def update_table(n_clicks, file_name, well_name, var_list, group_by, group_optio
     return data, columns
 
 @app.callback(
-    Output('save_message_reporte','children'),
+    Output('modal_report','is_open'),
     [Input('btn_save_report', 'n_clicks'),
     Input('dpd-query-lista', 'value'),
     Input('inp-ruta-report', 'value'),
-    Input('dpd-var-list', 'value')]) 
-def save_reporte(n_clicks, consulta, file_name, var_list ):
+    Input('dpd-var-list', 'value'),
+    State('modal_report','is_open')]) 
+def save_reporte(n_clicks, consulta, file_name, var_list, is_open ):
     mensaje=''
     changed_id = [p['prop_id'] for p in dash.callback_context.triggered][0]
     if 'btn_save_report' in changed_id:
@@ -406,8 +414,8 @@ def save_reporte(n_clicks, consulta, file_name, var_list ):
             'var_list': var_list})
         with open(TEMPLATE_DIRECTORY+file_name, 'w') as file:
             json.dump(data, file, indent=4)
-        mensaje = 'Archivo guardado'
-    return mensaje
+        is_open = True
+    return is_open
 
 @app.callback( [Output('inp-ruta-report', 'value'),
                 Output('dpd-query-lista', 'value'),

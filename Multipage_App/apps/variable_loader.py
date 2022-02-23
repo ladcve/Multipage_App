@@ -20,7 +20,7 @@ import base64
 import os
 
 from app import app 
-from library import search_list, days_month
+from library import search_list
 
 #Lee el archivo de configuracion
 configuracion = configparser.ConfigParser()
@@ -174,6 +174,13 @@ layout = html.Div([
             message='La consulta no cumple con los requisitos.',
         ),
     ]),
+    dbc.Modal(
+        [
+            dbc.ModalHeader("Variable guardada"),
+        ],
+        id="modal_var",
+        is_open=False,
+    ),
 ])
 
 
@@ -189,11 +196,11 @@ def add_variable(n_clicks, rows, columns):
 
 
 @app.callback(
-    Output("save_message_var", "children"),
+    Output("modal_var", "is_open"),
     Input("btn_save_var", "n_clicks"),
-    [State('tab_variables', 'data')]
+    [State('tab_variables', 'data'), State('modal_var','is_open')]
 )
-def update_table_variables(n_clicks, dataset):
+def update_table_variables(n_clicks, dataset, is_open):
     changed_id = [p['prop_id'] for p in dash.callback_context.triggered][0]
     mensaje = ''
     pg = pd.DataFrame(dataset)
@@ -202,8 +209,8 @@ def update_table_variables(n_clicks, dataset):
         pg.to_sql('VARIABLES', con, if_exists='replace', index=False)
         con.commit()
         con.close()
-        mensaje='Datos guardados'
-    return mensaje
+        is_open=True
+    return is_open
 
 @app.callback(
     [Output("tab_resultados", "data"), Output("tab_resultados", "columns"),
