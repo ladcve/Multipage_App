@@ -104,7 +104,7 @@ layout = html.Div([
                     dbc.Col([
                         html.Br(),
                         dbc.Button(html.Span(["Exportar", html.I(className="fas fa-file-export ml-1")],style={'font-size':'1.5em','text-align':'center'}),
-                         id="btn_export_excel", color="primary", className="mr-3"),
+                         id="btn_export_report", color="primary", className="mr-3"),
                     ], width={"size": 1, "offset": 1}),
                 ]),
                 html.Br(),
@@ -130,7 +130,6 @@ layout = html.Div([
                         html.Br(),
                         dbc.Button(html.Span(["Salvar", html.I(className="fas fa-save ml-1")],style={'font-size':'1.5em','text-align':'center'}),
                          id="btn_save_report", color="primary", className="mr-3"),
-                        html.Div(id="save_message_reporte"),
                     ], width={"size": 1, "offset": 1}),
                 ]),
                 html.Br(),
@@ -291,11 +290,40 @@ layout = html.Div([
     ]),
     dbc.Modal(
         [
-            dbc.ModalHeader("Plantilla guardada"),
+            dbc.ModalHeader( html.Div(id="save_message_reporte")),
         ],
         id="modal_report",
         is_open=False,
     ),
+    dbc.Modal(
+        [
+            dbc.ModalHeader("Exportar datos"),
+            dbc.ModalBody([
+                html.Label(['Seleccione el Formato :'],style={'font-weight': 'bold', "text-align": "left"}),
+                dcc.RadioItems(id='rb-format-export-data',
+                    options=[
+                        {'label': '  CSV', 'value': 'CSV'},
+                        {'label': '  Json', 'value': 'JSON'},
+                        {'label': '  EXCEL', 'value': 'EXCEL'}
+                    ],
+                    value='CSV'
+                ),
+                html.Br(),
+                html.Label(['Nombre archivo:'],style={'font-weight': 'bold', "text-align": "left"}),
+                dbc.Input(id="inp-export-file", placeholder="Type something...", type="text", style={'backgroundColor':'white'}),
+            ]),
+            dbc.ModalFooter([
+                dbc.Button(
+                    "Exportar", id="btn_export_data_format", className="ms-auto", n_clicks=0
+                ),
+                dbc.Button(
+                    "Cancelar", id="btn_cancel", className="ms-auto", n_clicks=0
+                ),
+            ]),
+        ],
+        id="export_report",
+        is_open=False,
+    )
 ])
 
 @app.callback(
@@ -397,7 +425,8 @@ def update_table(n_clicks, file_name, well_name, var_list, group_by, group_optio
     return data, columns
 
 @app.callback(
-    Output('modal_report','is_open'),
+    [Output('modal_report','is_open'),
+     Output('save_message_reporte','children')],
     [Input('btn_save_report', 'n_clicks'),
     Input('dpd-query-lista', 'value'),
     Input('inp-ruta-report', 'value'),
@@ -415,7 +444,7 @@ def save_reporte(n_clicks, consulta, file_name, var_list, is_open ):
         with open(TEMPLATE_DIRECTORY+file_name, 'w') as file:
             json.dump(data, file, indent=4)
         is_open = True
-    return is_open
+    return is_open, "Plantilla Guardada"
 
 @app.callback( [Output('inp-ruta-report', 'value'),
                 Output('dpd-query-lista', 'value'),
@@ -437,3 +466,31 @@ def open_report( list_of_names, list_of_contents):
                 consulta = str(drop_values['consulta'])
                 var_list = drop_values['var_list']
     return archivo, consulta, var_list
+
+@app.callback( Output('export_report', 'is_open'),
+              [Input('btn_export_report', 'n_clicks'),
+              Input('btn_cancel', 'n_clicks'),
+              Input('btn_export_data_format', 'n_clicks'),
+              Input('dt_report_results','data'),
+              Input('inp-export-file','value'),
+              Input('rb-format-export-data','value')],
+              State('export_report','is_open')
+              )
+def open_export( n_clicks, n_cancel, n_export, data, file_name, formato, is_open):
+    changed_id = [p['prop_id'] for p in dash.callback_context.triggered][0]
+    if 'btn_export_report' in changed_id:
+        is_open = True
+    if 'btn_cancel' in changed_id:
+        is_open = False
+    if 'btn_export_data_format' in changed_id:
+
+        if data and file_name:
+            df = pd.DataFrame(data)
+            if formato == 'EXCEL': 
+                df.to_excel(EXPORT_DIRECTORY+file_name+".xlsx")
+            if formato == 'CSV':
+                df.to_csv(EXPORT_DIRECTORY+file_name+".csv")
+            if formato == 'JSON':
+                df.to_json (EXPORT_DIRECTORY+file_name+".json")
+            is_open = False
+    return is_open

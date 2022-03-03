@@ -850,7 +850,10 @@ def update_line_chart(n_clicks, file_name, well_name, column_list_y1, column_lis
      Input('dpd-LineStile-chart3-y1', 'value'),
      Input('dpd-LineStile-chart3-y2', 'value'),
      ])
-def update_triple_chart(n_clicks, file_name, well_name, cols_chart1_y1, cols_chart1_y2, cols_chart2_y1, cols_chart2_y2, cols_chart3_y1, cols_chart3_y2, var_list1,  var_list2, var_list3, color_chart1_y1,color_chart1_y2, color_chart2_y1,color_chart2_y2, color_chart3_y1,color_chart3_y2, clear_data_chart1, clear_data_chart2, clear_data_chart3, stile_chart1_y1, stile_chart1_y2, stile_chart2_y1, stile_chart2_y2, stile_chart3_y1, stile_chart3_y2):
+def update_triple_chart(n_clicks, file_name, well_name, cols_chart1_y1, cols_chart1_y2, cols_chart2_y1, 
+   cols_chart2_y2, cols_chart3_y1, cols_chart3_y2, var_list1,  var_list2, var_list3, color_chart1_y1,color_chart1_y2, 
+   color_chart2_y1,color_chart2_y2, color_chart3_y1,color_chart3_y2, clear_data_chart1, clear_data_chart2, clear_data_chart3, 
+   stile_chart1_y1, stile_chart1_y2, stile_chart2_y1, stile_chart2_y2, stile_chart3_y1, stile_chart3_y2):
 
     changed_id = [p['prop_id'] for p in dash.callback_context.triggered][0]
     fig1 = {}
@@ -887,6 +890,7 @@ def update_column_list(file_name, var_list):
 @app.callback(
     Output('modal_line','is_open'),
     [Input('btn_save_linechart', 'n_clicks'),
+    Input('btn_save_Triplechart','n_clicks'),
     Input('dpd-consulta-lista', 'value'),
     Input('dpd-column-list-y1', 'value'),
     Input('dpd-column-list-y2', 'value'),
@@ -897,9 +901,38 @@ def update_column_list(file_name, var_list):
     Input('ts-annotation', 'value'), 
     Input('dpd-LineStile-y2', 'value'),
     Input('dpd-LineStile-y2', 'value'),
+
+    Input("cb_clear_data_line1", "value"),
+    Input("dpd-column-chart1-y1", "value"),
+    Input("inp-color-chart1-y1", "value"),
+    Input("dpd-LineStile-chart1-y1", "value"),
+    Input("dpd-column-chart1-y2", "value"),
+    Input("inp-color-chart1-y2", "value"),
+    Input("dpd-LineStile-chart1-y2", "value"),
+    Input("dpd-var-chart1", "value"),
+    Input("cb_clear_data_line2", "value"),
+    Input("dpd-column-chart2-y1", "value"),
+    Input("inp-color-chart2-y1", "value"),
+    Input("dpd-LineStile-chart2-y1", "value"),
+    Input("dpd-column-chart2-y2", "value"),
+    Input("inp-color-chart2-y2", "value"),
+    Input("dpd-LineStile-chart2-y2", "value"),
+    Input("dpd-var-chart2", "value"),
+    Input("cb_clear_data_line3", "value"),
+    Input("dpd-column-chart3-y1", "value"),
+    Input("inp-color-chart3-y1", "value"),
+    Input("dpd-LineStile-chart3-y1", "value"),
+    Input("dpd-column-chart3-y2", "value"),
+    Input("inp-color-chart3-y2", "value"),
+    Input("dpd-LineStile-chart3-y2", "value"),
+    Input("dpd-var-chart3", "value"),
     State('modal_line', 'is_open')
     ]) 
-def save_linechart(n_clicks, consulta, datos_y1, datos_y2, file_name, var_list, color_y1, color_y2, text_annot, stile_y1, stile_y2, is_open ):
+def save_linechart(n_clicks, n_clicks2, consulta, datos_y1, datos_y2, file_name, var_list, color_y1,
+    color_y2, text_annot, stile_y1, stile_y2, clear1, datos1_y1, color1_y1, stile1_y1,
+    datos1_y2, color1_y2, stile1_y2, var_list1, clear2, datos2_y1, color2_y1, stile2_y1,
+    datos2_y2, color2_y2, stile2_y2, var_list2, clear3, datos3_y1, color3_y1, stile3_y1,
+    datos3_y2, color3_y2, stile3_y2, var_list3, is_open ):
     mensaje=''
     changed_id = [p['prop_id'] for p in dash.callback_context.triggered][0]
     if 'btn_save_linechart' in changed_id:
@@ -919,6 +952,41 @@ def save_linechart(n_clicks, consulta, datos_y1, datos_y2, file_name, var_list, 
         with open(CHART_DIRECTORY+file_name, 'w') as file:
             json.dump(data, file, indent=4)
         is_open = True
+    changed_id = [p['prop_id'] for p in dash.callback_context.triggered][0]
+    if 'btn_save_Triplechart' in changed_id:
+        ata = {}
+        data['grafico'] = []
+        data['grafico'].append({
+            'consulta': consulta,
+            'clear1': clear1,
+            'datos1_y1': datos1_y1,
+            'color1_y1': color1_y1,
+            'stile1_y1': stile1_y1,
+            'datos1_y2': datos1_y2,
+            'color1_y2': color1_y2,
+            'stile1_y2': stile1_y2,
+            'var_list1': var_list1,
+            'clear2': clear2,
+            'datos2_y1': datos2_y1,
+            'color2_y1': color2_y1,
+            'stile2_y1': stile2_y1,
+            'datos2_y2': datos2_y2,
+            'color2_y2': color2_y2,
+            'stile2_y2': stile2_y2,
+            'var_list2': var_list2,
+            'clear3': clear3,
+            'datos3_y1': datos3_y1,
+            'color3_y1': color3_y1,
+            'stile3_y1': stile3_y1,
+            'datos3_y2': datos3_y2,
+            'color3_y2': color3_y2,
+            'stile3_y2': stile3_y2,
+            'var_list3': var_list3,
+            })
+        with open(CHART_DIRECTORY+file_name, 'w') as file:
+            json.dump(data, file, indent=4)
+        is_open = True
+
     return is_open
 
 @app.callback( [Output('inp-ruta-linechart', 'value'),
@@ -931,6 +999,34 @@ def save_linechart(n_clicks, consulta, datos_y1, datos_y2, file_name, var_list, 
                 Output('ts-annotation', 'value'),
                 Output('dpd-LineStile-y1', 'value'),
                 Output('dpd-LineStile-y2', 'value'),
+
+                Output("dpd-column-chart1-y1", "value"),
+                Output("inp-color-chart1-y1", "value"),
+                Output("dpd-LineStile-chart1-y1", "value"),
+                Output("dpd-column-chart1-y2", "value"),
+                Output("inp-color-chart1-y2", "value"),
+                Output("dpd-LineStile-chart1-y2", "value"),
+                Output("dpd-var-chart1", "value"),
+                Output("cb_clear_data_line1", "value"),
+
+                Output("dpd-column-chart2-y1", "value"),
+                Output("inp-color-chart2-y1", "value"),
+                Output("dpd-LineStile-chart2-y1", "value"),
+                Output("dpd-column-chart2-y2", "value"),
+                Output("inp-color-chart2-y2", "value"),
+                Output("dpd-LineStile-chart2-y2", "value"),
+                Output("dpd-var-chart2", "value"),
+                Output("cb_clear_data_line2", "value"),
+
+                Output("dpd-column-chart3-y1", "value"),
+                Output("inp-color-chart3-y1", "value"),
+                Output("dpd-LineStile-chart3-y1", "value"),
+                Output("dpd-column-chart3-y2", "value"),
+                Output("inp-color-chart3-y2", "value"),
+                Output("dpd-LineStile-chart3-y2", "value"),
+                Output("dpd-var-chart3", "value"),
+                Output("cb_clear_data_line3", "value"),
+
                 ],
               [Input('btn_open_linechart', 'filename'),
               Input('btn_open_linechart', 'contents')]
@@ -941,11 +1037,35 @@ def open_linechart( list_of_names, list_of_contents):
     datos_y1=[]
     datos_y2=[]
     var_list=[]
+    datos1_y1=[]
+    datos1_y2=[]
+    var_list1=[]
+    datos2_y1=[]
+    datos2_y2=[]
+    var_list2=[]
+    datos3_y1=[]
+    datos3_y2=[]
+    var_list3=[]
+    clear1=[]
+    clear2=[]
+    clear3=[]
     color_y1="#1530E3"
     color_y2="#1530E3"
+    color1_y1="#1530E3"
+    color1_y2="#1530E3"
+    color2_y1="#1530E3"
+    color2_y2="#1530E3"
+    color3_y1="#1530E3"
+    color3_y2="#1530E3"
     text_annot=False
     stile_y1='solid'
     stile_y2='solid'
+    stile1_y1='solid'
+    stile1_y2='solid'
+    stile2_y1='solid'
+    stile2_y2='solid'
+    stile3_y1='solid'
+    stile3_y2='solid'
 
     changed_id = [p['prop_id'] for p in dash.callback_context.triggered][0]
     if 'btn_open_linechart' in changed_id:
@@ -964,5 +1084,42 @@ def open_linechart( list_of_names, list_of_contents):
                     text_annot = drop_values['annotation']
                     stile_y1 = drop_values['stile_y1']
                     stile_y2 = drop_values['stile_y2']
-                    
-    return archivo, consulta, datos_y1, datos_y2, var_list, color_y1, color_y2, text_annot, stile_y1, stile_y2
+
+    if 'btn_open_triplechart' in changed_id:
+
+        if list_of_names is not None:
+            archivo = list_of_names
+            with open(CHART_DIRECTORY+archivo) as file:
+                data = json.load(file)
+                for drop_values   in data['grafico']:
+                    consulta = str(drop_values['consulta'])
+                    datos1_y1 = drop_values['datos1_y1']
+                    datos1_y2 = drop_values['datos1_y2']
+                    var_list1 = drop_values['var_list1']
+                    color1_y1 = drop_values['color1_y1']
+                    color1_y2 = drop_values['color1_y2']
+                    stile1_y1= drop_values['stile1_y1']
+                    stile1_y2= drop_values['stile1_y2']
+                    clear1 = drop_values['clear1']
+
+                    datos2_y1 = drop_values['datos2_y1']
+                    datos2_y2 = drop_values['datos2_y2']
+                    var_list2 = drop_values['var_list2']
+                    color2_y1 = drop_values['color2_y1']
+                    color2_y2 = drop_values['color2_y2']
+                    stile2_y1= drop_values['stile2_y1']
+                    stile2_y2= drop_values['stile2_y2']
+                    clear2 = drop_values['clear2']
+
+                    datos3_y1 = drop_values['datos3_y1']
+                    datos3_y2 = drop_values['datos3_y2']
+                    var_list3 = drop_values['var_list3']
+                    color3_y1 = drop_values['color3_y1']
+                    color3_y2 = drop_values['color3_y2']
+                    stile3_y1= drop_values['stile3_y1']
+                    stile3_y2= drop_values['stile3_y2']
+                    clear3 = drop_values['clear3']
+
+
+    return archivo, consulta, datos_y1, datos_y2, var_list, color_y1, color_y2, text_annot, stile_y1, stile_y2, datos1_y1, color1_y1, stile1_y1, datos1_y2, color1_y2, stile1_y2, var_list1, clear1, datos2_y1, color2_y1, stile2_y1, datos2_y2, color2_y2, stile2_y2, var_list2, clear2, datos3_y1, color3_y1, stile3_y1, datos3_y2, color3_y2, stile3_y2, var_list3, clear3
+
