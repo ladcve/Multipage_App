@@ -13,12 +13,11 @@ import datetime
 import webbrowser
 
 
-
 # Connect to main app.py file
 from app import app
 
 # Connect to your app pages
-from apps import report_builder, multi_line_chart, line_chart, bar_chart, sunburst_chart, events_loader, survey_loader, dashboard, sql_builder2, decline_analysis, contour_map, scatter_chart, area_chart, wellbore_diagram, wellbore_loader, LAS_chart, cross_section, items_loader, db_creation_update, variable_loader, python_interprete, export_data, nodal, markers_loader, units_loader, mdt_loader
+from apps import report_builder, multi_line_chart, line_chart, bar_chart, sunburst_chart, events_loader, survey_loader, dashboard, sql_builder2, decline_analysis, contour_map, scatter_chart, area_chart, wellbore_diagram, wellbore_loader, LAS_chart, cross_section, items_loader, db_creation_update, variable_loader, python_interprete, export_data, nodal, markers_loader, units_loader, mdt_loader, analisis_presion
 
 app.css.config.serve_locally = True
 app.scripts.config.serve_locally = True
@@ -153,6 +152,7 @@ submenu_ingenieria = [
             dbc.NavLink("Curva de Declinacion", href="/apps/decline_analysis", active="exact"),
             dbc.NavLink("Cross Section", href="/apps/cross_section", active="exact"),
             dbc.NavLink("Esquematico del Pozo", href="/apps/wellbore_diagram", active="exact"),
+            dbc.NavLink("Imagenes Anal. Presion", href="/apps/analisis_presion", active="exact"),
             dbc.NavLink("LAS", href="/apps/LAS_chart", active="exact"),
             dbc.NavLink("Python Interprete", href="/apps/python_interprete", active="exact"),
         ],
@@ -284,8 +284,9 @@ def display_page(pathname):
     if pathname == '/apps/units_loader': 
         return units_loader.layout, 'Unidades'
     if pathname == '/apps/mdt_loader': 
-        return mdt_loader.layout, 'Punto de Presión'     
-        return None, 'Bye'
+        return mdt_loader.layout, 'Punto de Presión'
+    if pathname == '/apps/analisis_presion': 
+        return analisis_presion.layout, 'Imagenes Análisis de Presión'     
     else:
         return "404 Page Error! Please choose a link" , ""
 
