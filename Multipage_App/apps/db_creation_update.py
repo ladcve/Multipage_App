@@ -128,7 +128,7 @@ layout = html.Div([
 ])
 
 @app.callback(
-    [Output('mdoal_db_update', 'is_open'),
+    [Output('modal_db_update', 'is_open'),
      Output('txt-last-update', 'children'),
      Output('error-connect-pdms', 'displayed'),
      Output('error-connect-sqlite', 'displayed')

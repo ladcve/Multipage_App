@@ -103,7 +103,7 @@ layout = html.Div([
         dbc.Card([
             dbc.CardHeader(html.Label(['Datos Archivo Excel'],style={'font-weight': 'bold', "text-align": "left"})),
             dbc.CardBody([
-                dbc.Spinner(
+                dcc.Loading(
                     dash_table.DataTable(id="query_results_excel", 
                     style_as_list_view=True,
                     editable=True,

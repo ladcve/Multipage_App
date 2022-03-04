@@ -141,7 +141,7 @@ layout = html.Div([
                         title="Mapa de Contorno"
                     ),
                     dac.BoxBody([
-                        dbc.Spinner(
+                        dcc.Loading(
                             dcc.Graph(id='cht-contour-chart', style={"width": "100%"}),
                         ),
                     ]),	

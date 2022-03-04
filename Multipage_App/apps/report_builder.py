@@ -146,7 +146,7 @@ layout = html.Div([
                         title="Reporte"
                     ),
                     dac.BoxBody([
-                        dbc.Spinner(
+                        dcc.Loading(
                             dash_table.DataTable(id="dt_report_results", 
                             style_as_list_view=True,
                             style_cell={'padding': '5px', 'textAlign':'left','fontSize':15, 'font-family':'arial'},

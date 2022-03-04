@@ -150,7 +150,7 @@ layout = html.Div([
                     title="Gráfico de Barra"
                 ),
                 dac.BoxBody(
-                    dbc.Spinner(
+                    dcc.Loading(
                         dcc.Graph(id='cht-bar-chart', style={"width": "100%"}),
                     ),
                 ),	

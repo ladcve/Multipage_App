@@ -209,7 +209,7 @@ layout = html.Div([
                         title="Comparativa"
                     ),
                 	dac.BoxBody(
-                        dbc.Spinner(
+                        dcc.Loading(
                             dash_table.DataTable(id="dt_compare_results",        
                                 style_as_list_view=True,
                                 style_cell={'padding': '5px', 'fontSize':15, 'font-family':'arial'},
@@ -242,7 +242,7 @@ layout = html.Div([
                         title="Graficos de Tendencia"
                     ),
                 	dac.BoxBody(
-                        dbc.Spinner(
+                        dcc.Loading(
                             html.Div(id="chart_container", children=[]),
                         ),
                     )		

@@ -147,7 +147,7 @@ layout = html.Div([
                         title="Marcadores Estratgráficos"
                     ),
                     dac.BoxBody(
-                        dbc.Spinner(
+                        dcc.Loading(
                             dcc.Graph(id='cht-area-chart', style={"width": "100%"}),
                         ),
                     ),	

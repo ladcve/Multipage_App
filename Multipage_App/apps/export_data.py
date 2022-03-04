@@ -145,7 +145,7 @@ layout = html.Div([
                         ),
                         html.Br(),
                         dbc.Row([
-                            dbc.Spinner(
+                            dcc.Loading(
                                 html.Div(id="save_export_message")
                             ),
                         ]),

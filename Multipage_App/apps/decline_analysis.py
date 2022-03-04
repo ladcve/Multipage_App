@@ -140,7 +140,7 @@ layout = html.Div([
                                 title="Curva de Declinación"
                             ),
                             dac.BoxBody([
-                                dbc.Spinner(
+                                dcc.Loading(
                                     dcc.Graph(id='cht-decline-chart'),
                                 ),
                             ]),	
@@ -159,7 +159,7 @@ layout = html.Div([
                                 title="Curva de Acumulado"
                             ),
                             dac.BoxBody([
-                                dbc.Spinner(
+                                dcc.Loading(
                                     dcc.Graph(id='cht-cumulative-chart'),
                                 ),
                             ]),	

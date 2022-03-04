@@ -161,7 +161,7 @@ layout = html.Div([
                         title="Gráfico de Sunburst"
                     ),
                     dac.BoxBody(
-                        dbc.Spinner(
+                        dcc.Loading(
                             dcc.Graph(id='cht-pie-chart', style={"width": "100%"}),
                         ),
                     ),	

@@ -3,6 +3,7 @@ import dash_bootstrap_components as dbc
 from dash_bootstrap_components._components.Row import Row
 import dash_core_components as dcc
 import dash_html_components as html
+from plotly.subplots import make_subplots
 from dash.dependencies import Input, Output, State
 from dash_table.Format import Format, Symbol
 import dash_admin_components as dac
@@ -23,6 +24,8 @@ import base64
 import os
 from skimage import io
 from decimal import Decimal
+from glob import glob
+import os
 
 from app import app
 
@@ -73,7 +76,7 @@ layout = html.Div([
                     dbc.Col([
                         html.Label(['Pozo:'],style={'font-weight': 'bold', "text-align": "left"}),
                         dcc.Dropdown(
-                            id='dpd-well-list',
+                            id='dpd-well-list-press',
                             options=[{'label': i, 'value': i} for i in well_list],
                             clearable=False,
                             multi=False
@@ -82,7 +85,7 @@ layout = html.Div([
                     dbc.Col([
                         html.Br(),
                         dbc.Button(html.Span(["mostrar ", html.I(className="fas fa-chart-bar ml-1")],style={'font-size':'1.5em','text-align':'center'}),
-                        id="btn_show_chart", color="success", className="mr-3"),
+                        id="btn_show_press_img", color="success", className="mr-3"),
                     ], width={"size": 2, "offset": 0}),
                 ]),
                 html.Br(),
@@ -100,7 +103,7 @@ layout = html.Div([
                     ),
                     dac.BoxBody([
                         dcc.Loading(
-                            dcc.Graph(id='cht-wellbore-chart',style={"height": 700, "width":300}),
+                            dcc.Graph(id='cht-analisis-presion'),
                         ),
                     ]),	
                 ],
@@ -109,72 +112,42 @@ layout = html.Div([
                 elevation=4,
                 width=12
             ),
-        ], width=5),
-        dbc.Col([
-            dac.Box([
-                    dac.BoxHeader(
-                        collapsible = False,
-                        closable = False,
-                        title="Survey"
-                    ),
-                    dac.BoxBody([
-                        dcc.Loading(
-                            dcc.Graph(id='cht-well-survey'),
-                        ),
-                    ]),	
-                ],
-                color='primary',
-                solid_header=True,
-                elevation=4,
-                width=12
-            ),
-        ], width=7),
+        ], width=12),
     ]),
 ])
 
 @app.callback(
-    [Output('cht-well-survey','figure'),
-    Output('cht-wellbore-chart','figure')],
-    [Input("btn_show_chart", "n_clicks"),
-     Input('dpd-well-list', 'value'),])
+    Output('cht-analisis-presion','figure'),
+    [Input("btn_show_press_img", "n_clicks"),
+     Input('dpd-well-list-press', 'value'),])
 def update_survey_chart(n_clicks, well_name):
-    fig1 = {}
-    fig2 = {}
+    fig = {}
     wellbore_table = pd.DataFrame()
     changed_id = [p['prop_id'] for p in dash.callback_context.triggered][0]
     
-    if 'btn_show_chart' in changed_id:
+    if 'btn_show_press_img' in changed_id:
         if well_name is not None:
-
-            #Cargando imagen del wellbore diagram
-            image_filename = './pictures/'+well_name+'.png'
-            wellbore = base64.b64encode(open(image_filename, 'rb').read())
             
-            data_results= wells_surveys[wells_surveys['NOMBRE']==well_name]
-            well = wp.load(data_results)     # LOAD WELL
-            fig1 = well.plot(style={'size': 5})
-            fig1.update_layout(width=800, height=800)
+            #Lee la lista de archivos que comiencen por el nombre del pozo
+            path = './pictures/'
+            img_list = list(glob(os.path.join(path, well_name+"*analisis-presion.png")))
+            if img_list:
+                chart_no=1
+                fig = make_subplots(rows=1, 
+                    horizontal_spacing=0.01, 
+                    shared_yaxes=True,
+                    cols=len(img_list))
+                img_width = 9000
+                img_height = 800
+                scale_factor = 18
+                for imagen in img_list:
+                    img = io.imread(imagen)
+                    fig.add_trace(go.Image(z=img,dx=10,dy=10), 1, chart_no)
+                    fig.update_layout(coloraxis_showscale=False)
+                    fig.update_xaxes(showticklabels=False)
+                    fig.update_yaxes(showticklabels=False)
+                    chart_no=chart_no+1
 
-            #Mostrar imagen de la completacion del pozo
             
-            img_width = 9000
-            img_height = 800
-            scale_factor = 18
-            fig2 = go.Figure()
-            fig2.add_layout_image(
-                    x=0,
-                    sizex=img_width*scale_factor,
-                    y=0,
-                    sizey=img_height*scale_factor,
-                    xref="x",
-                    yref="y",   
-                    opacity=1.0,
-                    layer="below",
-                    source='data:image/png;base64,{}'.format(wellbore.decode()),
-            )
-            fig2.update_xaxes(showgrid=False, showticklabels=False, range=(0, img_width))
-            fig2.update_yaxes(showgrid=False, showticklabels=False, scaleanchor='x', range=(20000, 0))
-            fig2.update_layout(width=600, height=800, margin=dict(l=0, r=0, b=0, t=0),paper_bgcolor='rgba(0,0,0,0)',plot_bgcolor='rgba(0,0,0,0)')
-
     #data = wellbore_table.to_dict('records')
-    return fig1, fig2
+    return fig

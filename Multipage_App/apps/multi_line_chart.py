@@ -254,7 +254,7 @@ def display_dropdowns(n_clicks, _,  well, file_name, children):
                         dbc.Col([
                             dac.Box([
                                     dac.BoxBody([
-                                        dbc.Spinner(
+                                        dcc.Loading(
                                             dcc.Graph(
                                                 id={"type": "dynamic-output", "index": n_clicks},
                                                 style={"width": "100%"},

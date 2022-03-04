@@ -152,7 +152,7 @@ layout = html.Div([
                         title="Grafico de Dispersión"
                     ),
                     dac.BoxBody(
-                        dbc.Spinner(
+                        dcc.Loading(
                             dcc.Graph(id='cht-scatter-chart', style={"width": "100%"}),
                         ),
                     ),

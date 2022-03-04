@@ -169,7 +169,7 @@ layout = html.Div([
                     dbc.Button(html.Span(["Borrar ", html.I(className="fas fa-trash-alt ml-1")],style={'font-size':'1.5em','text-align':'left'}),
                         id="btn_clear_section", color="danger", className="mr-3"),
                 ]),
-                dbc.Spinner(
+                dcc.Loading(
                     html.Div(content),
                 ),
             ]),	

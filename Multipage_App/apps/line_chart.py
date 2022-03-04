@@ -192,7 +192,7 @@ layout = html.Div([
                             title="Gráfico de Líneas"
                         ),
                         dac.BoxBody(
-                            dbc.Spinner(
+                            dcc.Loading(
                                 dcc.Graph(id='cht-line-chart', style={"width": "100%" }),
                             ),
                         ),	
@@ -409,7 +409,7 @@ layout = html.Div([
                             title="Gráfico Nro 1 "
                         ),
                         dac.BoxBody(
-                            dbc.Spinner(
+                            dcc.Loading(
                                 dcc.Graph(id='cht-line-chart1', style={"width": "100%" }),
                             ),
                         ),	
@@ -535,7 +535,7 @@ layout = html.Div([
                             title="Gráfico Nro 2 "
                         ),
                         dac.BoxBody(
-                            dbc.Spinner(
+                            dcc.Loading(
                                 dcc.Graph(id='cht-line-chart2', style={"width": "100%" }),
                             ),
                         ),	
@@ -661,7 +661,7 @@ layout = html.Div([
                             title="Gráfico Nro 3 "
                         ),
                         dac.BoxBody(
-                            dbc.Spinner(
+                            dcc.Loading(
                                 dcc.Graph(id='cht-line-chart3', style={"width": "100%" }),
                             ),
                         ),	

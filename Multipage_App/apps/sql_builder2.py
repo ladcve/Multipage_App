@@ -288,7 +288,7 @@ layout = html.Div([
                             title="Resultados"
                         ),
                         dac.BoxBody([
-                            dbc.Spinner(
+                            dcc.Loading(
                                 dash_table.DataTable(id="dt_query_results", 
                                 style_as_list_view=True,
                                 style_cell={'padding': '5px'},
