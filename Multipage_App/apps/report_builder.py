@@ -263,8 +263,8 @@ layout = html.Div([
                                         id='dtp_fecha_filter_range_report',
                                         min_date_allowed=date(1995, 1, 1),
                                         max_date_allowed=date.today(),
-                                        start_date = date.today()- timedelta(days=-7),
-                                        end_date=date.today(),
+                                        start_date = date.today(),
+                                        end_date=date.today() - timedelta(days=-7),
                                         display_format='YYYY-MM-DD',
                                         style={'backgroundColor':'white'},
                                     ),
@@ -421,6 +421,7 @@ def update_table(n_clicks, file_name, well_name, var_list, group_by, group_optio
 
     columns = [{'name': i, 'id': i, "deletable": True} for i in df.columns]
     data = df.to_dict('records')
+    con.close()
 
     return data, columns
 
