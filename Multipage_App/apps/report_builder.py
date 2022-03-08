@@ -419,9 +419,9 @@ def update_table(n_clicks, file_name, well_name, var_list, group_by, group_optio
                     var_name, var_color = search_unit(unidades, columnas)
                     df = df.rename(columns={columnas: var_name})
 
+            con.close()
     columns = [{'name': i, 'id': i, "deletable": True} for i in df.columns]
     data = df.to_dict('records')
-    con.close()
 
     return data, columns
 

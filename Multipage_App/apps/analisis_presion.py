@@ -65,9 +65,6 @@ wells_surveys =pd.read_sql(query, con)
 query = "SELECT * FROM WELLBORE"
 wellbore_detail =pd.read_sql(query, con)
 
-
-#Define las columans de la tabla y su formato
-
 layout = html.Div([
     dbc.Row([
         dbc.Col([
@@ -82,11 +79,6 @@ layout = html.Div([
                             multi=False
                         ),
                     ], width={"size": 4, "offset": 1}),
-                    dbc.Col([
-                        html.Br(),
-                        dbc.Button(html.Span(["mostrar ", html.I(className="fas fa-chart-bar ml-1")],style={'font-size':'1.5em','text-align':'center'}),
-                        id="btn_show_press_img", color="success", className="mr-3"),
-                    ], width={"size": 2, "offset": 0}),
                 ]),
                 html.Br(),
             ], style={"background-color": "#F9FCFC"},),
@@ -94,6 +86,23 @@ layout = html.Div([
     ]),
     html.Br(),
     dbc.Row([
+        dbc.Col([
+            dac.Box([
+                    dac.BoxHeader(
+                        collapsible = False,
+                        closable = False,
+                        title="Listado Imagenes"
+                    ),
+                    dac.BoxBody([
+                        dcc.RadioItems(id = "rb_file_list", style={"padding": "15px", "font-size": 18},)
+                    ]),	
+                ],
+                color='primary',
+                solid_header=True,
+                elevation=4,
+                width=12
+            ),
+        ], width=3),
         dbc.Col([
             dac.Box([
                     dac.BoxHeader(
@@ -112,42 +121,40 @@ layout = html.Div([
                 elevation=4,
                 width=12
             ),
-        ], width=12),
+        ], width=9),
     ]),
 ])
 
 @app.callback(
-    Output('cht-analisis-presion','figure'),
-    [Input("btn_show_press_img", "n_clicks"),
-     Input('dpd-well-list-press', 'value'),])
-def update_survey_chart(n_clicks, well_name):
+   Output('cht-analisis-presion','figure'),
+    Input('rb_file_list', 'value'))
+def update_img(file):
     fig = {}
-    wellbore_table = pd.DataFrame()
-    changed_id = [p['prop_id'] for p in dash.callback_context.triggered][0]
-    
-    if 'btn_show_press_img' in changed_id:
-        if well_name is not None:
-            
-            #Lee la lista de archivos que comiencen por el nombre del pozo
-            path = './pictures/'
-            img_list = list(glob(os.path.join(path, well_name+"*analisis-presion.png")))
-            if img_list:
-                chart_no=1
-                fig = make_subplots(rows=1, 
-                    horizontal_spacing=0.01, 
-                    shared_yaxes=True,
-                    cols=len(img_list))
-                img_width = 9000
-                img_height = 800
-                scale_factor = 18
-                for imagen in img_list:
-                    img = io.imread(imagen)
-                    fig.add_trace(go.Image(z=img,dx=10,dy=10), 1, chart_no)
-                    fig.update_layout(coloraxis_showscale=False)
-                    fig.update_xaxes(showticklabels=False)
-                    fig.update_yaxes(showticklabels=False)
-                    chart_no=chart_no+1
+    if file:
+        img = io.imread(file)
+        fig = px.imshow(img, aspect='auto')
+        fig.update_layout(coloraxis_showscale=False,autosize=False, width=1200, height =1200,
+            margin=go.layout.Margin(
+            l=0,
+            r=0,
+            b=500,
+            t=0
+        ))
+        fig.update_xaxes(showticklabels=False)
+        fig.update_yaxes(showticklabels=False)
 
-            
-    #data = wellbore_table.to_dict('records')
     return fig
+
+@app.callback(
+   Output('rb_file_list','options'),
+    Input('dpd-well-list-press', 'value'))
+def update_file_list(well_name):
+
+    img_list = []
+    if well_name is not None:
+            
+        #Lee la lista de archivos que comiencen por el nombre del pozo
+        path = './pictures/'
+        img_list = list(glob(os.path.join(path, well_name+"*analisis-presion.png")))
+
+    return [{'label': x, 'value' : x } for x in img_list]

@@ -171,8 +171,8 @@ layout = html.Div([
                         ),
                         html.Br(),
                         html.Label(['Muestreo: '],style={'font-weight': 'bold', "text-align": "left"}),
-                        dbc.Input(id="inp_sample", placeholder="Type something...", value=300, 
-                          type="number", min=50, max=450, style={'backgroundColor':'white'}),
+                        dbc.Input(id="inp_sample", placeholder="Type something...", value=100, 
+                          type="number", min=50, max=300, style={'backgroundColor':'white'}),
                         html.Br(),
                         daq.ToggleSwitch(
                             id='ts-emtpyspace',

@@ -116,7 +116,7 @@ layout = html.Div([
                                 },
                                 sort_action="native",
                                 sort_mode="multi",
-                                row_selectable="multi",
+                                row_selectable="single",
                                 row_deletable=True,
                                 selected_columns=[],
                                 selected_rows=[],
