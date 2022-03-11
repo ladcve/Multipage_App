@@ -211,10 +211,19 @@ layout = html.Div([
         id="modal_bar",
         is_open=False,
     ),
+    dbc.Modal(
+        [
+            dbc.ModalHeader("error"),
+        ],
+        id="modal_error_bar",
+        is_open=False,
+    ),
 ])
 
 @app.callback(
-    Output('cht-bar-chart','figure'),
+    [Output('cht-bar-chart','figure'),
+    Output("modal_error_bar", "children"),
+     Output("modal_error_bar", "is_open")],
     [Input("btn_show_barchart", "n_clicks"),
      Input('dpd-query-list-bar', 'value'), 
      Input('dpd-well-list', 'value'),
@@ -223,8 +232,10 @@ layout = html.Div([
      Input('dtp_fecha', 'end_date'),
      Input('inp_barchart_name', 'value'),
      Input('rdi_staked_columns', 'value'),
-     Input('dpd-var-list-barchart', 'value')])
-def update_bar_chart(n_clicks, file_name, well_name, columns_list, dtp_start_date, dtp_end_date, chart_title, staked_columns, var_list):
+     Input('dpd-var-list-barchart', 'value')],
+     [State("modal_error_bar", "is_open"),
+    State("modal_error_bar", "children")])
+def update_bar_chart(n_clicks, file_name, well_name, columns_list, dtp_start_date, dtp_end_date, chart_title, staked_columns, var_list, is_open, children):
 
     df = pd.DataFrame()
     query= ''
@@ -236,44 +247,52 @@ def update_bar_chart(n_clicks, file_name, well_name, columns_list, dtp_start_dat
         con = sqlite3.connect(archivo)
         query= ''
         if file_name:
-            with open(os.path.join(QUERY_DIRECTORY, file_name)) as f:
-                contenido = f.readlines()
-            if contenido:
-                if fecha_inicio:
-                    for linea in contenido:
-                        query +=  linea
-                    if query.find("WHERE")>0:
-                        query += " AND date(FECHA)>='"+fecha_inicio+"' AND  date(FECHA)<='"+fecha_fin+"' ORDER BY FECHA"
-                    else:
-                        query += " WHERE date(FECHA)>='"+fecha_inicio+"' AND  date(FECHA)<='"+fecha_fin+"' ORDER BY FECHA"
-                else:
-                    for linea in contenido:
-                        query +=  linea 
-                df =pd.read_sql(query, con)
-
-                if var_list:
-                    for columna in df.columns:
-                        if columna != 'FECHA' and columna != 'NOMBRE':
-                            df[columna] = pd.to_numeric(df[columna])
-
-                    for var in var_list:
-                        requisitos_list, titulo, ecuacion = search_calcv( archivo, var)
-
-                        if search_list(requisitos_list, df.columns.tolist()):
-                            df[titulo] =eval(ecuacion)
-                            var_name = titulo
-
-                if well_name is not None and columns_list:
-                    df= df[df['NOMBRE'].isin(well_name)]
-                    #Se asegura que el dataframe tenga datos
-                    if len(df)>0:
-                        if staked_columns=='STC':
-                            fig = px.bar(df, x="NOMBRE", y=columns_list,  height=700,  
-                            title=chart_title, animation_group="NOMBRE", barmode='stack', animation_frame="FECHA" )
+            try:
+                with open(os.path.join(QUERY_DIRECTORY, file_name)) as f:
+                    contenido = f.readlines()
+                if contenido:
+                    if fecha_inicio:
+                        for linea in contenido:
+                            query +=  linea
+                        if query.find("WHERE")>0:
+                            query += " AND date(FECHA)>='"+fecha_inicio+"' AND  date(FECHA)<='"+fecha_fin+"' ORDER BY FECHA"
                         else:
-                            fig = px.bar(df, x="NOMBRE", y=columns_list,  height=700,  
-                            title=chart_title,  animation_group="NOMBRE", barmode='group', animation_frame="FECHA")
-    return fig
+                            query += " WHERE date(FECHA)>='"+fecha_inicio+"' AND  date(FECHA)<='"+fecha_fin+"' ORDER BY FECHA"
+                    else:
+                        for linea in contenido:
+                            query +=  linea 
+                    df =pd.read_sql(query, con)
+
+                    if var_list:
+                        for columna in df.columns:
+                            if columna != 'FECHA' and columna != 'NOMBRE':
+                                df[columna] = pd.to_numeric(df[columna])
+
+                        for var in var_list:
+                            requisitos_list, titulo, ecuacion = search_calcv( archivo, var)
+
+                            if search_list(requisitos_list, df.columns.tolist()):
+                                df[titulo] =eval(ecuacion)
+                                var_name = titulo
+
+                    if well_name is not None and columns_list:
+                        df= df[df['NOMBRE'].isin(well_name)]
+                        #Se asegura que el dataframe tenga datos
+                        if len(df)>0:
+                            if staked_columns=='STC':
+                                fig = px.bar(df, x="NOMBRE", y=columns_list,  height=700,  
+                                title=chart_title, animation_group="NOMBRE", barmode='stack', animation_frame="FECHA" )
+                            else:
+                                fig = px.bar(df, x="NOMBRE", y=columns_list,  height=700,  
+                                title=chart_title,  animation_group="NOMBRE", barmode='group', animation_frame="FECHA")
+            except Exception  as e:
+                    is_open = True
+                    children = [dbc.ModalHeader("Error"),
+                        dbc.ModalBody(
+                            html.H6('Probelmas con la consulta, error: {}'.format(e), style={'textAlign': 'center', 'padding': 10}),
+                        ),
+                    ]
+    return fig, children, is_open
 
 @app.callback(
     Output('dpd-column-list','options'),

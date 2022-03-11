@@ -108,13 +108,13 @@ layout = html.Div([
                     style_as_list_view=True,
                     editable=True,
                     row_deletable=True,
-                    style_cell={'padding': '5px','fontSize':15, 'font-family':'arial'},
                     style_header={
                         'backgroundColor': 'blue',
                         'fontWeight': 'bold',
                         'color': 'white',
                         'font-family':'arial'
                     },
+                    style_cell={'padding': '5px','font_Size': '20px', 'font-family':'arial'},
                     page_action="native",
                     page_current= 0,
                     page_size= 10,),
@@ -124,7 +124,7 @@ layout = html.Div([
     ]),
     dbc.Modal(
         [
-            dbc.ModalHeader("Plantilla Salvada"),
+            dbc.ModalHeader("Datos Salvada"),
         ],
         id="modal_survey",
         is_open=False,
@@ -157,15 +157,16 @@ def update_table_excel(n_clicks, excel_name, sheet_excel_name, well_name, data, 
     changed_id = [p['prop_id'] for p in dash.callback_context.triggered][0]
 
     if 'btn_show_excel_data' in changed_id:
-        data_results = pd.read_excel(open(LOAD_DIRECTORY+excel_name, 'rb'), sheet_name=sheet_excel_name)  
-        data_results['NOMBRE']=well_name
+        if sheet_excel_name and excel_name and well_name:
+            data_results = pd.read_excel(open(LOAD_DIRECTORY+excel_name, 'rb'), sheet_name=sheet_excel_name)  
+            data_results['NOMBRE']=well_name
 
     columns = [{'name': i, 'id': i, 'renamable': True, 'deletable': True} for i in data_results.columns]
     data = data_results.to_dict('records')
     return data, columns
 
 @app.callback(
-    Output("modal_survey", "children"),
+    Output("modal_survey", "is_open"),
     Input("btn_save_excel_data", "n_clicks"),
     [State('query_results_excel', 'data'),State('modal_survey','is_open')]
 )
@@ -174,9 +175,28 @@ def fupdate_table(n_clicks, dataset, is_open):
     mensaje = ''
     pg = pd.DataFrame(dataset)
     if 'btn_save_excel_data' in changed_id:
-        con = sqlite3.connect(archivo)
-        pg.to_sql('SURVEY', con, if_exists='append', index=False)
-        con.commit()
-        con.close()
-        is_open=True
+        if len(pg):
+            con = sqlite3.connect(archivo)
+            c = con.cursor()
+            insert_statement = """
+            INSERT OR REPLACE INTO SURVEY (MD,
+                                INC,
+                                AZ,
+                                TVD,
+                                LOCAL_N,
+                                LOCAL_E,
+                                VSEC,
+                                DOGLEG,
+                                NOMBRE
+                                )
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)"""
+
+            for i in range(len(pg)):
+                values = tuple(pg.iloc[i])
+                print(values)
+                c.execute(insert_statement, values)
+                con.commit()
+
+            con.close()
+            is_open=True
     return is_open

@@ -205,10 +205,19 @@ layout = html.Div([
         id="modal_map",
         is_open=False,
     ),
+    dbc.Modal(
+        [
+            dbc.ModalHeader("error"),
+        ],
+        id="modal_error_map",
+        is_open=False,
+    ),
 ])
 
 @app.callback(
-    Output('cht-contour-chart','figure'),
+    [Output('cht-contour-chart','figure'),
+    Output("modal_error_map", "children"),
+     Output("modal_error_map", "is_open")],
     [Input("btn_show_chart", "n_clicks"),
      Input('dpd-query-list-contour', 'value'), 
      Input('dpd-data-lists', 'value'),
@@ -216,8 +225,10 @@ layout = html.Div([
      Input('inp_map_name', 'value'),
      Input('dpd-var-list-contour', 'value'),
      Input('ts-emtpyspace', 'value'),
-     Input('inp_sample', 'value')])
-def update_contour_map(n_clicks, file_name, columns_list, dtp_fecha, chart_title, var_list, emtpy_space, sample):
+     Input('inp_sample', 'value')],
+     [State("modal_error_map", "is_open"),
+    State("modal_error_map", "children")])
+def update_contour_map(n_clicks, file_name, columns_list, dtp_fecha, chart_title, var_list, emtpy_space, sample, is_open, childrren):
 
     df = pd.DataFrame()
     query= ''
@@ -240,25 +251,35 @@ def update_contour_map(n_clicks, file_name, columns_list, dtp_fecha, chart_title
         con = sqlite3.connect(archivo)
         query= ''
         if file_name is not None:
+
             with open(os.path.join(QUERY_DIRECTORY, file_name)) as f:
                 contenido = f.readlines()
             if contenido is not None:
-                if fecha is not None:
-                    for linea in contenido:
-                        query +=  linea
+                try:
+                    if fecha is not None:
+                        for linea in contenido:
+                            query +=  linea
 
-                    if query.find("WHERE")>-1 or query.find("where")>-1:
-                        if query.find("A.")>-1:
-                            query += " AND date(A.FECHA)='"+fecha+"' ORDER BY A.FECHA"
+                        if query.find("WHERE")>-1 or query.find("where")>-1:
+                            if query.find("A.")>-1:
+                                query += " AND date(A.FECHA)='"+fecha+"' ORDER BY A.FECHA"
+                            else:
+                                query += " AND date(FECHA)='"+fecha+"' ORDER BY FECHA"
                         else:
-                            query += " AND date(FECHA)='"+fecha+"' ORDER BY FECHA"
-                    else:
-                        if query.find("A.")>-1:
-                            query += " WHERE date(A.FECHA)='"+fecha+"' ORDER BY A.FECHA"
-                        else:
-                             query += " WHERE date(FECHA)='"+fecha+"' ORDER BY FECHA"
-                
-                df =pd.read_sql(query, con)
+                            if query.find("A.")>-1:
+                                query += " WHERE date(A.FECHA)='"+fecha+"' ORDER BY A.FECHA"
+                            else:
+                                query += " WHERE date(FECHA)='"+fecha+"' ORDER BY FECHA"
+                    
+                    df =pd.read_sql(query, con)
+                    
+                except Exception  as e:
+                    is_open = True
+                    children = [dbc.ModalHeader("Error"),
+                        dbc.ModalBody(
+                            html.H6('Probelmas con la consulta, error: {}'.format(e), style={'textAlign': 'center', 'padding': 10}),
+                        ),
+                    ]
 
                 if var_list:
                     for columna in df.columns:
@@ -272,116 +293,125 @@ def update_contour_map(n_clicks, file_name, columns_list, dtp_fecha, chart_title
 
                 z = df[columns_list]
                 if len(df)>0:
-                    # grid N data with cubic interpolation method
-                    zi = griddata((x,y),z,(xi,yi),method='cubic')
+                    try:
+                        # grid N data with cubic interpolation method
+                        zi = griddata((x,y),z,(xi,yi),method='cubic')
 
-                    fig = go.Figure(data = go.Contour(z=zi, connectgaps=emtpy_space, contours=dict(
-                                coloring ='heatmap',
-                                showlabels = True, # show labels on contours
-                                labelfont = dict( # label font properties
-                                    size = 12,
-                                    color = 'white',
-                                ))))
-                    # Update plot sizing
-                    fig.update_layout(
-                        width=1200,
-                        height=750,
-                        autosize=False,
-                        margin=dict(t=0, b=0, l=0, r=150),
-                    )
+                        fig = go.Figure(data = go.Contour(z=zi, connectgaps=emtpy_space, contours=dict(
+                                    coloring ='heatmap',
+                                    showlabels = True, # show labels on contours
+                                    labelfont = dict( # label font properties
+                                        size = 12,
+                                        color = 'white',
+                                    ))))
+                        # Update plot sizing
+                        fig.update_layout(
+                            width=1200,
+                            height=750,
+                            autosize=False,
+                            margin=dict(t=0, b=0, l=0, r=150),
+                        )
 
-                    # Update 3D scene options
-                    fig.update_scenes(
-                        aspectratio=dict(x=1, y=1, z=0.7),
-                        aspectmode="manual"
-                    )
-                    # button_layer_1_height = 1.08
-                    button_layer_1_height = 1.12
-                    button_layer_2_height = 1.1
+                        # Update 3D scene options
+                        fig.update_scenes(
+                            aspectratio=dict(x=1, y=1, z=0.7),
+                            aspectmode="manual"
+                        )
+                        # button_layer_1_height = 1.08
+                        button_layer_1_height = 1.12
+                        button_layer_2_height = 1.1
 
-                    fig.update_layout(
-                        updatemenus=[
-                            dict(
-                                buttons=list([
-                                    dict(
-                                        args=["colorscale", "Heatmap"],
-                                        label="heatmap",
-                                        method="restyle"
-                                    ),
-                                    dict(
-                                        args=["colorscale", "Viridis"],
-                                        label="Viridis",
-                                        method="restyle"
-                                    ),
-                                    dict(
-                                        args=["colorscale", "Cividis"],
-                                        label="Cividis",
-                                        method="restyle"
-                                    ),
-                                    dict(
-                                        args=["colorscale", "Blues"],
-                                        label="Blues",
-                                        method="restyle"
-                                    ),
-                                    dict(
-                                        args=["colorscale", "Greens"],
-                                        label="Greens",
-                                        method="restyle"
-                                    ),
-                                ]),
-                                type = "buttons",
-                                direction="right",
-                                pad={"r": 10, "t": 10},
-                                showactive=True,
-                                x=0.1,
-                                xanchor="left",
-                                y=button_layer_1_height,
-                                yanchor="top"
-                            ),
-                            dict(
-                                buttons=list([
-                                    dict(
-                                        args=["reversescale", False],
-                                        label="False",
-                                        method="restyle"
-                                    ),
-                                    dict(
-                                        args=["reversescale", True],
-                                        label="True",
-                                        method="restyle"
-                                    ),
-                                    dict(
-                                        args=["type", "surface"],
-                                        label="3D Surface",
-                                        method="restyle"
-                                    ),
-                                    dict(
-                                        args=["type", "heatmap"],
-                                        label="Contorno",
-                                        method="restyle"
-                                    )
-                                ]),
-                                type = "buttons",
-                                direction="right",
-                                pad={"r": 10, "t": 10},
-                                showactive=True,
-                                x=0.7,
-                                xanchor="left",
-                                y=button_layer_1_height,
-                                yanchor="top"
+                        fig.update_layout(
+                            updatemenus=[
+                                dict(
+                                    buttons=list([
+                                        dict(
+                                            args=["colorscale", "Heatmap"],
+                                            label="heatmap",
+                                            method="restyle"
+                                        ),
+                                        dict(
+                                            args=["colorscale", "Viridis"],
+                                            label="Viridis",
+                                            method="restyle"
+                                        ),
+                                        dict(
+                                            args=["colorscale", "Cividis"],
+                                            label="Cividis",
+                                            method="restyle"
+                                        ),
+                                        dict(
+                                            args=["colorscale", "Blues"],
+                                            label="Blues",
+                                            method="restyle"
+                                        ),
+                                        dict(
+                                            args=["colorscale", "Greens"],
+                                            label="Greens",
+                                            method="restyle"
+                                        ),
+                                    ]),
+                                    type = "buttons",
+                                    direction="right",
+                                    pad={"r": 10, "t": 10},
+                                    showactive=True,
+                                    x=0.1,
+                                    xanchor="left",
+                                    y=button_layer_1_height,
+                                    yanchor="top"
+                                ),
+                                dict(
+                                    buttons=list([
+                                        dict(
+                                            args=["reversescale", False],
+                                            label="False",
+                                            method="restyle"
+                                        ),
+                                        dict(
+                                            args=["reversescale", True],
+                                            label="True",
+                                            method="restyle"
+                                        ),
+                                        dict(
+                                            args=["type", "surface"],
+                                            label="3D Surface",
+                                            method="restyle"
+                                        ),
+                                        dict(
+                                            args=["type", "heatmap"],
+                                            label="Contorno",
+                                            method="restyle"
+                                        )
+                                    ]),
+                                    type = "buttons",
+                                    direction="right",
+                                    pad={"r": 10, "t": 10},
+                                    showactive=True,
+                                    x=0.7,
+                                    xanchor="left",
+                                    y=button_layer_1_height,
+                                    yanchor="top"
+                                ),
+                            ]
+                        )
+                        fig.update_layout(modebar_orientation="v"),
+                        fig.update_layout(
+                            annotations=[
+                                dict(text="Escala<br>Colores", x=0, xref="paper", y=1.1, yref="paper",
+                                                    align="left", showarrow=False),
+                                dict(text="Reversar<br>Escala Colores y Forma", x=0.6, xref="paper", y=1.1,
+                                                    yref="paper", align="left", showarrow=False),
+                            ])
+                    except Exception  as e:
+                        is_open = True
+                        children = [dbc.ModalHeader("Error"),
+                            dbc.ModalBody(
+                                html.H6('Error: {}'.format(e), style={'textAlign': 'center', 'padding': 10}),
                             ),
                         ]
-                    )
-                    fig.update_layout(modebar_orientation="v"),
-                    fig.update_layout(
-                        annotations=[
-                            dict(text="Escala<br>Colores", x=0, xref="paper", y=1.1, yref="paper",
-                                                align="left", showarrow=False),
-                            dict(text="Reversar<br>Escala Colores y Forma", x=0.6, xref="paper", y=1.1,
-                                                yref="paper", align="left", showarrow=False),
-                        ])
+            
                 
-    return fig
+    return fig, childrren, is_open
 
 @app.callback(
     Output('dpd-data-lists','options'),
@@ -414,7 +444,7 @@ def update_column_list(file_name, var_list):
                         df[columna] = pd.to_numeric(df[columna])
 
                 for var in var_list:
-                    requisitos_list, titulo, ecuacion = search_calcv( archivo, var)
+                    requisitos_list, titulo, ecuacion= search_calcv( archivo, var)
                     if search_list(requisitos_list, df.columns.tolist()):
                         df[titulo] =eval(ecuacion)
 

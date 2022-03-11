@@ -96,7 +96,7 @@ layout = html.Div([
                             page_current= 0,
                             page_size= 20,
                             style_table={'height': '500px', 'overflowY': 'auto'},
-                            style_cell={'textAlign': 'left', 'minWidth': '100px', 'width': '200px', 'maxWidth': '300px'},
+                            style_cell={'textAlign': 'left', 'minWidth': '100px', 'width': '200px', 'maxWidth': '300px', 'font_size': '20px'},
                     ),
                 )		
             ],

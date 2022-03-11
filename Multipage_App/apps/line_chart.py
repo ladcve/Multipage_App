@@ -72,6 +72,10 @@ event_list =pd.read_sql(query, con)
 query = "SELECT * FROM UNIDADES"
 unidades =pd.read_sql(query, con)
 
+#Listado de unidades por variables
+query = "SELECT NOMBRE, FECHA, PRESION FROM PRESION_ROCIO"
+press_rocio =pd.read_sql(query, con)
+
 con.close()
 
 #Listado de query
@@ -237,6 +241,7 @@ layout = html.Div([
                                             {'label': ' Media', 'value': 'MEAN'},
                                         ],
                                         value='SUM',
+                                        labelStyle={'display': 'inline-block', 'padding':'10px'},
                                     ),
                                     html.Br(),
                                     dbc.Card([
@@ -349,19 +354,45 @@ layout = html.Div([
                                             daq.ToggleSwitch(
                                                 id='ts-annotation',
                                                 value=True,
-                                                label='Mostrar Anotaciones',
+                                                label='Mostrar Eventos',
                                                 labelPosition='top'
                                             ),
                                             dash_table.DataTable(id="dt_table_event", 
-                                                columns = [{'name': i, 'id': i, "deletable": True} for i in event_list.columns],
+                                                columns = [{'name': i, 'id': i} for i in event_list.columns],
                                                 data = event_list.to_dict('records'),
                                                 style_as_list_view=True,
-                                                style_cell={'padding': '5px', 'textAlign':'left','fontSize':10, 'font-family':'arial'},
+                                                style_cell={'padding': '5px', 'textAlign':'left','fontSize':12, 'font-family':'arial'},
                                                 style_table={
                                                     'overflowX': 'auto',
                                                     'whiteSpace': 'normal',
                                                     'height': 'auto',
                                                 },
+                                                page_size= 5,
+                                                style_header={
+                                                    'backgroundColor': 'blue',
+                                                    'fontWeight': 'bold',
+                                                    'color': 'white',
+                                                    'textAlign':'center',
+                                                    'fontSize':10,
+                                                    'font-family':'arial'
+                                                },),
+                                            daq.ToggleSwitch(
+                                                id='ts-rocio',
+                                                value=False,
+                                                label='Mostrar Presión de Rocio',
+                                                labelPosition='top'
+                                            ),
+                                            dash_table.DataTable(id="dt_table_rocio", 
+                                                columns = [{'name': i, 'id': i} for i in press_rocio.columns],
+                                                data = press_rocio.to_dict('records'),
+                                                style_as_list_view=True,
+                                                style_cell={'padding': '5px', 'textAlign':'left','fontSize':12, 'font-family':'arial'},
+                                                style_table={
+                                                    'overflowX': 'auto',
+                                                    'whiteSpace': 'normal',
+                                                    'height': 'auto',
+                                                },
+                                                page_size= 5,
                                                 style_header={
                                                     'backgroundColor': 'blue',
                                                     'fontWeight': 'bold',
@@ -787,10 +818,19 @@ layout = html.Div([
         id="modal_line",
         is_open=False,
     ),
+    dbc.Modal(
+        [
+            dbc.ModalHeader("Plantilla Salvada"),
+        ],
+        id="modal_error_line",
+        is_open=False,
+    ),
 ])
 
 @app.callback(
-    Output('cht-line-chart','figure'),
+    [Output('cht-line-chart','figure'),
+    Output("modal_error_line", "children"),
+     Output("modal_error_line", "is_open")],
     [Input("btn_show_chart", "n_clicks"),
      Input('dpd-consulta-lista', 'value'), 
      Input('dpd-pozo-lista', 'value'),
@@ -806,17 +846,29 @@ layout = html.Div([
      Input('dpd-LineStile-y2', 'value'),
      Input('inp-color-annotation', 'value'),
      Input('cb_group_by', 'value'),
-     Input('rb-func-aggregation','value')
-     ])
-def update_line_chart(n_clicks, file_name, well_name, column_list_y1, column_list_y2, show_annot, annot_data, var_list, color_y1, color_y2, clear_data, stile_y1, stile_y2, anno_color, group_by, aggregation_func):
+     Input('rb-func-aggregation','value'),
+     Input('ts-rocio','value'),
+     Input('dt_table_rocio','data')],
+     [State("modal_error_line", "is_open"),
+    State("modal_error_line", "children")]
+    )
+def update_line_chart(n_clicks, file_name, well_name, column_list_y1, column_list_y2, show_annot, annot_data, var_list, color_y1, color_y2, clear_data, stile_y1, stile_y2, anno_color, group_by, aggregation_func, show_rocio, rocio_data, is_open, children):
 
     changed_id = [p['prop_id'] for p in dash.callback_context.triggered][0]
     fig = make_subplots(specs=[[{"secondary_y": True}]])
     
     if 'btn_show_chart' in changed_id:
         if column_list_y1 or column_list_y2:
-            fig = create_chart(archivo, unidades, file_name, well_name, column_list_y1, column_list_y2, show_annot, annot_data, var_list, color_y1, color_y2, clear_data, stile_y1, stile_y2, anno_color, group_by, aggregation_func)
-    return fig
+            try:
+                fig = create_chart(archivo, unidades, file_name, well_name, column_list_y1, column_list_y2, show_annot, annot_data, var_list, color_y1, color_y2, clear_data, stile_y1, stile_y2, anno_color, group_by, aggregation_func, show_rocio, rocio_data)
+            except Exception  as e:
+                    is_open = True
+                    children = [dbc.ModalHeader("Error"),
+                        dbc.ModalBody(
+                            html.H6('Probelmas con la consulta, error: {}'.format(e), style={'textAlign': 'center', 'padding': 10}),
+                        ),
+                    ]
+    return fig, children, is_open
 
 @app.callback(
     [Output('cht-line-chart1','figure'),

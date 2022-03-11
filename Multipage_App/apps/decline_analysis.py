@@ -359,6 +359,20 @@ layout = html.Div([
             ]),
         ], width=3),
     ]),
+    dbc.Modal(
+        [
+            dbc.ModalHeader("Plantilla Salvada"),
+        ],
+        id="modal_save_decline",
+        is_open=False,
+    ),
+    dbc.Modal(
+        [
+            dbc.ModalHeader("Datos Salvados a la BD."),
+        ],
+        id="modal_save_db",
+        is_open=False,
+    ),
 ])
 
 @app.callback(
@@ -428,12 +442,6 @@ def update_line_chart(n_clicks1, n_clicks2, well_name, decline_type, total_days,
         if filter_data and minimo and maximo:
             daily_prod_well = daily_prod_well[(daily_prod_well[decl_data] >= minimo) & (daily_prod_well[decl_data] <= maximo)]
 
-
-        #daily_prod_well.set_index('FECHA', inplace=True)
-        #daily_prod_well.index = pd.to_datetime(daily_prod_well.index)
-        #daily_prod_well = daily_prod_well.resample('1M').sum()
-        #daily_prod_well.reset_index(inplace=True)
-
         var_title = selec_unit.loc[decl_data]['GRAFICO']
         var_unit = selec_unit.loc[decl_data]['UNIDAD']
         var_color = selec_unit.loc[decl_data]['COLOR']
@@ -475,10 +483,6 @@ def update_line_chart(n_clicks1, n_clicks2, well_name, decline_type, total_days,
         if well_name:
             #Filtra los datos por pozo y valores en diferentes a cero
             daily_prod_well = daily_prod[daily_prod['NOMBRE']==well_name]
-            #daily_prod_well.set_index('FECHA', inplace=True)
-            #daily_prod_well.index = pd.to_datetime(daily_prod_well.index)
-            #daily_prod_well = daily_prod_well.resample('1M').sum()
-            #daily_prod_well.reset_index(inplace=True)
 
             #Filtrado por perido estable
             df_filter = daily_prod_well[(daily_prod_well['FECHA'] > start_date) & (daily_prod_well['FECHA'] < end_date)]
@@ -638,15 +642,16 @@ def update_line_chart(n_clicks1, n_clicks2, well_name, decline_type, total_days,
     return fig1, fig2, qi_val, min_forecast, di_val, b_val, max_qp, EUR, ti, max_decl_date, data, columns
 
 @app.callback(
-    Output('save_message_decline','children'),
+    Output('modal_save_decline','is_open'),
     [Input('btn_save_decline', 'n_clicks'),
     Input('dpd-decline-type', 'value'),
     Input('dtp-start-date', 'date'),
     Input('dtp-end-date', 'date'),
     Input('inp-ruta-decline', 'value'),
     Input('inp-total-days', 'value'),
-    Input('dtp_max_date', 'date')]) 
-def save_decline(n_clicks, tipo_decl, start_date, end_date, file_name, decl_days, decl_end_date ):
+    Input('dtp_max_date', 'date')],
+    State('modal_map', 'is_open')) 
+def save_decline(n_clicks, tipo_decl, start_date, end_date, file_name, decl_days, decl_end_date, is_open ):
     mensaje=''
     changed_id = [p['prop_id'] for p in dash.callback_context.triggered][0]
     if 'btn_save_decline' in changed_id:
@@ -661,8 +666,8 @@ def save_decline(n_clicks, tipo_decl, start_date, end_date, file_name, decl_days
         if file_name:
             with open(TEMPLATE_DIRECTORY+file_name, 'w') as file:
                 json.dump(data, file, indent=4)
-            mensaje = 'Archivo guardado'
-    return mensaje
+            is_open = True
+    return is_open
 
 @app.callback( [Output('inp-ruta-decline', 'value'),
                 Output('dpd-decline-type', 'value'),
@@ -700,18 +705,18 @@ def open_decline( n_clicks, list_of_names, list_of_contents):
     return archivo, declinacion, start_date, end_date, decl_days, decl_end_date
 
 @app.callback(
-    Output("save_message_forecast", "children"),
+    Output("modal_save_db", "is_open"),
     Input("btn_save_forecast", "n_clicks"),
-    [State('dt_decline', 'data')]
+    [State('dt_decline', 'data'), State('modal_save_db', 'is_open')]
 )
-def fupdate_table(n_clicks, dataset):
+def fupdate_table(n_clicks, dataset, is_open):
     changed_id = [p['prop_id'] for p in dash.callback_context.triggered][0]
-    mensaje = ''
+
     pg = pd.DataFrame(dataset)
     if 'btn_save_forecast' in changed_id:
         con = sqlite3.connect(archivo)
         pg.to_sql('DCA', con, if_exists='append', index=False)
         con.commit()
         con.close()
-        mensaje='Datos guardados'
-    return mensaje
+        is_open=True
+    return is_open

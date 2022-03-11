@@ -123,6 +123,38 @@ layout = html.Div([
             ),
         ], width=9),
     ]),
+    dbc.Row([
+        dac.Box([
+                dac.BoxHeader(
+                    collapsible = False,
+                    closable = False,
+                    title="Resumen PTA"
+                ),
+                dac.BoxBody([
+                    dash_table.DataTable(id="dt_resumen_pta", 
+                        style_as_list_view=True,
+                        style_header={
+                            'backgroundColor': 'blue',
+                            'fontWeight': 'bold',
+                            'color': 'white'
+                        },
+                        sort_action="native",
+                        sort_mode="multi",
+                        row_selectable="single",
+                        row_deletable=False,
+                        page_current= 0,
+                        page_size= 10,
+                        style_table={'height': '500px', 'overflowY': 'auto'},
+                        style_cell={'textAlign': 'left', 'minWidth': '100px', 'width': '200px', 'maxWidth': '300px','font_size':'20px'},
+                    )
+                ]),	
+            ],
+            color='primary',
+            solid_header=True,
+            elevation=4,
+            width=12
+        ),
+    ]),
 ])
 
 @app.callback(
@@ -133,11 +165,11 @@ def update_img(file):
     if file:
         img = io.imread(file)
         fig = px.imshow(img, aspect='auto')
-        fig.update_layout(coloraxis_showscale=False,autosize=False, width=1200, height =1200,
+        fig.update_layout(coloraxis_showscale=False,autosize=False, width=1200, height =500,modebar_orientation="v",
             margin=go.layout.Margin(
             l=0,
             r=0,
-            b=500,
+            b=0,
             t=0
         ))
         fig.update_xaxes(showticklabels=False)
@@ -146,15 +178,27 @@ def update_img(file):
     return fig
 
 @app.callback(
-   Output('rb_file_list','options'),
+   [Output('rb_file_list','options'),
+   Output("dt_resumen_pta", "data"), Output("dt_resumen_pta", "columns")],
     Input('dpd-well-list-press', 'value'))
 def update_file_list(well_name):
 
+    df= pd.DataFrame()
     img_list = []
+
     if well_name is not None:
             
         #Lee la lista de archivos que comiencen por el nombre del pozo
         path = './pictures/'
         img_list = list(glob(os.path.join(path, well_name+"*analisis-presion.png")))
 
-    return [{'label': x, 'value' : x } for x in img_list]
+        #Listado de pozos activos
+        con = sqlite3.connect(archivo)
+        query = "SELECT * FROM RESUMEN_PTA WHERE NOMBRE='"+well_name+"'"
+        df =pd.read_sql(query, con)
+        con.close()
+
+    columns = [{'name': i, 'id': i, "deletable": True} for i in df.columns]
+    data = df.to_dict('records')
+
+    return [{'label': x, 'value' : x } for x in img_list], data, columns

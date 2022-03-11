@@ -231,10 +231,18 @@ layout = html.Div([
         id="modal_area",
         is_open=False,
     ),
+    dbc.Modal(
+        [
+            dbc.ModalHeader("Plantilla Salvada"),
+        ],
+        id="modal_error_area",
+        is_open=False,
+    ),
 ])
-
 @app.callback(
-    Output('cht-area-chart','figure'),
+    [Output('cht-area-chart','figure'),
+    Output("modal_error_area", "children"),
+     Output("modal_error_area", "is_open")],
     [Input("btn_show_areachart", "n_clicks"),
      Input('dpd-query-list-area', 'value'), 
      Input('dpd-well-list-area', 'value'),
@@ -244,8 +252,10 @@ layout = html.Div([
      Input('dpd-mode', 'value'),
      Input('inp-color-y1', 'value'),
      Input('inp-color-y2', 'value'),
-     Input('dpd-var-list-areachart', 'value')])
-def update_bar_chart(n_clicks, file_name, well_name, columns_list_y1, columns_list_y2, chart_title, type_mode, color_y1, color_y2, var_list):
+     Input('dpd-var-list-areachart', 'value')],
+     [State("modal_error_area", "is_open"),
+    State("modal_error_area", "children")])
+def update_bar_chart(n_clicks, file_name, well_name, columns_list_y1, columns_list_y2, chart_title, type_mode, color_y1, color_y2, var_list, is_open, children):
 
     color_axis_y1 = dict(hex=color_y1)
     color_axis_y2 = dict(hex=color_y2)
@@ -259,104 +269,112 @@ def update_bar_chart(n_clicks, file_name, well_name, columns_list_y1, columns_li
         variables =pd.read_sql(query, con)
         query=''
         if file_name is not None:
-            with open(os.path.join(QUERY_DIRECTORY, file_name)) as f:
-                contenido = f.readlines()
-            if contenido is not None:
-                for linea in contenido:
-                    query +=  linea 
+            try:
+                with open(os.path.join(QUERY_DIRECTORY, file_name)) as f:
+                    contenido = f.readlines()
+                if contenido is not None:
+                    for linea in contenido:
+                        query +=  linea 
 
-                df =pd.read_sql(query, con)
-                df =df.sort_values("FECHA")
+                    df =pd.read_sql(query, con)
+                    df =df.sort_values("FECHA")
 
-                if var_list is not None:
-                    for columna in df.columns:
-                        if columna != 'FECHA' and columna != 'NOMBRE':
-                            df[columna] = pd.to_numeric(df[columna])
+                    if var_list is not None:
+                        for columna in df.columns:
+                            if columna != 'FECHA' and columna != 'NOMBRE':
+                                df[columna] = pd.to_numeric(df[columna])
 
-                    for var in var_list:
-                        requisitos_list, titulo, ecuacion = search_calcv( archivo, var)
+                        for var in var_list:
+                            requisitos_list, titulo, ecuacion = search_calcv( archivo, var)
 
-                        if search_list(requisitos_list, df.columns.tolist()):
-                            df[titulo] =eval(ecuacion)
-                            var_name = titulo
-                
-                if well_name is not None:
-                    df= df[df['NOMBRE']==well_name]
+                            if search_list(requisitos_list, df.columns.tolist()):
+                                df[titulo] =eval(ecuacion)
+                                var_name = titulo
+                    
+                    if well_name is not None:
+                        df= df[df['NOMBRE']==well_name]
 
-                i=1
+                    i=1
 
-                for columnas_y1 in columns_list_y1:
-                    var_name, var_color = search_unit(unidades, columnas_y1)
+                    for columnas_y1 in columns_list_y1:
+                        var_name, var_color = search_unit(unidades, columnas_y1)
 
-                    if color_axis_y1 == {'hex': '#1530E3'} and var_color:
-                        color_axis_y1 = dict(hex=var_color)
+                        if color_axis_y1 == {'hex': '#1530E3'} and var_color:
+                            color_axis_y1 = dict(hex=var_color)
 
-                    fig.add_trace(
-                        go.Scatter(x=df['FECHA'],
-                            y=df[columnas_y1],
-                            name=var_name,
-                            mode=type_mode,
-                            line_color=color_axis_y1["hex"],
-                            yaxis= 'y'+ str(i),
-                            fill='tozeroy'
-                        ),
-                        secondary_y=False,
-                    )
-                    i=+1
-                for columnas_y2 in columns_list_y2:
-                    var_name, var_color = search_unit(unidades, columnas_y2)
-
-                    if color_axis_y2 == {'hex': '#1530E3'} and var_color:
-                        color_axis_y2 = dict(hex=var_color)
-
-                    fig.add_trace(
-                        go.Scatter(x=df['FECHA'],
-                            y=df[columnas_y2],
-                            name=var_name,
-                            mode=type_mode,
-                            fill='tonexty',
-                            line_color=color_axis_y2["hex"],
-                            yaxis= 'y'+ str(i),
-                        ),
-                        secondary_y=True,
-                    )
-                    i=+1
-
-                fig.update_layout(
-                    autosize=False,
-                    title=chart_title,
-                    hovermode='x unified',
-                    paper_bgcolor='rgba(0,0,0,0)',
-                    plot_bgcolor='rgb(240, 240, 240)',
-                    height=700,
-                    margin=dict(
-                        l=50,
-                        r=50,
-                        b=100,
-                        t=100,
-                        pad=4,
-                    ),
-                )
-                fig.update_xaxes(
-                    rangeslider_visible=True,
-                        rangeselector=dict(
-                            buttons=list([
-                            dict(count=1, label="1m", step="month", stepmode="backward"),
-                            dict(count=6, label="6m", step="month", stepmode="backward"),
-                            dict(count=1, label="YTD", step="year", stepmode="todate"),
-                            dict(count=1, label="1y", step="year", stepmode="backward"),
-                            dict(step="all")
-                            ])
+                        fig.add_trace(
+                            go.Scatter(x=df['FECHA'],
+                                y=df[columnas_y1],
+                                name=var_name,
+                                mode=type_mode,
+                                line_color=color_axis_y1["hex"],
+                                yaxis= 'y'+ str(i),
+                                fill='tozeroy'
+                            ),
+                            secondary_y=False,
                         )
+                        i=+1
+                    for columnas_y2 in columns_list_y2:
+                        var_name, var_color = search_unit(unidades, columnas_y2)
+
+                        if color_axis_y2 == {'hex': '#1530E3'} and var_color:
+                            color_axis_y2 = dict(hex=var_color)
+
+                        fig.add_trace(
+                            go.Scatter(x=df['FECHA'],
+                                y=df[columnas_y2],
+                                name=var_name,
+                                mode=type_mode,
+                                fill='tonexty',
+                                line_color=color_axis_y2["hex"],
+                                yaxis= 'y'+ str(i),
+                            ),
+                            secondary_y=True,
+                        )
+                        i=+1
+
+                    fig.update_layout(
+                        autosize=False,
+                        title=chart_title,
+                        hovermode='x unified',
+                        paper_bgcolor='rgba(0,0,0,0)',
+                        plot_bgcolor='rgb(240, 240, 240)',
+                        height=700,
+                        margin=dict(
+                            l=50,
+                            r=50,
+                            b=100,
+                            t=100,
+                            pad=4,
+                        ),
                     )
-                fig.update_layout(legend=dict(
-                    orientation="h",
-                    yanchor="bottom",
-                    y=1.02,
-                    xanchor="right",
-                    x=1
-                ))
-    return fig
+                    fig.update_xaxes(
+                        rangeslider_visible=True,
+                            rangeselector=dict(
+                                buttons=list([
+                                dict(count=1, label="1m", step="month", stepmode="backward"),
+                                dict(count=6, label="6m", step="month", stepmode="backward"),
+                                dict(count=1, label="YTD", step="year", stepmode="todate"),
+                                dict(count=1, label="1y", step="year", stepmode="backward"),
+                                dict(step="all")
+                                ])
+                            )
+                        )
+                    fig.update_layout(legend=dict(
+                        orientation="h",
+                        yanchor="bottom",
+                        y=1.02,
+                        xanchor="right",
+                        x=1
+                    ))
+            except Exception  as e:
+                    is_open = True
+                    children = [dbc.ModalHeader("Error"),
+                        dbc.ModalBody(
+                            html.H6('Error: {}'.format(e), style={'textAlign': 'center', 'padding': 10}),
+                        ),
+                    ]
+    return fig, children, is_open
 
 @app.callback(
     [Output('dpd-column-list-ejey1-area','options'),

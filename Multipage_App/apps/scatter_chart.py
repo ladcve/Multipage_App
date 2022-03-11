@@ -247,12 +247,21 @@ layout = html.Div([
         id="modal_scatter",
         is_open=False,
     ),
+    dbc.Modal(
+        [
+            dbc.ModalHeader("error"),
+        ],
+        id="modal_error",
+        is_open=False,
+    ),
 ])
 
 @app.callback(
     [Output('cht-scatter-chart','figure'),
      Output('coeficientes','children'),
      Output('r_squared','children'),
+     Output("modal_error", "children"),
+     Output("modal_error", "is_open"),
     ], 
     [Input("btn_show_scatterchart", "n_clicks"),
      Input('dpd-query-list-scatter', 'value'), 
@@ -262,8 +271,10 @@ layout = html.Div([
      Input('dpd-var-list-scatterchart', 'value'),
      Input("PolyFeat", "value"),
      Input('ts-statistic', 'value'),
-     ])
-def update_scatter_chart(n_clicks, file_name, well_name, column_list_x, column_list_y, var_list, nFeatures, trendline):
+     ],
+     [State("modal_error", "is_open"),
+    State("modal_error", "children")])
+def update_scatter_chart(n_clicks, file_name, well_name, column_list_x, column_list_y, var_list, nFeatures, trendline, is_open, children):
 
     df = pd.DataFrame()
     query= ''
@@ -272,7 +283,7 @@ def update_scatter_chart(n_clicks, file_name, well_name, column_list_x, column_l
     dff = pd.DataFrame()
     results = {}
     r_squared = ''
-
+    abierto = False
     changed_id = [p['prop_id'] for p in dash.callback_context.triggered][0]
     fig = {}
     
@@ -282,80 +293,97 @@ def update_scatter_chart(n_clicks, file_name, well_name, column_list_x, column_l
         variables =pd.read_sql(query, con)
         query= ''
         test_results=''
+
         if file_name is not None:
             with open(os.path.join(QUERY_DIRECTORY, file_name)) as f:
                 contenido = f.readlines()
             if contenido is not None:
-                if well_name is not None:
-                    for linea in contenido:
-                        query +=  linea 
-                    df =pd.read_sql(query, con)
-                    df =df.sort_values("FECHA")
-                    df = df[df['NOMBRE']==well_name]
+                try:
+                    if well_name is not None:
+                        for linea in contenido:
+                            query +=  linea 
+                        df =pd.read_sql(query, con)
+                        df =df.sort_values("FECHA")
+                        df = df[df['NOMBRE']==well_name]
 
-                    xaxis_name, var_color = search_unit(unidades, column_list_x)
-                    yaxis_name, var_color = search_unit(unidades, column_list_y)
-                if column_list_x and column_list_y:
-                    if var_list is not None:
-                        for columna in df.columns:
-                            if columna != 'FECHA' and columna != 'NOMBRE':
-                                df[columna] = pd.to_numeric(df[columna])
+                        xaxis_name, var_color = search_unit(unidades, column_list_x)
+                        yaxis_name, var_color = search_unit(unidades, column_list_y)
+                    if column_list_x and column_list_y:
+                        if var_list is not None:
+                            for columna in df.columns:
+                                if columna != 'FECHA' and columna != 'NOMBRE':
+                                    df[columna] = pd.to_numeric(df[columna])
 
-                        for var in var_list:
-                            requisitos_list, titulo, ecuacion = search_calcv( archivo, var)
+                            for var in var_list:
+                                requisitos_list, titulo, ecuacion = search_calcv( archivo, var)
 
-                            if search_list(requisitos_list, df.columns.tolist()):
-                                evalu = eval(ecuacion)
-                                df[titulo] = evalu
+                                if search_list(requisitos_list, df.columns.tolist()):
+                                    evalu = eval(ecuacion)
+                                    df[titulo] = evalu
 
-                    fig = px.scatter(x=df[column_list_x],
-                            y=df[column_list_y])
-        
+                        fig = px.scatter(x=df[column_list_x],
+                                y=df[column_list_y])
+            
 
-                    fig.update_xaxes(title_text=xaxis_name,showline=True, linewidth=2, linecolor='black', showgrid=False,)
-                    fig.update_yaxes(title_text=yaxis_name,showline=True, linewidth=2, linecolor='black', showgrid=False,)
-                    fig.update_layout(
-                        autosize=False,
-                        paper_bgcolor='rgba(0,0,0,0)',
-                        height=700,
-                        plot_bgcolor='rgb(240, 240, 240)',
-                        margin=dict(
-                            l=50,
-                            r=50,
-                            b=100,
-                            t=100,
-                            pad=4,
+                        fig.update_xaxes(title_text=xaxis_name,showline=True, linewidth=2, linecolor='black', showgrid=False,)
+                        fig.update_yaxes(title_text=yaxis_name,showline=True, linewidth=2, linecolor='black', showgrid=False,)
+                        fig.update_layout(
+                            autosize=False,
+                            paper_bgcolor='rgba(0,0,0,0)',
+                            height=700,
+                            plot_bgcolor='rgb(240, 240, 240)',
+                            margin=dict(
+                                l=50,
+                                r=50,
+                                b=100,
+                                t=100,
+                                pad=4,
+                            ),
+                        )
+                        fig.update_layout(legend=dict(
+                            orientation="h",
+                            yanchor="bottom",
+                            y=1.02,
+                            xanchor="right",
+                            x=1
+                        ))
+                        if trendline:
+                            try:
+                                x=df[column_list_x]
+                                y=df[column_list_y]
+                                coeffs = np.polyfit(x, y, nFeatures)
+                                p7 = np.poly1d(np.polyfit(x, y,  nFeatures))
+                                xp = np.linspace(min(x), max(x), 500)
+
+                                results = coeffs.tolist()
+
+                                # r-squared
+                                p = np.poly1d(coeffs)
+                                # fit values, and mean
+                                yhat = p(x)                         # or [p(z) for z in x]
+                                ybar = np.sum(y)/len(y)          # or sum(y)/len(y)
+                                ssreg = np.sum((yhat-ybar)**2)   # or sum([ (yihat - ybar)**2 for yihat in yhat])
+                                sstot = np.sum((y - ybar)**2)    # or sum([ (yi - ybar)**2 for yi in y])
+                                r_squared = 'R2 = {} '.format(ssreg / sstot)
+
+                                fig.add_traces(go.Scatter(x=xp, y=p7(xp), mode='lines', name = 'Tendencia'))
+                            except Exception  as e:
+                                abierto = True
+                                children = [dbc.ModalHeader("Error"),
+                                    dbc.ModalBody(
+                                        html.H6('Error de convergencia: {}'.format(e), style={'textAlign': 'center', 'padding': 10}),
+                                    ),
+                                ]
+                except Exception  as e:
+                    abierto = True
+                    children = [dbc.ModalHeader("Error"),
+                        dbc.ModalBody(
+                            html.H6('Probelmas con la consulta, error: {}'.format(e), style={'textAlign': 'center', 'padding': 10}),
                         ),
-                    )
-                    fig.update_layout(legend=dict(
-                        orientation="h",
-                        yanchor="bottom",
-                        y=1.02,
-                        xanchor="right",
-                        x=1
-                    ))
-                    if trendline:
-                        x=df[column_list_x]
-                        y=df[column_list_y]
-                        coeffs = np.polyfit(x, y, nFeatures)
-                        p7 = np.poly1d(np.polyfit(x, y,  nFeatures))
-                        xp = np.linspace(min(x), max(x), 500)
-
-                        results = coeffs.tolist()
-
-                        # r-squared
-                        p = np.poly1d(coeffs)
-                        # fit values, and mean
-                        yhat = p(x)                         # or [p(z) for z in x]
-                        ybar = np.sum(y)/len(y)          # or sum(y)/len(y)
-                        ssreg = np.sum((yhat-ybar)**2)   # or sum([ (yihat - ybar)**2 for yihat in yhat])
-                        sstot = np.sum((y - ybar)**2)    # or sum([ (yi - ybar)**2 for yi in y])
-                        r_squared = 'R2 = {} '.format(ssreg / sstot)
-
-                        fig.add_traces(go.Scatter(x=xp, y=p7(xp), mode='lines', name = 'Tendencia'))
+                    ]
         con.close()
 
-    return fig, html.Ul([html.Li(x) for x in results]), r_squared
+    return fig, html.Ul([html.Li(x) for x in results]), r_squared, children, abierto
 
 
 @app.callback(

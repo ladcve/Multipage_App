@@ -227,10 +227,19 @@ layout = html.Div([
         id="modal_pie",
         is_open=False,
     ),
+    dbc.Modal(
+        [
+            dbc.ModalHeader("Plantilla Salvada"),
+        ],
+        id="modal_error_pie",
+        is_open=False,
+    ),
 ])
 
 @app.callback(
-    Output('cht-pie-chart','figure'),
+    [Output('cht-pie-chart','figure'),
+     Output("modal_error_pie", "children"),
+     Output("modal_error_pie", "is_open")],
     [Input("btn_show_piechart", "n_clicks"),
      Input('dpd-query-list-pie', 'value'), 
      Input('dpd-well-list-pie', 'value'),
@@ -238,8 +247,10 @@ layout = html.Div([
      Input('dtp_fecha', 'date'),    
      Input('inp_piechart_name', 'value'),
      Input('dpd-color-lists-pie', 'value'),
-     Input('dpd-var-list-piechart', 'value')])
-def update_pie_chart(n_clicks, file_name, well_name, columns_list, dtp_fecha, chart_title, color_list, var_list):
+     Input('dpd-var-list-piechart', 'value')],
+     [State("modal_error_pie", "is_open"),
+    State("modal_error_pie", "children")])
+def update_pie_chart(n_clicks, file_name, well_name, columns_list, dtp_fecha, chart_title, color_list, var_list, is_open, children):
 
     df = pd.DataFrame()
     fecha = str(dtp_fecha)
@@ -250,65 +261,74 @@ def update_pie_chart(n_clicks, file_name, well_name, columns_list, dtp_fecha, ch
         con = sqlite3.connect(archivo)
         query=''
         if file_name is not None:
-            with open(os.path.join(QUERY_DIRECTORY, file_name)) as f:
-                contenido = f.readlines()
-            if contenido is not None:
-                if fecha is not None:
-                    for linea in contenido:
-                        query +=  linea 
+            try:
+                with open(os.path.join(QUERY_DIRECTORY, file_name)) as f:
+                    contenido = f.readlines()
+                if contenido is not None:
+                    if fecha is not None:
+                        for linea in contenido:
+                            query +=  linea 
 
-                    if query.find("WHERE")>-1 or query.find("where")>-1:
-                        query += " AND date(FECHA)='"+fecha+"'"
+                        if query.find("WHERE")>-1 or query.find("where")>-1:
+                            query += " AND date(FECHA)='"+fecha+"'"
+                        else:
+                            query += " WHERE date(FECHA)='"+fecha+"'"
                     else:
-                        query += " WHERE date(FECHA)='"+fecha+"'"
-                else:
-                    for linea in contenido:
-                        query +=  linea
-                df =pd.read_sql(query, con)
-                df =df.sort_values("FECHA")
-                if well_name is not None:
-                    df= df[df['NOMBRE'].isin(well_name)]
+                        for linea in contenido:
+                            query +=  linea
+                    df =pd.read_sql(query, con)
+                    df =df.sort_values("FECHA")
+                    if well_name is not None:
+                        df= df[df['NOMBRE'].isin(well_name)]
 
-            if columns_list:
-                if var_list is not None:
-                    for columna in df.columns:
-                        if columna != 'FECHA' and columna != 'NOMBRE':
-                            df[columna] = pd.to_numeric(df[columna])
+                if columns_list:
+                    if var_list is not None:
+                        for columna in df.columns:
+                            if columna != 'FECHA' and columna != 'NOMBRE':
+                                df[columna] = pd.to_numeric(df[columna])
 
-                    for var in var_list:
-                        requisitos_list, titulo, ecuacion = search_calcv( archivo, var)
-                        if search_list(requisitos_list, df.columns.tolist()):
-                            df[titulo] =eval(ecuacion)
-                            var_name = titulo
+                        for var in var_list:
+                            requisitos_list, titulo, ecuacion= search_calcv( archivo, var)
+                            if search_list(requisitos_list, df.columns.tolist()):
+                                df[titulo] =eval(ecuacion)
+                                var_name = titulo
 
-                df3 = pd.DataFrame()
-                for columna in columns_list:
-                    filtro = ['NOMBRE']
-                    filtro.append(columna)
-                    df2 = df[filtro]
-                    df2.rename(columns={columna: "VOLUMEN"}, inplace=True)
-                    df2['FLUIDO']=columna
-                    df3 = df3.append(df2)
-                if len(df)>0:
-                    fig =px.sunburst(
-                            df3,
-                            path=['NOMBRE', 'FLUIDO'],
-                            height=700,
-                            values='VOLUMEN',
-                            title=chart_title,
-                        )
-                    if color_list=='night_colors':
-                        fig.update_traces( marker_colors=night_colors)
-                    if color_list=='sunflowers_colors':
-                        fig.update_traces( marker_colors=sunflowers_colors)
-                    if color_list=='irises_colors ':
-                        fig.update_traces( marker_colors=irises_colors )
-                    if color_list=='cafe_colors ':
-                        fig.update_traces( marker_colors=cafe_colors )
+                    df3 = pd.DataFrame()
+                    for columna in columns_list:
+                        filtro = ['NOMBRE']
+                        filtro.append(columna)
+                        df2 = df[filtro]
+                        df2.rename(columns={columna: "VOLUMEN"}, inplace=True)
+                        df2['FLUIDO']=columna
+                        df3 = df3.append(df2)
+                    if len(df)>0:
+                        fig =px.sunburst(
+                                df3,
+                                path=['NOMBRE', 'FLUIDO'],
+                                height=700,
+                                values='VOLUMEN',
+                                title=chart_title,
+                            )
+                        if color_list=='night_colors':
+                            fig.update_traces( marker_colors=night_colors)
+                        if color_list=='sunflowers_colors':
+                            fig.update_traces( marker_colors=sunflowers_colors)
+                        if color_list=='irises_colors ':
+                            fig.update_traces( marker_colors=irises_colors )
+                        if color_list=='cafe_colors ':
+                            fig.update_traces( marker_colors=cafe_colors )
 
-                    fig.update_layout(margin=dict(t=0, b=0, l=0, r=0))
+                        fig.update_layout(margin=dict(t=0, b=0, l=0, r=0))
+
+            except Exception  as e:
+                is_open = True
+                children = [dbc.ModalHeader("Error"),
+                    dbc.ModalBody(
+                        html.H6('Probelmas con la consulta, error: {}'.format(e), style={'textAlign': 'center', 'padding': 10}),
+                    ),
+                ]
                 
-    return fig
+    return fig, children, is_open
 
 @app.callback(
     Output('dpd-column-lists-pie','options'),
@@ -340,7 +360,7 @@ def update_column_list_pie(file_name, var_list):
                         df[columna] = pd.to_numeric(df[columna])
 
                 for var in var_list:
-                    requisitos_list, titulo, ecuacion = search_calcv( archivo, var)
+                    requisitos_list, titulo, ecuacion= search_calcv( archivo, var)
 
                     if search_list(requisitos_list, df.columns.tolist()):
                         evalu = eval(ecuacion)

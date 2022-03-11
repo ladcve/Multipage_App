@@ -323,11 +323,20 @@ layout = html.Div([
         ],
         id="export_report",
         is_open=False,
-    )
+    ),
+    dbc.Modal(
+        [
+            dbc.ModalHeader("error"),
+        ],
+        id="modal_error_report",
+        is_open=False,
+    ),
 ])
 
 @app.callback(
-    [Output("dt_report_results", "data"), Output("dt_report_results", "columns")],
+    [Output("dt_report_results", "data"), Output("dt_report_results", "columns"),
+    Output("modal_error_report", "children"),
+     Output("modal_error_report", "is_open")],
     [Input("btn_execute_report", "n_clicks"),
      Input('dpd-query-lista', 'value'), 
      Input('dpd-well-lista', 'value'),
@@ -342,9 +351,10 @@ layout = html.Div([
      Input('dpd-order-by', 'value'),
      Input('bs-order-by', 'on'),
      Input('ckl-clear-report-data','value')], 
-    [State('dt_report_results', 'data'), State('dt_report_results', 'columns')]
+    [State('dt_report_results', 'data'), State('dt_report_results', 'columns'), State("modal_error_report", "is_open"),
+    State("modal_error_report", "children")]
 )
-def update_table(n_clicks, file_name, well_name, var_list, group_by, group_options, agregation_fun, filter_date_type, at_date,start_date, end_date, order_by, ascendente, data, columns, cls_data):
+def update_table(n_clicks, file_name, well_name, var_list, group_by, group_options, agregation_fun, filter_date_type, at_date,start_date, end_date, order_by, ascendente, data, columns, cls_data, is_open, children):
     df = pd.DataFrame()
     data_frame = pd.DataFrame()
     changed_id = [p['prop_id'] for p in dash.callback_context.triggered][0]
@@ -354,76 +364,84 @@ def update_table(n_clicks, file_name, well_name, var_list, group_by, group_optio
         con = sqlite3.connect(archivo)
         query=''
         if file_name:
-            with open(os.path.join(QUERY_DIRECTORY, file_name)) as f:
-                contenido = f.readlines()
-            if contenido is not None:
-                for linea in contenido:
-                    query +=  linea
-            
-                #Filtra el dataframe en un rango de fechas
-                if filter_date_type == 'RANGE' and start_date and end_date:
-                    if query.find("WHERE")>-1 or query.find("where")>-1:
-                        query += " AND DATE(FECHA)>='"+start_date+"' AND DATE(FECHA)<='"+end_date+"'"
-                    else:
-                        query += " WHERE DATE(FECHA)>='"+start_date+" ' AND DATE(FECHA)<='"+end_date+"'"
+            try:
+                with open(os.path.join(QUERY_DIRECTORY, file_name)) as f:
+                    contenido = f.readlines()
+                if contenido is not None:
+                    for linea in contenido:
+                        query +=  linea
+                
+                    #Filtra el dataframe en un rango de fechas
+                    if filter_date_type == 'RANGE' and start_date and end_date:
+                        if query.find("WHERE")>-1 or query.find("where")>-1:
+                            query += " AND DATE(FECHA)>='"+start_date+"' AND DATE(FECHA)<='"+end_date+"'"
+                        else:
+                            query += " WHERE DATE(FECHA)>='"+start_date+" ' AND DATE(FECHA)<='"+end_date+"'"
 
-                df =pd.read_sql(query, con)
+                    df =pd.read_sql(query, con)
 
-                if cls_data:
-                    df = df[(df!=0)]
+                    if cls_data:
+                        df = df[(df!=0)]
 
-                if 'index' in df:
-                    df = df.drop(['index'], axis=1)
+                    if 'index' in df:
+                        df = df.drop(['index'], axis=1)
 
-                #Extrae la maxima fecha
-                data_frame['FECHA'] = pd.to_datetime(df['FECHA'])
-                last_date = str(data_frame['FECHA'].max())
-                time_last_date = last_date[-9:]
+                    #Extrae la maxima fecha
+                    data_frame['FECHA'] = pd.to_datetime(df['FECHA'])
+                    last_date = str(data_frame['FECHA'].max())
+                    time_last_date = last_date[-9:]
 
-                #Filtra el dataframe a una fecha determinada
-                if filter_date_type == 'ATDATE' and at_date:
-                    df= df.loc[df['FECHA']==at_date+time_last_date]
+                    #Filtra el dataframe a una fecha determinada
+                    if filter_date_type == 'ATDATE' and at_date:
+                        df= df.loc[df['FECHA']==at_date+time_last_date]
 
-                #Filtra el dataframe a la ultima fecha
-                if filter_date_type == 'LASTDATE' and at_date:
-                    df= df.loc[df['FECHA']==last_date]
+                    #Filtra el dataframe a la ultima fecha
+                    if filter_date_type == 'LASTDATE' and at_date:
+                        df= df.loc[df['FECHA']==last_date]
 
-                if well_name:
-                    df= df.loc[df['NOMBRE'].isin(well_name)]
+                    if well_name:
+                        df= df.loc[df['NOMBRE'].isin(well_name)]
 
-                if order_by:
-                    df = df.sort_values(by=order_by, ascending=ascendente)
+                    if order_by:
+                        df = df.sort_values(by=order_by, ascending=ascendente)
 
-                if group_by and group_options:
-                    if agregation_fun == 'SUM':
-                        df =df.groupby(group_options, as_index=True).sum().reset_index()
-                    else:
-                        df =df.groupby(group_options, as_index=True).mean().reset_index()
+                    if group_by and group_options:
+                        if agregation_fun == 'SUM':
+                            df =df.groupby(group_options, as_index=True).sum().reset_index()
+                        else:
+                            df =df.groupby(group_options, as_index=True).mean().reset_index()
 
-            #Agrega las variables calculadas
-            if var_list:
-                for columna in df.columns:
-                    if columna != 'FECHA' and columna != 'NOMBRE':
-                        df[columna] = pd.to_numeric(df[columna])
+                #Agrega las variables calculadas
+                if var_list:
+                    for columna in df.columns:
+                        if columna != 'FECHA' and columna != 'NOMBRE':
+                            df[columna] = pd.to_numeric(df[columna])
 
-                for var in var_list:
-                    requisitos_list, titulo, ecuacion = search_calcv( archivo, var)
-                    if search_list(requisitos_list, df.columns.tolist()):
-                        df[var] =eval(ecuacion)
+                    for var in var_list:
+                        requisitos_list, titulo, ecuacion = search_calcv( archivo, var)
+                        if search_list(requisitos_list, df.columns.tolist()):
+                            df[var] =eval(ecuacion)
 
-            #Traduce los nombre de las columnas tomando en cuenta lo contenido en 
-            # en la tabla de unidades
-            column_list = df.columns
-            for columnas in column_list:
-                if columnas != 'NOMBRE' and columnas != 'FECHA':
-                    var_name, var_color = search_unit(unidades, columnas)
-                    df = df.rename(columns={columnas: var_name})
+                #Traduce los nombre de las columnas tomando en cuenta lo contenido en 
+                # en la tabla de unidades
+                column_list = df.columns
+                for columnas in column_list:
+                    if columnas != 'NOMBRE' and columnas != 'FECHA':
+                        var_name, var_color = search_unit(unidades, columnas)
+                        df = df.rename(columns={columnas: var_name})
 
-            con.close()
+                con.close()
+            except Exception  as e:
+                is_open = True
+                children = [dbc.ModalHeader("Error"),
+                    dbc.ModalBody(
+                        html.H6('Probelmas con la consulta, error: {}'.format(e), style={'textAlign': 'center', 'padding': 10}),
+                    ),
+                ]
     columns = [{'name': i, 'id': i, "deletable": True} for i in df.columns]
     data = df.to_dict('records')
 
-    return data, columns
+    return data, columns, children, is_open
 
 @app.callback(
     [Output('modal_report','is_open'),
