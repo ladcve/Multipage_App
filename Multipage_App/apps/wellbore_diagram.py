@@ -130,14 +130,22 @@ layout = html.Div([
             ),
         ], width=7),
     ]),
+    dbc.Modal(
+        [
+            dbc.ModalHeader("error"),
+        ],
+        id="modal_error_wellbore",
+        is_open=False,
+    ),
 ])
 
 @app.callback(
     [Output('cht-well-survey','figure'),
-    Output('cht-wellbore-chart','figure')],
+    Output('cht-wellbore-chart','figure'), Output('modal_error_wellbore', 'is_open')],
     [Input("btn_show_chart", "n_clicks"),
-     Input('dpd-well-list', 'value'),])
-def update_survey_chart(n_clicks, well_name):
+     Input('dpd-well-list', 'value')],
+     State('modal_error_wellbore','is_open'))
+def update_survey_chart(n_clicks, well_name, is_open):
     fig1 = {}
     fig2 = {}
     wellbore_table = pd.DataFrame()
@@ -145,36 +153,42 @@ def update_survey_chart(n_clicks, well_name):
     
     if 'btn_show_chart' in changed_id:
         if well_name is not None:
+            try:
+                #Cargando imagen del wellbore diagram
+                image_filename = './pictures/'+well_name+'.png'
+                wellbore = base64.b64encode(open(image_filename, 'rb').read())
+                
+                data_results= wells_surveys[wells_surveys['NOMBRE']==well_name]
+                well = wp.load(data_results)     # LOAD WELL
+                fig1 = well.plot(style={'size': 5})
+                fig1.update_layout(width=800, height=800)
 
-            #Cargando imagen del wellbore diagram
-            image_filename = './pictures/'+well_name+'.png'
-            wellbore = base64.b64encode(open(image_filename, 'rb').read())
-            
-            data_results= wells_surveys[wells_surveys['NOMBRE']==well_name]
-            well = wp.load(data_results)     # LOAD WELL
-            fig1 = well.plot(style={'size': 5})
-            fig1.update_layout(width=800, height=800)
-
-            #Mostrar imagen de la completacion del pozo
-            
-            img_width = 9000
-            img_height = 800
-            scale_factor = 18
-            fig2 = go.Figure()
-            fig2.add_layout_image(
-                    x=0,
-                    sizex=img_width*scale_factor,
-                    y=0,
-                    sizey=img_height*scale_factor,
-                    xref="x",
-                    yref="y",   
-                    opacity=1.0,
-                    layer="below",
-                    source='data:image/png;base64,{}'.format(wellbore.decode()),
-            )
-            fig2.update_xaxes(showgrid=False, showticklabels=False, range=(0, img_width))
-            fig2.update_yaxes(showgrid=False, showticklabels=False, scaleanchor='x', range=(20000, 0))
-            fig2.update_layout(width=600, height=800, margin=dict(l=0, r=0, b=0, t=0),paper_bgcolor='rgba(0,0,0,0)',plot_bgcolor='rgba(0,0,0,0)')
-
+                #Mostrar imagen de la completacion del pozo
+                
+                img_width = 9000
+                img_height = 800
+                scale_factor = 18
+                fig2 = go.Figure()
+                fig2.add_layout_image(
+                        x=0,
+                        sizex=img_width*scale_factor,
+                        y=0,
+                        sizey=img_height*scale_factor,
+                        xref="x",
+                        yref="y",   
+                        opacity=1.0,
+                        layer="below",
+                        source='data:image/png;base64,{}'.format(wellbore.decode()),
+                )
+                fig2.update_xaxes(showgrid=False, showticklabels=False, range=(0, img_width))
+                fig2.update_yaxes(showgrid=False, showticklabels=False, scaleanchor='x', range=(20000, 0))
+                fig2.update_layout(width=600, height=800, margin=dict(l=0, r=0, b=0, t=0),paper_bgcolor='rgba(0,0,0,0)',plot_bgcolor='rgba(0,0,0,0)')
+            except Exception  as e:
+                    is_open = True
+                    children = [dbc.ModalHeader("Error"),
+                        dbc.ModalBody(
+                            html.H6('Error: {}'.format(e), style={'textAlign': 'center', 'padding': 10}),
+                        ),
+                    ]
     #data = wellbore_table.to_dict('records')
-    return fig1, fig2
+    return fig1, fig2, is_open

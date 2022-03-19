@@ -650,7 +650,7 @@ def update_line_chart(n_clicks1, n_clicks2, well_name, decline_type, total_days,
     Input('inp-ruta-decline', 'value'),
     Input('inp-total-days', 'value'),
     Input('dtp_max_date', 'date')],
-    State('modal_map', 'is_open')) 
+    State('modal_save_decline', 'is_open')) 
 def save_decline(n_clicks, tipo_decl, start_date, end_date, file_name, decl_days, decl_end_date, is_open ):
     mensaje=''
     changed_id = [p['prop_id'] for p in dash.callback_context.triggered][0]

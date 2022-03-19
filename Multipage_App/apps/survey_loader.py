@@ -129,6 +129,13 @@ layout = html.Div([
         id="modal_survey",
         is_open=False,
     ),
+    dbc.Modal(
+        [
+            dbc.ModalHeader("error"),
+        ],
+        id="modal_error_survey",
+        is_open=False,
+    ),
 ])
 
 @app.callback(Output('inp-ruta-excel', 'value'),
@@ -166,37 +173,44 @@ def update_table_excel(n_clicks, excel_name, sheet_excel_name, well_name, data, 
     return data, columns
 
 @app.callback(
-    Output("modal_survey", "is_open"),
+    [Output("modal_survey", "is_open"),Output("modal_error_survey", "is_open")],
     Input("btn_save_excel_data", "n_clicks"),
-    [State('query_results_excel', 'data'),State('modal_survey','is_open')]
+    [State('query_results_excel', 'data'),State('modal_survey','is_open'), State('modal_error_survey','is_open')]
 )
-def fupdate_table(n_clicks, dataset, is_open):
+def fupdate_table(n_clicks, dataset, is_open, abierto):
     changed_id = [p['prop_id'] for p in dash.callback_context.triggered][0]
-    mensaje = ''
+
     pg = pd.DataFrame(dataset)
     if 'btn_save_excel_data' in changed_id:
         if len(pg):
-            con = sqlite3.connect(archivo)
-            c = con.cursor()
-            insert_statement = """
-            INSERT OR REPLACE INTO SURVEY (MD,
-                                INC,
-                                AZ,
-                                TVD,
-                                LOCAL_N,
-                                LOCAL_E,
-                                VSEC,
-                                DOGLEG,
-                                NOMBRE
-                                )
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)"""
+            try:
+                con = sqlite3.connect(archivo)
+                c = con.cursor()
+                insert_statement = """
+                INSERT OR REPLACE INTO SURVEY (MD,
+                                    INC,
+                                    AZ,
+                                    TVD,
+                                    LOCAL_N,
+                                    LOCAL_E,
+                                    VSEC,
+                                    DOGLEG,
+                                    NOMBRE
+                                    )
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)"""
 
-            for i in range(len(pg)):
-                values = tuple(pg.iloc[i])
-                print(values)
-                c.execute(insert_statement, values)
-                con.commit()
+                for i in range(len(pg)):
+                    values = tuple(pg.iloc[i])
+                    c.execute(insert_statement, values)
+                    con.commit()
 
-            con.close()
-            is_open=True
-    return is_open
+                con.close()
+                is_open=True
+            except Exception  as e:
+                    abierto = True
+                    children = [dbc.ModalHeader("Error"),
+                        dbc.ModalBody(
+                            html.H6('Error de convergencia: {}'.format(e), style={'textAlign': 'center', 'padding': 10}),
+                        ),
+                    ]
+    return is_open, abierto

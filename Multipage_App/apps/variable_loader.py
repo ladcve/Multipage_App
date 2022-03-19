@@ -123,7 +123,7 @@ layout = html.Div([
                                 page_current= 0,
                                 page_size= 20,
                                 style_table={'height': '700px', 'overflowY': 'auto'},
-                                style_cell={'textAlign': 'left', 'minWidth': '100px', 'width': '200px', 'maxWidth': '300px', 'font-family':'arial'},
+                                style_cell={'textAlign': 'left', 'minWidth': '100px', 'width': '200px', 'maxWidth': '300px', 'font-family':'arial','font_size':'18px'},
                             ),
                         ),
                     ]),	
@@ -158,7 +158,7 @@ layout = html.Div([
                                     page_current= 0,
                                     page_size= 13,
                                     style_table={'height': '500px', 'overflowY': 'auto'},
-                                    style_cell={'textAlign': 'left', 'minWidth': '100px', 'width': '200px', 'maxWidth': '300px'},
+                                    style_cell={'textAlign': 'left', 'minWidth': '100px', 'width': '200px', 'maxWidth': '300px', 'font-family':'arial','font_size':'18px'},
                             ),
                         ),
                     ]),	
@@ -246,6 +246,7 @@ def update_table_results(n_clicks, rows, row_ids, file_name, data, columns):
                 df[nombre] = evalu
             else:
                 display_message = True
+                df = pd.DataFrame()
 
     columns = [{'name': i, 'id': i} for i in df.columns]
     data = df.to_dict('records')

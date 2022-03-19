@@ -154,7 +154,7 @@ layout = html.Div([
     Input('btn_add_mdt', 'n_clicks'),
     State('tb_mdt', 'data'),
     State('tb_mdt', 'columns'))
-def add_unit(n_clicks, rows, columns):
+def add_mdt(n_clicks, rows, columns):
     if n_clicks > 0:
         rows.append({c['id']: '' for c in columns})
     return rows
@@ -164,14 +164,15 @@ def add_unit(n_clicks, rows, columns):
     Input("btn_save_mdt", "n_clicks"),
     [State('tb_mdt', 'data'),State('modal_mdt','is_open')]
 )
-def update_table_unitsvariables(n_clicks, dataset, is_open):
+def update_table_mdt(n_clicks, dataset, is_open):
     changed_id = [p['prop_id'] for p in dash.callback_context.triggered][0]
     mensaje = ''
     pg = pd.DataFrame(dataset)
     if 'btn_save_mdt' in changed_id:
-        con = sqlite3.connect(archivo)
-        pg.to_sql('MDT', con, if_exists='replace', index=False)
-        con.commit()
-        con.close()
-        is_open=True
+        if len(dataset):
+            con = sqlite3.connect(archivo)
+            pg.to_sql('MDT', con, if_exists='replace', index=False)
+            con.commit()
+            con.close()
+            is_open=True
     return is_open
