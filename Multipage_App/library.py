@@ -49,7 +49,7 @@ def search_unit(unidades, variable):
     var_name = var_title + " " + var_unit
     return var_name, var_color
 
-def create_chart(archivo, unidades, file_name, well_name, column_list_y1, column_list_y2, show_annot, annot_data, var_list, color_y1, color_y2, clear_data, stile_y1, stile_y2, anota_color, group_by,agregation_fun):
+def create_chart(archivo, unidades, file_name, well_name, column_list_y1, column_list_y2, show_annot, annot_data, var_list, color_y1, color_y2, clear_data, stile_y1, stile_y2, anota_color, group_by,agregation_fun, show_rocio, rocio_data):
 
     color_axis_y1 = dict(hex=color_y1)
     color_axis_y2 = dict(hex=color_y2)
@@ -64,6 +64,11 @@ def create_chart(archivo, unidades, file_name, well_name, column_list_y1, column
     titulo = ''
     
     con = sqlite3.connect(archivo)
+
+    #Listado de tablas en la BD
+    cursor = con.execute("SELECT name FROM sqlite_master WHERE type='table';")
+    tables_list = pd.DataFrame (cursor.fetchall(), columns = ['name'])
+    tables_list = tables_list.sort_values('name')['name'].unique()
 
     if file_name is not None:
         with open(os.path.join(QUERY_DIRECTORY, file_name)) as f:
@@ -100,6 +105,7 @@ def create_chart(archivo, unidades, file_name, well_name, column_list_y1, column
                     if search_list(requisitos_list, df.columns.tolist()):
                         df[titulo] =eval(ecuacion)
                         var_name = titulo
+                    
             i=1
 
             if column_list_y1:
@@ -119,8 +125,9 @@ def create_chart(archivo, unidades, file_name, well_name, column_list_y1, column
                                 line_color=color_axis_y1["hex"],
                                 yaxis= 'y'+ str(i),
                                 line={'dash': stile_y1},
+                                
                             ),
-                            secondary_y=False,
+                            #secondary_y=True,
                         )
                     i=+1
 
@@ -161,6 +168,7 @@ def create_chart(archivo, unidades, file_name, well_name, column_list_y1, column
                     t=100,
                     pad=4,
                 ),
+                showlegend=True,
                 legend=dict(
                     orientation="h",
                     yanchor="bottom",
@@ -190,6 +198,76 @@ def create_chart(archivo, unidades, file_name, well_name, column_list_y1, column
                         bgcolor=back_color["hex"],
                         textangle=-90,
                         arrowhead=1)
+            if show_rocio and well_name:
+                df_rocio = pd.DataFrame(rocio_data)
+                df_rocio = df_rocio[df_rocio['NOMBRE']==well_name]
+                fig.add_hline(y=df_rocio['PRESION'].iloc[0],
+                    line_color="green",
+                    line_dash="dot",
+                    annotation_text="Presion Rocio", 
+                    annotation_position="bottom left"
+                )
+    con.close()
+
+    return fig
+
+def create_chart_single(archivo, unidades, file_name, well_name, column_data, clear_data, min_val, max_val):
+
+    df = pd.DataFrame()
+    query= ''
+    fig = make_subplots()
+    var_name = ''
+    color_axis = dict(hex='#1530E3')
+    
+    con = sqlite3.connect(archivo)
+
+    if file_name is not None:
+        with open(os.path.join(QUERY_DIRECTORY, file_name)) as f:
+            contenido = f.readlines()
+        if contenido is not None:
+            query = ''
+            for linea in contenido:
+                query +=  linea 
+
+            df =pd.read_sql(query, con)
+
+            if well_name:
+                df = df[df['NOMBRE']==well_name]
+                
+            df = df.sort_values(by="FECHA")
+            
+            if clear_data:
+                df = df[(df!=0)]
+
+            df['indice'] = np.arange(len(df))
+
+            df= df[(df['indice'] >= min_val) & (df['indice'] <= max_val)]
+            print("Longitud Q_df 2:", len(df))
+
+            if column_data in df.columns:
+                fig.add_trace(
+                    go.Scatter(x=df['indice'],
+                        y=df[column_data],
+                        connectgaps=True,
+                    ),
+                )
+                
+            fig.update_xaxes(title_text="Fecha",showline=True, linewidth=2, linecolor='black', showgrid=False,)
+            fig.update_yaxes(showline=True, linewidth=2, linecolor='black', showgrid=False,)
+            fig.update_layout(
+                autosize=False,
+                hovermode='x unified',
+                paper_bgcolor='rgba(0,0,0,0)',
+                plot_bgcolor='rgb(240, 240, 240)',
+                margin=dict(
+                    l=50,
+                    r=50,
+                    b=100,
+                    t=100,
+                    pad=4,
+                ),
+                )
+
     con.close()
 
     return fig
@@ -271,6 +349,11 @@ def update_columns_list(archivo, file_name, var_list):
 
     query=''
     columns = [{'label': i, 'value': i} for i in []]
+    #Listado de tablas en la BD
+    cursor = con.execute("SELECT name FROM sqlite_master WHERE type='table';")
+    tables_list = pd.DataFrame (cursor.fetchall(), columns = ['name'])
+    tables_list = tables_list.sort_values('name')['name'].unique()
+
     if file_name:
         with open(os.path.join(QUERY_DIRECTORY, file_name)) as f:
             contenido = f.readlines()
@@ -293,6 +376,11 @@ def update_columns_list(archivo, file_name, var_list):
                 if search_list(requisitos_list, df.columns.tolist()):
                     evalu = eval(ecuacion)
                     df[titulo] = evalu
+
+                if search_list(requisitos_list, tables_list):
+                    #Buscar query en la tabla de Variables calculadas
+                    #Modificar funcion para bsucar datos de variables calculadas
+                    df[titulo]=""
 
         if  df.columns[2]=='FECHA':
             columns=[{'label': i, 'value': i} for i in df.columns[3:]]
