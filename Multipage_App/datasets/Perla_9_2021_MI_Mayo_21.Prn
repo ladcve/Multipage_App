@@ -1,0 +1,91 @@
+Report Produced on 10/25/2021 - 22:56:33 - File : D:\Modelos_de_Pozo_2020\Perla_9_2021_MI_Mayo_21.Out
+
+
+                 ..............................................
+                 .  SYSTEM SENSITIVITY ANALYSIS - Input Data  .
+                 ..............................................
+
+Top Node Pressure	3089.00	(psig)
+Water Gas Ratio	2.36	(STB/MMscf)
+Total GOR	34350.00	(scf/STB)
+Surface Equipment Correlation	Beggs and Brill
+Vertical Lift Correlation	Petroleum Experts 3 1.00 0.98
+Solution Node	Bottom Node
+Rate Method	Automatic - Linear
+Left-Hand Intersection	DisAllow
+PE5 Stability Flag	No
+
+                  ###########################################
+                  #  SYSTEM SENSITIVITY ANALYSIS - Results  #
+                  ###########################################
+
+
+
+
+      	     	     	     	     	     	   dP	      	    	      	      	   	   dP	  Sand	     	      	    First	     	    	  Gauge	    Gauge	  Total	  Maximum	 Maximum	  Maximum	          	          	    PE5	 Erosional	 Maximum	  Turner	
+     Gas	    Oil	   Water	  Liquid	   VLP	   IPR	  Total	     dP	   dP	     dP	 Completion	 Total	  Sand	 Control	 WellHead	  WellHead	    Node	    dP	   dP	    1	      1	  NoSlip	 Erosional	    C	   Grain	       Erosion	      Corrosion	 Stability	 Velocity	  Turner	 Velocity	
+    Rate	   Rate	   Rate	   Rate	 Pressure	 Pressure	  Skin	 Perforation	 Damage	 Completion	    Skin	 Skin	 Control	  Skin	 Pressure	 Temperature	 Temperature	 Friction	 Gravity	 Pressure	 Temperature	 Velocity	 Velocity	 Factor	  Diameter	        Rate	        Rate	   Flag	   Flag	 Velocity	   Flag	
+ (MMscf/day)	 (STB/day)	 (STB/day)	 (STB/day)	  (psig)	  (psig)	  (psi)	    (psi)	 (psi)	   (psi)	      	   	  (psi)	    	  (psig)	   (deg F)	   (deg F)	   (psi)	  (psi)	  (psig)	   (deg F)	 (ft/sec)	 (ft/sec)	    	  (inches)	 (0.001 inches/year)	 (0.001 inches/year)	     	     	 (ft/sec)	     	
+ ___________	 _________	 _________	 _________	 ________	 ________	 _______	 ___________	 ______	 __________	 __________	 _____	 _______	 _______	 ________	 ___________	 ___________	 _________	 _______	 ________	 ___________	 ________	 _________	 _______	 __________	 ___________________	 ___________________	 _________	 _________	 ________	 ________	
+ 0.33513	 9.8	 0.79092	 10.5	 5672.84	 4339.61	 0.11719	 0	 0	 0	 7.15	 7.15	 0.11719	 7.15	 3089.00	 70.67	 70.67	 0.0011241	 2583.84	 5434.87	 191.72	 0.12541	 73.141	 0.5205	 0.00013051	 	 163.1	 	 No	 1.369	 Yes	
+ 17.942	 522.3	 42.3	 564.7	 3934.12	 4311.54	 6.33	 0	 0	 0	 7.17	 7.17	 6.33	 7.17	 3089.00	 104.20	 104.20	 15.13	 829.71	 3876.81	 197.75	 8.433	 82.272	 30.7852	 0.43072	 	 536.6	 	 No	 1.795	 No	
+ 35.549	 1034.9	 83.9	 1118.8	 3915.25	 4268.89	 12.70	 0	 0	 0	 7.20	 7.20	 12.70	 7.20	 3089.00	 127.81	 127.81	 43.73	 781.40	 3854.88	 198.85	 16.781	 83.130	 61.1322	 1.00000	 	 660.6	 	 No	 1.893	 No	
+ 53.156	 1547.5	 125.4	 1673.0	 3937.32	 4211.65	 19.30	 0	 0	 0	 7.22	 7.22	 19.30	 7.22	 3089.00	 142.79	 142.79	 83.36	 762.41	 3870.76	 199.28	 24.993	 84.031	 91.2191	 1.00000	 	 745.0	 	 No	 1.941	 No	
+ 70.763	 2060.1	 167.0	 2227.1	 3980.16	 4139.83	 26.20	 0	 0	 0	 7.25	 7.25	 26.20	 7.25	 3089.00	 152.82	 152.82	 132.74	 753.87	 3905.32	 199.51	 33.009	 85.062	 120.922	 1.00000	 	 813.8	 	 No	 1.972	 No	
+ 88.370	 2572.7	 208.6	 2781.3	 4037.64	 4053.42	 33.50	 0	 0	 0	 7.27	 7.27	 33.50	 7.27	 3089.00	 159.92	 159.92	 191.12	 750.45	 3952.66	 199.66	 40.790	 85.892	 150.158	 1.00000	 	 870.2	 	 No	 1.993	 No	
+ 105.977	 3085.3	 250.1	 3335.4	 4106.93	 3952.39	 41.29	 0	 0	 0	 7.29	 7.29	 41.29	 7.29	 3089.00	 165.20	 165.20	 257.78	 750.00	 4010.20	 199.75	 48.312	 86.500	 178.861	 1.00000	 	 916.7	 	 No	 2.008	 No	
+ 123.583	 3597.9	 291.7	 3889.5	 4192.88	 3836.61	 49.70	 0	 0	 0	 7.32	 7.32	 49.70	 7.32	 3089.00	 169.27	 169.27	 338.06	 752.11	 4082.82	 199.83	 55.494	 86.963	 206.843	 1.00000	 	 955.6	 	 No	 2.020	 No	
+ 141.190	 4110.5	 333.2	 4443.7	 4301.06	 3705.92	 58.89	 0	 0	 0	 7.34	 7.34	 58.89	 7.34	 3089.00	 172.50	 172.50	 437.88	 756.44	 4174.86	 199.88	 62.241	 87.324	 233.857	 1.00000	 	 997.0	 	 No	 2.029	 No	
+ 158.797	 4623.1	 374.8	 4997.8	 4423.19	 3559.95	 69.05	 0	 0	 0	 7.36	 7.36	 69.05	 7.36	 3089.00	 175.12	 175.12	 549.82	 762.18	 4278.65	 199.92	 68.616	 87.614	 259.954	 1.00000	 	 1028.0	 	 No	 2.035	 No	
+ 176.404	 5135.7	 416.3	 5552.0	 4558.50	 3398.18	 80.45	 0	 0	 0	 7.39	 7.39	 80.45	 7.39	 3089.00	 177.29	 177.29	 673.27	 769.16	 4393.54	 199.95	 74.625	 87.849	 285.033	 1.00000	 	 960.8	 	 No	 2.041	 No	
+ 194.011	 5648.2	 457.9	 6106.1	 4703.81	 3219.75	 93.44	 0	 0	 0	 7.41	 7.41	 93.44	 7.41	 3089.00	 179.12	 179.12	 804.55	 777.75	 4519.10	 199.98	 80.281	 88.043	 307.622	 1.00000	 	 959.5	 	 Yes	 2.045	 No	
+ 211.618	 6160.8	 499.4	 6660.3	 4847.77	 3023.35	 108.52	 0	 0	 0	 7.44	 7.44	 108.52	 7.44	 3089.00	 180.68	 180.68	 933.30	 787.14	 4653.86	 200.01	 85.680	 88.205	 331.925	 1.00000	 	 980.9	 	 Yes	 2.049	 No	
+ 229.225	 6673.4	 541.0	 7214.4	 4990.08	 2806.96	 126.44	 0	 0	 0	 7.46	 7.46	 126.44	 7.46	 3089.00	 182.03	 182.03	 1059.25	 796.94	 4792.18	 200.03	 91.231	 88.341	 356.483	 1.00000	 	 1001.2	 	 Yes	 2.051	 No	
+ 246.832	 7186.0	 582.5	 7768.5	 5137.47	 2567.35	 148.41	 0	 0	 0	 7.48	 7.48	 148.41	 7.48	 3089.00	 183.20	 183.20	 1189.39	 807.12	 4920.91	 200.04	 96.590	 88.455	 380.641	 1.00000	 	 1024.6	 	 Yes	 2.054	 No	
+ 264.439	 7698.6	 624.1	 8322.7	 5287.09	 2299.23	 176.48	 0	 0	 0	 7.51	 7.51	 176.48	 7.51	 3089.00	 184.23	 184.23	 1320.92	 817.68	 5051.12	 200.06	 101.803	 88.552	 404.487	 1.00000	 	 1046.5	 	 Yes	 2.055	 No	
+ 282.046	 8211.2	 665.6	 8876.8	 5442.48	 1993.01	 214.64	 0	 0	 0	 7.53	 7.53	 214.64	 7.53	 3089.00	 185.15	 185.15	 1457.45	 828.54	 5186.38	 200.07	 106.841	 88.634	 427.959	 1.00000	 	 1069.6	 	 Yes	 2.057	 No	
+ 299.652	 8723.8	 707.2	 9431.0	 5606.49	 1629.23	 272.18	 0	 0	 0	 7.55	 7.55	 272.18	 7.55	 3089.00	 185.96	 185.96	 1601.71	 839.75	 5329.65	 200.08	 111.681	 88.704	 451.009	 1.00000	 	 1090.3	 	 Yes	 2.058	 No	
+ 317.259	 9236.4	 748.7	 9985.1	 5775.10	 1156.41	 379.14	 0	 0	 0	 7.58	 7.58	 379.14	 7.58	 3089.00	 186.69	 186.69	 1750.36	 850.80	 5476.88	 200.09	 116.380	 88.763	 473.744	 1.00000	 	 1121.6	 	 Yes	 2.059	 No	
+ 334.866	 9749.0	 790.3	 10539.3	 5945.42	 141.29	 907.81	 0	 0	 0	 7.60	 7.60	 907.81	 7.60	 3089.00	 187.36	 187.36	 1900.23	 861.81	 5625.15	 200.10	 120.979	 88.813	 496.247	 1.00000	 	 1152.5	 	 Yes	 2.059	 No	
+
+                              ....................
+                              .  Solution Point  .
+                              ....................
+
+Gas Rate	90.001	(MMscf/day)
+Oil Rate	2620.2	(STB/day)
+Water Rate	212.4	(STB/day)
+Liquid Rate	2832.6	(STB/day)
+Solution Node Pressure	4044.06	(psig)
+dP Friction	197.30	(psi)
+dP Gravity	750.40	(psi)
+dP Total Skin	34.20	(psi)
+dP Perforation	0	(psi)
+dP Damage	0	(psi)
+dP Completion	0	(psi)
+Completion Skin	7.27	
+Total Skin	7.27	
+dP Sand Control	34.20	(psi)
+Sand Control Skin	7.27	
+Gauge 1 Pressure	3957.99	(psig)
+Gauge 1 Temperature	199.67	(deg F)
+Wellhead Liquid Density	52.031	(lb/ft3)
+Wellhead Gas Density	10.407	(lb/ft3)
+Wellhead Liquid Viscosity	0.33408	(centipoise)
+Wellhead Gas Viscosity	0.021313	(centipoise)
+Wellhead Superficial Liquid Velocity	1.081	(ft/sec)
+Wellhead Superficial Gas Velocity	24.335	(ft/sec)
+Wellhead Z Factor	0.87942	
+Wellhead Interfacial Tension	2.3941	(dyne/cm)
+Wellhead Pressure	3089.00	(psig)
+Wellhead Temperature	160.41	(deg F)
+First Node Liquid Density	52.031	(lb/ft3)
+First Node Gas Density	10.407	(lb/ft3)
+First Node Liquid Viscosity	0.33408	(centipoise)
+First Node Gas Viscosity	0.021313	(centipoise)
+First Node Superficial Liquid Velocity	1.081	(ft/sec)
+First Node Superficial Gas Velocity	24.335	(ft/sec)
+First Node Z Factor	0.87942	
+First Node Interfacial Tension	2.3941	(dyne/cm)
+First Node Pressure	3089.00	(psig)
+First Node Temperature	160.41	(deg F)
