@@ -455,14 +455,15 @@ def save_reporte(n_clicks, consulta, file_name, var_list, is_open ):
     mensaje=''
     changed_id = [p['prop_id'] for p in dash.callback_context.triggered][0]
     if 'btn_save_report' in changed_id:
-        data = {}
-        data['reporte'] = []
-        data['reporte'].append({
-            'consulta': consulta,
-            'var_list': var_list})
-        with open(TEMPLATE_DIRECTORY+file_name, 'w') as file:
-            json.dump(data, file, indent=4)
-        is_open = True
+        if file_name:
+            data = {}
+            data['reporte'] = []
+            data['reporte'].append({
+                'consulta': consulta,
+                'var_list': var_list})
+            with open(TEMPLATE_DIRECTORY+file_name, 'w') as file:
+                json.dump(data, file, indent=4)
+            is_open = True
     return is_open, "Plantilla Guardada"
 
 @app.callback( [Output('inp-ruta-report', 'value'),

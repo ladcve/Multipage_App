@@ -395,6 +395,7 @@ def update_column_list(file_name, var_list):
                 contenido = f.readlines()
                 for linea in contenido:
                     query +=  linea
+                query += " LIMIT 1"
                 df =pd.read_sql(query, con)
 
                 if var_list is not None:

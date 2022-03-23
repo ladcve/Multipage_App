@@ -246,7 +246,7 @@ def update_bar_chart(n_clicks, file_name, well_name, columns_list, dtp_start_dat
     if 'btn_show_barchart' in changed_id:
         con = sqlite3.connect(archivo)
         query= ''
-        if file_name:
+        if file_name and well_name:
             try:
                 with open(os.path.join(QUERY_DIRECTORY, file_name)) as f:
                     contenido = f.readlines()
@@ -383,7 +383,6 @@ def open_bar_chart( list_of_names, list_of_contents):
     changed_id = [p['prop_id'] for p in dash.callback_context.triggered][0]
     if 'btn_open_barchart' in changed_id:
         if list_of_names is not None:
-            print(list_of_names)
             archivo = list_of_names
             with open(CHART_DIRECTORY+archivo) as file:
                 data = json.load(file)

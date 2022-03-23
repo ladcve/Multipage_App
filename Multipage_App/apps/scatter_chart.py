@@ -30,7 +30,7 @@ from sklearn.linear_model import LinearRegression
 from sklearn.pipeline import make_pipeline
 
 from app import app 
-from library import reform_df, search_unit, search_calcv, search_list
+from library import reform_df, search_unit, search_calcv, search_list, format_coefs
 
 #Variable con la ruta para salvar los querys
 QUERY_DIRECTORY = "./querys"
@@ -227,6 +227,8 @@ layout = html.Div([
                         ),
                         html.Br(),
                         html.Label(['Resultados:'],style={'font-weight': 'bold', "text-align": "left"}),
+                        html.Label(['Ecuacion:'],style={'font-weight': 'bold', "text-align": "left"}),
+                        html.Div(id="ecuacion"),
                         html.Label(['Coeficientes:'],style={'font-weight': 'bold', "text-align": "left"}),
                         html.Div(id="coeficientes"),
                         html.Div(id="r_squared"),
@@ -259,6 +261,7 @@ layout = html.Div([
 @app.callback(
     [Output('cht-scatter-chart','figure'),
      Output('coeficientes','children'),
+     Output('ecuacion','children'),
      Output('r_squared','children'),
      Output("modal_error", "children"),
      Output("modal_error", "is_open"),
@@ -283,6 +286,7 @@ def update_scatter_chart(n_clicks, file_name, well_name, column_list_x, column_l
     dff = pd.DataFrame()
     results = {}
     r_squared = ''
+    equation = ''
     abierto = False
     changed_id = [p['prop_id'] for p in dash.callback_context.triggered][0]
     fig = {}
@@ -356,6 +360,8 @@ def update_scatter_chart(n_clicks, file_name, well_name, column_list_x, column_l
                                 xp = np.linspace(min(x), max(x), 500)
 
                                 results = coeffs.tolist()
+                                results = [round(num, 2) for num in results]
+                                equation = format_coefs(results)
 
                                 # r-squared
                                 p = np.poly1d(coeffs)
@@ -383,7 +389,7 @@ def update_scatter_chart(n_clicks, file_name, well_name, column_list_x, column_l
                     ]
         con.close()
 
-    return fig, html.Ul([html.Li(x) for x in results]), r_squared, children, abierto
+    return fig, html.Ul([html.Li(x) for x in results]), equation, r_squared, children, abierto
 
 
 @app.callback(
@@ -444,19 +450,20 @@ def save_scatterchart(n_clicks, consulta, datos_y1, datos_y2, file_name, var_lis
     mensaje=''
     changed_id = [p['prop_id'] for p in dash.callback_context.triggered][0]
     if 'btn_save_scatterchart' in changed_id:
-        data = {}
-        data['grafico'] = []
-        data['grafico'].append({
-            'consulta': consulta,
-            'datos_y1': datos_y1,
-            'datos_y2': datos_y2,
-            'var_list': var_list,
-            'trend_line': trend_type,
-            'nFeatures' : nFeatures,
-            })
-        with open(CHART_DIRECTORY+file_name, 'w') as file:
-            json.dump(data, file, indent=4)
-        is_open =True
+        if file_name:
+            data = {}
+            data['grafico'] = []
+            data['grafico'].append({
+                'consulta': consulta,
+                'datos_y1': datos_y1,
+                'datos_y2': datos_y2,
+                'var_list': var_list,
+                'trend_line': trend_type,
+                'nFeatures' : nFeatures,
+                })
+            with open(CHART_DIRECTORY+file_name, 'w') as file:
+                json.dump(data, file, indent=4)
+            is_open =True
     return is_open
 
 @app.callback( [Output('inp-ruta-scatterchart', 'value'),

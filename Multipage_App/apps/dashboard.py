@@ -97,19 +97,17 @@ cabecera = dac.TabItem(id='content_value_boxes',
                 dac.InfoBox(
                     id='ind-prodgas',
                     title = "Gas Producido",
-                    color = "info",
+                    color = "success",
                     icon = "burn",
-                    width = 13,
-                    gradient_color = "primary",
+                    width = 12,
                     ),
             ], width={"size": 2, "offset": 0}),
             dbc.Col([
                 dac.InfoBox(
                     id='ind-prodcond',
                     title = "Condensado Producido",
-                    color = "info",
+                    color = "success",
                     icon = "oil-can",
-                    gradient_color = "primary",
                     width = 12
                     ),
             ], width={"size": 2, "offset": 0}),
@@ -117,9 +115,9 @@ cabecera = dac.TabItem(id='content_value_boxes',
                 dac.InfoBox(
                     id='ind-prodwat',
                     title = "Agua Producida",
-                    color = "info",
+                    color = "success",
                     icon = "water",
-                    gradient_color = "primary",
+                    style={'font_Size': '30px', 'font-family':'arial'},
                     width = 12
                     ),
             ], width={"size": 2, "offset": 0}),
@@ -127,9 +125,8 @@ cabecera = dac.TabItem(id='content_value_boxes',
                 dac.InfoBox(
                     id='ind-perdidas',
                     title = "Perdidas (diferida alta)",
-                    color = "info",
+                    color = "success",
                     icon = "level-down-alt",
-                    gradient_color = "primary",
                     width = 12
                     ),
             ], width={"size": 2, "offset": 0}),
@@ -137,9 +134,8 @@ cabecera = dac.TabItem(id='content_value_boxes',
                 dac.InfoBox(
                     id='ind-potencial',
                     title = "Potencial",
-                    color = "info",
+                    color = "success",
                     icon = "chart-line",
-                    gradient_color = "primary",
                     width = 12
                     ),
             ], width={"size": 2, "offset": 0}),
@@ -256,7 +252,7 @@ layout = html.Div([
     ]),
 ])
 
-def create_figure(well, column_y, clear_data, file_name):
+def create_figure(well, column_y, clear_data, file_name, chart_type):
 
     con = sqlite3.connect(archivo)
     fig = {}
@@ -282,34 +278,61 @@ def create_figure(well, column_y, clear_data, file_name):
 
         color = dict(hex=var_color)
 
-        df = df.set_index('NOMBRE')
-        fig = px.line(df.query("NOMBRE == '{}'".format(well)), x='FECHA', y=column_y)
-        fig.update_layout(
-            title="{} {}".format(well, var_name),
-            hovermode='x unified',
-            margin_l=10,
-            margin_r=0,
-            margin_b=30,
-        )
-        fig.update_traces(line_color=color["hex"])
-        fig.update_xaxes(title_text="")
-        fig.update_yaxes(title_text="")
-        fig.update_layout(
-            paper_bgcolor='rgba(0,0,0,0)',
-            plot_bgcolor='rgba(0,0,0,0)',
-        )
-        fig.update_xaxes(
-            rangeslider_visible=True,
-                rangeselector=dict(
-                    buttons=list([
-                    dict(count=1, label="1m", step="month", stepmode="backward"),
-                    dict(count=6, label="6m", step="month", stepmode="backward"),
-                    dict(count=1, label="YTD", step="year", stepmode="todate"),
-                    dict(count=1, label="1y", step="year", stepmode="backward"),
-                    dict(step="all")
-                    ])
-                )
+        #df = df.set_index('NOMBRE')
+        if chart_type == 'LINE':
+            #fig = px.line(df.query("NOMBRE in '{}'".format(well)), x='FECHA', y=column_y)
+            fig = px.line(df[df['NOMBRE'].isin(well)], x='FECHA', y=column_y)
+        if chart_type == 'BAR':
+            fig = px.bar(df[df['NOMBRE'].isin(well)], x='FECHA', y=column_y)
+        if chart_type == 'AREA':
+            fig = px.area(df[df['NOMBRE'].isin(well)], x='FECHA', y=column_y)
+        if chart_type == 'PIE':
+            if well is not None:
+                df= df[df['NOMBRE'].isin(well)]
+
+            df3 = pd.DataFrame()
+            filtro = ['NOMBRE']
+            filtro.append(column_y)
+            df2 = df[filtro]
+            df2.rename(columns={column_y: "VOLUMEN"}, inplace=True)
+            df2['FLUIDO']=column_y
+            df3 = df3.append(df2)
+
+            if len(df)>0:
+                fig =px.sunburst(
+                        df3,
+                        path=['NOMBRE', 'FLUIDO'],
+                        height=300,
+                        values='VOLUMEN',
+                    )
+
+        if chart_type == 'AREA' or chart_type == 'LINE':
+            fig.update_layout(
+                title="{} {}".format(well, var_name),
+                hovermode='x unified',
+                margin_l=10,
+                margin_r=0,
+                margin_b=30,
             )
+            fig.update_traces(line_color=color["hex"])
+            fig.update_xaxes(title_text="")
+            fig.update_yaxes(title_text="")
+            fig.update_layout(
+                paper_bgcolor='rgba(0,0,0,0)',
+                plot_bgcolor='rgba(0,0,0,0)',
+            )
+            fig.update_xaxes(
+                rangeslider_visible=True,
+                    rangeselector=dict(
+                        buttons=list([
+                        dict(count=1, label="1m", step="month", stepmode="backward"),
+                        dict(count=6, label="6m", step="month", stepmode="backward"),
+                        dict(count=1, label="YTD", step="year", stepmode="todate"),
+                        dict(count=1, label="1y", step="year", stepmode="backward"),
+                        dict(step="all")
+                        ])
+                    )
+                )
     return fig
 
 
@@ -350,7 +373,7 @@ def display_dropdowns(n_clicks, _, clear_data, file_name,  children):
                 else:
                     default_column_y = df.columns[2]
 
-            default_well = well_list[0]
+            default_well = [well_list[0]]
             new_element = html.Div(
                 style={
                     "width": "33%",
@@ -359,30 +382,52 @@ def display_dropdowns(n_clicks, _, clear_data, file_name,  children):
                     "padding": 10,
                 },
                 children=[
-                    html.Div([
-                        dbc.Button(html.Span([ html.I(className="fas fa-trash-alt ml-1")],style={'font-size':'1.5em','text-align':'center'}),
-                            id={"type": "dynamic-delete-chart", "index": n_clicks},
-                            n_clicks=0,
-                            style={"display": "block"},
-                            color="danger", className="mr-1"),
-                    ], className="d-grid gap-2 d-md-flex justify-content-md-end",),
-
-                    dcc.Graph(
-                        id={"type": "dynamic-chart-output", "index": n_clicks},
-                        style={"height": 300},
-                        #figure=create_figure(default_well, default_column_y, color, clear_data, file_name),
-                        figure={}
-                    ),
-                    dcc.Dropdown(
-                        id={"type": "dynamic-well", "index": n_clicks},
-                        options=[{"label": i, "value": i} for i in well_list],
-                        value=default_well,
-                    ),
-                    dcc.Dropdown(
-                        id={"type": "dynamic-dropdown-y", "index": n_clicks},
-                        options=[{"label": i, "value": i} for i in df.columns],
-                        value=default_column_y,
-                    ),
+                    dbc.Row([
+                        dbc.Col([
+                            html.Label(['Tipo de Gráfico'],style={'font-weight': 'bold', "text-align": "left"}),
+                            dcc.Dropdown(
+                                id={"type": "dynamic-chart-type", "index": n_clicks},
+                                options=[
+                                    {'label': 'Línea', 'value': 'LINE'},
+                                    {'label': 'Barra', 'value': 'BAR'},
+                                    {'label': 'Área', 'value': 'AREA'},
+                                    {'label': 'Torta', 'value': 'PIE'},
+                                ],
+                                value='LINE',
+                            ),
+                        ]),
+                        dbc.Col([
+                            html.Div([
+                                dbc.Button(html.Span([ html.I(className="fas fa-trash-alt ml-1")],style={'font-size':'1.5em','text-align':'center'}),
+                                    id={"type": "dynamic-delete-chart", "index": n_clicks},
+                                    n_clicks=0,
+                                    style={"display": "block"},
+                                    color="danger", className="mr-1"),
+                            ], className="d-grid gap-2 d-md-flex justify-content-md-end",),
+                        ]),
+                    ]),
+                    dbc.Row([
+                        dbc.Col([
+                            dcc.Graph(
+                                id={"type": "dynamic-chart-output", "index": n_clicks},
+                                style={"height": 300},
+                                #figure=create_figure(default_well, default_column_y, color, clear_data, file_name),
+                                figure={}
+                            ),
+                            dcc.Dropdown(
+                                id={"type": "dynamic-well", "index": n_clicks},
+                                options=[{"label": i, "value": i} for i in well_list],
+                                value=default_well,
+                                multi=True,
+                            ),
+                            dcc.Dropdown(
+                                id={"type": "dynamic-dropdown-y", "index": n_clicks},
+                                options=[{"label": i, "value": i} for i in df.columns],
+                                value=default_column_y,
+                                multi=False, 
+                            ),
+                        ]),
+                    ]),
                 ],
             )
             children.append(new_element)
@@ -398,9 +443,10 @@ def display_dropdowns(n_clicks, _, clear_data, file_name,  children):
         Input({"type": "dynamic-dropdown-y", "index": MATCH}, "options"),
         Input("cb_clear_data", "value"),
         Input("dpd-consulta-lista", "value"),
+        Input({"type": "dynamic-chart-type", "index": MATCH}, "value"),
     ],
 )
-def display_output(well, column_y, y_options, clear_data, file_name):
+def display_output(well, column_y, y_options, clear_data, file_name, chart_type):
     con = sqlite3.connect(archivo)
     query=''
     options = y_options
@@ -427,7 +473,7 @@ def display_output(well, column_y, y_options, clear_data, file_name):
                 column_y = df.columns[2]
             
          
-    return create_figure(well, column_y, clear_data, file_name), options
+    return create_figure(well, column_y, clear_data, file_name, chart_type), options
 
 @app.callback(
     [Output("dt_compare_results", "data"), Output("dt_compare_results", "columns"),

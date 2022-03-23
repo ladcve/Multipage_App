@@ -157,7 +157,7 @@ layout = html.Div([
                     dac.BoxHeader(
                         collapsible = False,
                         closable = False,
-                        title="Marcadores Estratgráficos"
+                        title="Párametros"
                     ),
                     dac.BoxBody([     
                         html.Label(['Nombre del Gráfico'],style={'font-weight': 'bold', "text-align": "left"}),
@@ -250,13 +250,13 @@ def update_contour_map(n_clicks, file_name, columns_list, dtp_fecha, chart_title
     if 'btn_show_chart' in changed_id:
         con = sqlite3.connect(archivo)
         query= ''
-        if file_name is not None:
+        if file_name:
 
             with open(os.path.join(QUERY_DIRECTORY, file_name)) as f:
                 contenido = f.readlines()
-            if contenido is not None:
+            if contenido:
                 try:
-                    if fecha is not None:
+                    if fecha:
                         for linea in contenido:
                             query +=  linea
 

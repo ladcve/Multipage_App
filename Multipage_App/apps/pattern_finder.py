@@ -131,7 +131,7 @@ layout = html.Div([
             ]),
         ], width=9),
         dbc.Col([
-            dbc.Col([
+            dbc.Row([
                 dac.Box([
                         dac.BoxHeader(
                             collapsible = False,
@@ -139,34 +139,59 @@ layout = html.Div([
                             title="Parámetros"
                         ),
                         dac.BoxBody([
-                            dcc.Checklist(
-                                id="cb_clear_cero_data",
-                                options=[{"label": "  Limpiar valores Ceros", "value": "YES"}],
-                                value=[],
-                                labelStyle={"display": "inline-block"},
-                            ),
+                            dbc.Row([
+                                dbc.Col([
+                                    dcc.Checklist(
+                                        id="cb_clear_cero_data",
+                                        options=[{"label": "  Limpiar valores Ceros", "value": "YES"}],
+                                        value=[],
+                                        labelStyle={"display": "inline-block"},
+                                    ),
+                                    daq.ToggleSwitch(
+                                        id='ts-gaps',
+                                        value=True,
+                                        label='Conectar líneas',
+                                        labelPosition='top'
+                                    ),
+                                    html.Br(),
+                                    html.Label(['Variable:'],style={'font-weight': 'bold', "text-align": "left"}),
+                                    dcc.Dropdown(
+                                        id='dpd-study-variable',
+                                        clearable=False,
+                                        multi=False
+                                    ),
+                                    html.Br(),
+                                    html.Label(['Patrón:'],style={'font-weight': 'bold', "text-align": "left"}),
+                                    dcc.Loading(
+                                        dcc.Graph(id='cht-pattern-chart', style={"height": 350},),
+                                ),
+                                ]),
+                            ]),
                             html.Br(),
-                            html.Label(['Variable:'],style={'font-weight': 'bold', "text-align": "left"}),
-                            dcc.Dropdown(
-                                id='dpd-study-variable',
-                                clearable=False,
-                                multi=False
-                            ),
+                            dbc.Row([
+                                dbc.Col([
+                                    html.Label(['Minimo:'],style={'font-weight': 'bold', "text-align": "left"}),
+                                    dbc.Input(id="inp-min-val", type="number", step=1, style={'backgroundColor':'white'}),
+                                    html.Label(['k-ésimo:'],style={'font-weight': 'bold', "text-align": "left"}),
+                                    dbc.Input(id="inp-k", type="number", step=1, value=9, style={'backgroundColor':'white'}),
+                                ]),
+                                dbc.Col([
+                                    html.Label(['Maximo:'],style={'font-weight': 'bold', "text-align": "left"}),
+                                    dbc.Input(id="inp-max-val", type="number", step=1, style={'backgroundColor':'white'}),
+                                    html.Br(),
+                                ]),
+                            ]),
                             html.Br(),
-                            html.Label(['Patrón:'],style={'font-weight': 'bold', "text-align": "left"}),
-                            dcc.Loading(
-                                dcc.Graph(id='cht-pattern-chart', style={"height": 450},),
-                            ),
-                            html.Label(['Minimo:'],style={'font-weight': 'bold', "text-align": "left"}),
-                            dbc.Input(id="inp-min-val", type="number", step=1, style={'backgroundColor':'white'}),
-                            html.Label(['Maximo:'],style={'font-weight': 'bold', "text-align": "left"}),
-                            dbc.Input(id="inp-max-val", type="number", step=1, style={'backgroundColor':'white'}),
-                            html.Br(),
-                            dbc.Button(html.Span(["mostrar", html.I(className="fas fa-chart-line-down ml-1")],style={'font-size':'1.5em','text-align':'center'}),
-                            id="btn_show_pattern", color="primary", className="mr-3"),
-                            html.Br(),
-                            dbc.Button(html.Span(["Identificar", html.I(className="fas fa-chart-line-down ml-1")],style={'font-size':'1.5em','text-align':'center'}),
-                            id="btn_find_pattern", color="primary", className="mr-3"),
+                            dbc.Row([
+                                dbc.Col([
+                                    dbc.Button(html.Span(["mostrar", html.I(className="fas fa-chart-line-down ml-1")],style={'font-size':'1.5em','text-align':'center'}),
+                                    id="btn_show_pattern", color="primary", className="mr-3"),
+                                ]),
+                                dbc.Col([
+                                    dbc.Button(html.Span(["Identificar", html.I(className="fas fa-chart-line-down ml-1")],style={'font-size':'1.5em','text-align':'center'}),
+                                    id="btn_find_pattern", color="primary", className="mr-3"),
+                                ]),
+                            ], justify="center"),
                         ]),	
                     ],
                     color='primary',
@@ -201,8 +226,10 @@ def update_column_list(file_name):
      Input('dpd-study-variable', 'value'),
      Input('cb_clear_cero_data','value'),
      Input('inp-min-val','value'),
-     Input('inp-max-val','value'),])
-def update_history_chart(n_clicks, n_clicks2, file_name, well_name, column_var, clear_data, min_val, max_val):
+     Input('inp-max-val','value'),
+     Input('ts-gaps', 'value'),
+     Input('inp-k','value')])
+def update_history_chart(n_clicks, n_clicks2, file_name, well_name, column_var, clear_data, min_val, max_val, gaps, k_value):
 
     fig = {}
     color_line = dict(hex='#0bfc03')
@@ -251,7 +278,7 @@ def update_history_chart(n_clicks, n_clicks2, file_name, well_name, column_var, 
                                 go.Scatter(x=T_df['indice'],
                                     y=T_df[column_var],
                                     name=var_name,
-                                    connectgaps=True,
+                                    connectgaps=gaps,
                                     mode='lines',
                                     line_color=color_axis_y1["hex"],
                                     yaxis= 'y1'                             
@@ -264,14 +291,11 @@ def update_history_chart(n_clicks, n_clicks2, file_name, well_name, column_var, 
                         if clear_data:
                             Q_df = Q_df[(Q_df!=0)]
 
-                        print("Longitud Q_df:", len(Q_df))
-                        print("Longitud T_df:", len(T_df))
-
                         if len(Q_df)>0:
                             distance_profile = stumpy.core.mass(Q_df[column_var], T_df[column_var])
 
                             k = 16
-                            idxs = np.argpartition(distance_profile, k)[:k]
+                            idxs = np.argpartition(distance_profile, k_value)[:k_value]
                             idxs = idxs[np.argsort(distance_profile[idxs])]
 
                             for idx in idxs:

@@ -27,7 +27,7 @@ import os
 import dash_daq as daq
 
 from app import app
-from library import create_chart, update_columns_list, search_unit
+from library import create_chart, update_columns_list, search_unit, find_file
 
 #Definir imagenes
 open_chart = '.\pictures\open_chart.png'
@@ -142,11 +142,13 @@ layout = html.Div([
                     ], width={"size": 2, "offset": 0}),
                     dbc.Col([
                         html.Label(['Grafico Triple:'],style={'font-weight': 'bold', "text-align": "left"}),
-                        dbc.Button(html.Span(["Abrir ", html.I(className="fas fa-save ml-1")],style={'font-size':'1.5em','text-align':'center'}),
-                            id="btn_open_triplechart", 
-                            n_clicks=0, 
-                            color="primary", 
-                            className="mr-3"
+                        dcc.Upload(
+                            dbc.Button(
+                                html.Span(["Abrir ", html.I(className="fas fa-upload ml-1")],style={'font-size':'1.5em','text-align':'center'}),
+                                n_clicks=0, color="primary", className="mr-3"
+                            ),
+                            id='btn_open_triplechart',
+                            multiple=False
                         ),
                     ], width={"size": 2, "offset": 0}),
                     dbc.Col([
@@ -913,9 +915,9 @@ def update_triple_chart(n_clicks, file_name, well_name, cols_chart1_y1, cols_cha
     fig3 = {}
     
     if 'btn_show_chart' in changed_id:
-        fig1 = create_chart(archivo,  unidades, file_name, well_name, cols_chart1_y1, cols_chart1_y2, False, [], var_list1, color_chart1_y1, color_chart1_y2, clear_data_chart1, stile_chart1_y1, stile_chart1_y2, '#ecebda', [], [])
-        fig2 = create_chart(archivo,  unidades, file_name, well_name, cols_chart2_y1, cols_chart2_y2, False, [], var_list2, color_chart2_y1, color_chart2_y2, clear_data_chart2, stile_chart2_y1, stile_chart2_y2, '#ecebda', [], [])
-        fig3 = create_chart(archivo,  unidades, file_name, well_name, cols_chart3_y1, cols_chart3_y2, False, [], var_list3, color_chart3_y1, color_chart3_y2, clear_data_chart3, stile_chart3_y1, stile_chart3_y2, '#ecebda', [], [])
+        fig1 = create_chart(archivo,  unidades, file_name, well_name, cols_chart1_y1, cols_chart1_y2, False, [], var_list1, color_chart1_y1, color_chart1_y2, clear_data_chart1, stile_chart1_y1, stile_chart1_y2, '#ecebda', [], [], False, None)
+        fig2 = create_chart(archivo,  unidades, file_name, well_name, cols_chart2_y1, cols_chart2_y2, False, [], var_list2, color_chart2_y1, color_chart2_y2, clear_data_chart2, stile_chart2_y1, stile_chart2_y2, '#ecebda', [], [], False, None)
+        fig3 = create_chart(archivo,  unidades, file_name, well_name, cols_chart3_y1, cols_chart3_y2, False, [], var_list3, color_chart3_y1, color_chart3_y2, clear_data_chart3, stile_chart3_y1, stile_chart3_y2, '#ecebda', [], [], False, None)
 
     return fig1, fig2, fig3
 
@@ -988,56 +990,59 @@ def save_linechart(n_clicks, n_clicks2, consulta, datos_y1, datos_y2, file_name,
     mensaje=''
     changed_id = [p['prop_id'] for p in dash.callback_context.triggered][0]
     if 'btn_save_linechart' in changed_id:
-        data = {}
-        data['grafico'] = []
-        data['grafico'].append({
-            'consulta': consulta,
-            'datos_y1': datos_y1,
-            'datos_y2': datos_y2,
-            'var_list': var_list,
-            'color_y1': color_y1,
-            'color_y2': color_y2,
-            'annotation': text_annot,
-            'stile_y1' : stile_y1,
-            'stile_y2' : stile_y2,
-            })
-        with open(CHART_DIRECTORY+file_name, 'w') as file:
-            json.dump(data, file, indent=4)
-        is_open = True
+        if file_name:
+            data = {}
+            data['grafico'] = []
+            data['grafico'].append({
+                'consulta': consulta,
+                'datos_y1': datos_y1,
+                'datos_y2': datos_y2,
+                'var_list': var_list,
+                'color_y1': color_y1,
+                'color_y2': color_y2,
+                'annotation': text_annot,
+                'stile_y1' : stile_y1,
+                'stile_y2' : stile_y2,
+                })
+            with open(CHART_DIRECTORY+file_name, 'w') as file:
+                json.dump(data, file, indent=4)
+            is_open = True
+
     changed_id = [p['prop_id'] for p in dash.callback_context.triggered][0]
     if 'btn_save_Triplechart' in changed_id:
-        ata = {}
-        data['grafico'] = []
-        data['grafico'].append({
-            'consulta': consulta,
-            'clear1': clear1,
-            'datos1_y1': datos1_y1,
-            'color1_y1': color1_y1,
-            'stile1_y1': stile1_y1,
-            'datos1_y2': datos1_y2,
-            'color1_y2': color1_y2,
-            'stile1_y2': stile1_y2,
-            'var_list1': var_list1,
-            'clear2': clear2,
-            'datos2_y1': datos2_y1,
-            'color2_y1': color2_y1,
-            'stile2_y1': stile2_y1,
-            'datos2_y2': datos2_y2,
-            'color2_y2': color2_y2,
-            'stile2_y2': stile2_y2,
-            'var_list2': var_list2,
-            'clear3': clear3,
-            'datos3_y1': datos3_y1,
-            'color3_y1': color3_y1,
-            'stile3_y1': stile3_y1,
-            'datos3_y2': datos3_y2,
-            'color3_y2': color3_y2,
-            'stile3_y2': stile3_y2,
-            'var_list3': var_list3,
-            })
-        with open(CHART_DIRECTORY+file_name, 'w') as file:
-            json.dump(data, file, indent=4)
-        is_open = True
+        if file_name:
+            data = {}
+            data['grafico'] = []
+            data['grafico'].append({
+                'consulta': consulta,
+                'clear1': clear1,
+                'datos1_y1': datos1_y1,
+                'color1_y1': color1_y1,
+                'stile1_y1': stile1_y1,
+                'datos1_y2': datos1_y2,
+                'color1_y2': color1_y2,
+                'stile1_y2': stile1_y2,
+                'var_list1': var_list1,
+                'clear2': clear2,
+                'datos2_y1': datos2_y1,
+                'color2_y1': color2_y1,
+                'stile2_y1': stile2_y1,
+                'datos2_y2': datos2_y2,
+                'color2_y2': color2_y2,
+                'stile2_y2': stile2_y2,
+                'var_list2': var_list2,
+                'clear3': clear3,
+                'datos3_y1': datos3_y1,
+                'color3_y1': color3_y1,
+                'stile3_y1': stile3_y1,
+                'datos3_y2': datos3_y2,
+                'color3_y2': color3_y2,
+                'stile3_y2': stile3_y2,
+                'var_list3': var_list3,
+                })
+            with open(CHART_DIRECTORY+file_name, 'w') as file:
+                json.dump(data, file, indent=4)
+            is_open = True
 
     return is_open
 
@@ -1081,9 +1086,11 @@ def save_linechart(n_clicks, n_clicks2, consulta, datos_y1, datos_y2, file_name,
 
                 ],
               [Input('btn_open_linechart', 'filename'),
-              Input('btn_open_linechart', 'contents')]
+              Input('btn_open_linechart', 'contents'),
+              Input('btn_open_triplechart','filename'),
+              Input('btn_open_triplechart','contents')]
               )
-def open_linechart( list_of_names, list_of_contents):
+def open_linechart( list_of_names, list_of_contents, triple_file_name, triple_file_contents):
     archivo = list_of_names
     consulta=[]
     datos_y1=[]
@@ -1137,10 +1144,10 @@ def open_linechart( list_of_names, list_of_contents):
                     stile_y1 = drop_values['stile_y1']
                     stile_y2 = drop_values['stile_y2']
 
-    if 'btn_open_triplechart' in changed_id:
+    if 'btn_open_triplechart.contents' in changed_id:
 
-        if list_of_names is not None:
-            archivo = list_of_names
+        if triple_file_name is not None:
+            archivo = triple_file_name
             with open(CHART_DIRECTORY+archivo) as file:
                 data = json.load(file)
                 for drop_values   in data['grafico']:
