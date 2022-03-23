@@ -433,6 +433,10 @@
     }
 }
 
+.Select-menu-outer {
+  display : block !important;
+  }
+
 ._dash-loading-callback {
   font-family: sans-serif;
   padding-top: 50px;
