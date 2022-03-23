@@ -17,7 +17,7 @@ import webbrowser
 from app import app
 
 # Connect to your app pages
-from apps import report_builder, multi_line_chart, line_chart, bar_chart, sunburst_chart, events_loader, survey_loader, dashboard, sql_builder2, decline_analysis, contour_map, scatter_chart, area_chart, wellbore_diagram, wellbore_loader, LAS_chart, cross_section, items_loader, db_creation_update, variable_loader, python_interprete, export_data, nodal, markers_loader, units_loader, mdt_loader, analisis_presion
+from apps import report_builder, multi_line_chart, line_chart, bar_chart, sunburst_chart, events_loader, survey_loader, dashboard, sql_builder2, decline_analysis, contour_map, scatter_chart, area_chart, wellbore_diagram, wellbore_loader, LAS_chart, cross_section, items_loader, db_creation_update, variable_loader, python_interprete, export_data, nodal, markers_loader, units_loader, mdt_loader, analisis_presion, pattern_finder, training_videos, presion_rocio, material_balance
 
 app.css.config.serve_locally = True
 app.scripts.config.serve_locally = True
@@ -130,11 +130,11 @@ submenu_datos = [
     dbc.Collapse(
         [
             dbc.NavLink("Eventos", href="/apps/events_loader", active="exact"),
-            dbc.NavLink("Wellbore Diagram", href="/apps/wellbore_loader", active="exact"),
             dbc.NavLink("Survey", href="/apps/survey_loader", active="exact"),
             dbc.NavLink("Items", href="/apps/items_loader", active="exact"),
             dbc.NavLink("Puntos de Presión", href="/apps/mdt_loader", active="exact"),
             dbc.NavLink("Estratigráfia", href="/apps/markers_loader", active="exact"),
+            dbc.NavLink("Presión Rocio", href="/apps/presion_rocio", active="exact"),
         ],
         id="submenu-4-collapse",
     ),
@@ -149,10 +149,12 @@ submenu_ingenieria = [
     # we use the Collapse component to hide and reveal the navigation links
     dbc.Collapse(
         [
-            dbc.NavLink("Curva de Declinacion", href="/apps/decline_analysis", active="exact"),
+            dbc.NavLink("Curva de Declinación", href="/apps/decline_analysis", active="exact"),
             dbc.NavLink("Cross Section", href="/apps/cross_section", active="exact"),
             dbc.NavLink("Esquematico del Pozo", href="/apps/wellbore_diagram", active="exact"),
-            dbc.NavLink("Imagenes Anal. Presion", href="/apps/analisis_presion", active="exact"),
+            dbc.NavLink("Imagenes Anal. Presión", href="/apps/analisis_presion", active="exact"),
+            dbc.NavLink("Reconcimiento Patrón", href="/apps/pattern_finder", active="exact"),
+            dbc.NavLink("Balance de Material", href="/apps/material_balance", active="exact"),
             dbc.NavLink("LAS", href="/apps/LAS_chart", active="exact"),
             dbc.NavLink("Python Interprete", href="/apps/python_interprete", active="exact"),
         ],
@@ -180,6 +182,21 @@ submenu_admin = [
     ),
 ]
 
+submenu_training = [
+    html.Li(
+        "Training",
+        style={"cursor": "pointer"},
+        id="submenu-7",
+    ),
+    # we use the Collapse component to hide and reveal the navigation links
+    dbc.Collapse(
+        [
+            dbc.NavLink("videos", href="/apps/training_videos", active="exact"),
+            
+        ],
+        id="submenu-7-collapse",
+    ),
+]
 
 sidebar = html.Div(
     [
@@ -189,6 +206,7 @@ sidebar = html.Div(
         dbc.Nav(submenu_datos, vertical=True),
         dbc.Nav(submenu_ingenieria, vertical=True),
         dbc.Nav(submenu_admin, vertical=True),
+        dbc.Nav(submenu_training, vertical=True),
     ],
     id="sidebar",
     style=SIDEBAR_STYLE,
@@ -217,7 +235,7 @@ def set_navitem_class(is_open):
         return "open"
     return ""
 
-for i in [1, 2, 3, 4, 5, 6]:
+for i in [1, 2, 3, 4, 5, 6, 7]:
     app.callback(
         Output(f"submenu-{i}-collapse", "is_open"),
         [Input(f"submenu-{i}", "n_clicks")],
@@ -261,10 +279,8 @@ def display_page(pathname):
         return area_chart.layout, 'Gráfico de Área'
     if pathname == '/apps/wellbore_diagram': 
         return wellbore_diagram.layout, 'Diagrama Mecanico'
-    if pathname == '/apps/wellbore_loader': 
-        return wellbore_loader.layout, 'Cargador de Diagrama Mecánico'
     if pathname == '/apps/LAS_chart': 
-        return LAS_chart.layout, 'Visualziador de Archivos LAS'
+        return LAS_chart.layout, 'Visualizador de Archivos LAS'
     if pathname == '/apps/cross_section': 
         return cross_section.layout, 'Generador de Cross Section'
     if pathname == '/apps/items_loader': 
@@ -286,7 +302,15 @@ def display_page(pathname):
     if pathname == '/apps/mdt_loader': 
         return mdt_loader.layout, 'Punto de Presión'
     if pathname == '/apps/analisis_presion': 
-        return analisis_presion.layout, 'Imagenes Análisis de Presión'     
+        return analisis_presion.layout, 'Imagenes Análisis de Presión'
+    if pathname == '/apps/pattern_finder': 
+        return pattern_finder.layout, 'Reconocimiento de Patrones'  
+    if pathname == '/apps/training_videos': 
+        return training_videos.layout, 'Video de Entrenamiento' 
+    if pathname == '/apps/presion_rocio': 
+        return presion_rocio.layout, 'Presión de Rocio'
+    if pathname == '/apps/material_balance': 
+        return material_balance.layout, 'Balance de Materiales'
     else:
         return "404 Page Error! Please choose a link" , ""
 

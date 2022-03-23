@@ -1,0 +1,15 @@
+df =        Unnamed: 0  index    NOMBRE                FECHA  ...  CHOKE_FCV  PRESION_LINEA  PRESION_CABEZAL  PRESION_TUBING
+0               0      0  Perla-10  2021-07-01 00:00:00  ...        NaN    2082.315674      3055.954102             NaN
+1               1      1  Perla-1X  2021-07-01 00:00:00  ...        NaN    1949.515015      3267.038330             NaN
+2               2      2   Perla-5  2021-07-01 00:00:00  ...        NaN    1943.454468         0.042787             NaN
+3               3      3   Perla-6  2021-07-01 00:00:00  ...        NaN    2242.370361      3068.570801             NaN
+4               4      4   Perla-7  2021-07-01 00:00:00  ...        0.0    1949.697144      3316.000000             0.0
+...           ...    ...       ...                  ...  ...        ...            ...              ...             ...
+12396       12396      1  Perla-1X  2022-01-26 00:00:00  ...        NaN    1953.445312      3239.500000             NaN
+12397       12397      2   Perla-5  2022-01-26 00:00:00  ...        NaN    1975.699097      3136.030000             NaN
+12398       12398      3   Perla-6  2022-01-26 00:00:00  ...        NaN    2169.592285      3024.250000             NaN
+12399       12399      4   Perla-7  2022-01-26 00:00:00  ...        NaN    2048.752930      3111.280000             NaN
+12400       12400      5   Perla-9  2022-01-26 00:00:00  ...        NaN    1987.506104      3151.210000             NaN
+
+[12401 rows x 16 columns] (DataFrame)
+pd = <module 'pandas' from 'C:\\Users\\lduarte\\AppData\\Local\\Programs\\Python\\Python39\\lib\\site-packages\\pandas\\__init__.py'> (module)

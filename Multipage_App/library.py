@@ -242,7 +242,6 @@ def create_chart_single(archivo, unidades, file_name, well_name, column_data, cl
             df['indice'] = np.arange(len(df))
 
             df= df[(df['indice'] >= min_val) & (df['indice'] <= max_val)]
-            print("Longitud Q_df 2:", len(df))
 
             if column_data in df.columns:
                 fig.add_trace(
@@ -415,3 +414,13 @@ def create_list(item=None, value=None, operator=None):
   temp_list = list()
   if item is not None and value is not None and operator is not None:
     temp_list.append(item+operator+str(value))
+
+def format_coefs(coefs):
+    equation_list = [f"{coef}x^{i}" for i, coef in enumerate(coefs)]
+    equation = "$" +  " + ".join(equation_list) + "$"
+
+    replace_map = {"x^0": "", "x^1": "x", '+ -': '- '}
+    for old, new in replace_map.items():
+        equation = equation.replace(old, new)
+
+    return equation
