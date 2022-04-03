@@ -246,106 +246,114 @@ def update_history_chart(n_clicks, n_clicks2, file_name, well_name, column_var, 
             con = sqlite3.connect(archivo)
 
             if file_name is not None:
-                with open(os.path.join(QUERY_DIRECTORY, file_name)) as f:
-                    contenido = f.readlines()
-                if contenido is not None:
-                    query = ''
-                    for linea in contenido:
-                        query +=  linea 
+                try:
+                    with open(os.path.join(QUERY_DIRECTORY, file_name)) as f:
+                        contenido = f.readlines()
+                    if contenido is not None:
+                        query = ''
+                        for linea in contenido:
+                            query +=  linea 
 
-                    query1 = query + ' ORDER BY FECHA'
+                        query1 = query + ' ORDER BY FECHA'
 
-                    T_df =pd.read_sql(query1, con)
+                        T_df =pd.read_sql(query1, con)
 
-                    if well_name:
-                        T_df = T_df[T_df['NOMBRE']==well_name]
-                                          
-                    if clear_data:
-                        T_df = T_df[(T_df!=0)]
-
-                    T_df['indice'] = np.arange(len(T_df))
-
-                    if column_var:
-
-                        #Valida que la columna seleccionada este en el dataframe
-                        if column_var in T_df:
-                            var_name, var_color = search_unit(unidades, column_var)
-
-                            if var_color:
-                                color_axis_y1 = dict(hex=var_color)
-                                    
-                            fig.add_trace(
-                                go.Scatter(x=T_df['indice'],
-                                    y=T_df[column_var],
-                                    name=var_name,
-                                    connectgaps=gaps,
-                                    mode='lines',
-                                    line_color=color_axis_y1["hex"],
-                                    yaxis= 'y1'                             
-                                ),
-                            )
-                        i=+1
-                    if 'btn_find_pattern' in changed_id:
-                        Q_df= T_df[(T_df['indice'] >= min_val) & (T_df['indice'] <= max_val)]
-
+                        if well_name:
+                            T_df = T_df[T_df['NOMBRE']==well_name]
+                                            
                         if clear_data:
-                            Q_df = Q_df[(Q_df!=0)]
+                            T_df = T_df[(T_df!=0)]
 
-                        if len(Q_df)>0:
-                            distance_profile = stumpy.core.mass(Q_df[column_var], T_df[column_var])
+                        T_df['indice'] = np.arange(len(T_df))
 
-                            k = 16
-                            idxs = np.argpartition(distance_profile, k_value)[:k_value]
-                            idxs = idxs[np.argsort(distance_profile[idxs])]
+                        if column_var:
 
-                            for idx in idxs:
-                                T_df2['indice'] = range(idx, idx+len(Q_df))
-                                T_df2['valor'] = T_df[column_var].values[idx:idx+len(Q_df)]
+                            #Valida que la columna seleccionada este en el dataframe
+                            if column_var in T_df:
+                                var_name, var_color = search_unit(unidades, column_var)
+
+                                if var_color:
+                                    color_axis_y1 = dict(hex=var_color)
+                                        
                                 fig.add_trace(
-                                    go.Scatter(x=T_df2['indice'],
-                                        y= T_df2['valor'],
+                                    go.Scatter(x=T_df['indice'],
+                                        y=T_df[column_var],
+                                        name=var_name,
+                                        connectgaps=gaps,
                                         mode='lines',
-                                        line_color=color_line["hex"],
-                                        yaxis= 'y2',                               
+                                        line_color=color_axis_y1["hex"],
+                                        yaxis= 'y1'                             
                                     ),
                                 )
+                            i=+1
+                        if 'btn_find_pattern' in changed_id:
+                            Q_df= T_df[(T_df['indice'] >= min_val) & (T_df['indice'] <= max_val)]
 
-                    fig.update_xaxes(title_text="FECHA",showline=True, linewidth=2, linecolor='black', showgrid=False,)
-                    fig.update_yaxes(showline=True, linewidth=2, linecolor='black', showgrid=False,)
-                    fig.update_layout(
-                        autosize=False,
-                        hovermode='x unified',
-                        height=700,
-                        paper_bgcolor='rgba(0,0,0,0)',
-                        plot_bgcolor='rgb(240, 240, 240)',
-                        margin=dict(
-                            l=50,
-                            r=50,
-                            b=100,
-                            t=100,
-                            pad=4,
-                        ),
-                        showlegend=False,
-                        legend=dict(
-                            orientation="h",
-                            yanchor="bottom",
-                            y=1.02,
-                            xanchor="right",
-                            x=1
-                        ),
+                            if clear_data:
+                                Q_df = Q_df[(Q_df!=0)]
+
+                            if len(Q_df)>0:
+                                distance_profile = stumpy.core.mass(Q_df[column_var], T_df[column_var])
+
+                                k = 16
+                                idxs = np.argpartition(distance_profile, k_value)[:k_value]
+                                idxs = idxs[np.argsort(distance_profile[idxs])]
+
+                                for idx in idxs:
+                                    T_df2['indice'] = range(idx, idx+len(Q_df))
+                                    T_df2['valor'] = T_df[column_var].values[idx:idx+len(Q_df)]
+                                    fig.add_trace(
+                                        go.Scatter(x=T_df2['indice'],
+                                            y= T_df2['valor'],
+                                            mode='lines',
+                                            line_color=color_line["hex"],
+                                            yaxis= 'y2',                               
+                                        ),
+                                    )
+
+                        fig.update_xaxes(title_text="FECHA",showline=True, linewidth=2, linecolor='black', showgrid=False,)
+                        fig.update_yaxes(showline=True, linewidth=2, linecolor='black', showgrid=False,)
+                        fig.update_layout(
+                            autosize=False,
+                            hovermode='x unified',
+                            height=700,
+                            paper_bgcolor='rgba(0,0,0,0)',
+                            plot_bgcolor='rgb(240, 240, 240)',
+                            margin=dict(
+                                l=50,
+                                r=50,
+                                b=100,
+                                t=100,
+                                pad=4,
+                            ),
+                            showlegend=False,
+                            legend=dict(
+                                orientation="h",
+                                yanchor="bottom",
+                                y=1.02,
+                                xanchor="right",
+                                x=1
+                            ),
+                            )
+                        fig.update_xaxes(
+                        rangeslider_visible=True,
+                            rangeselector=dict(
+                                buttons=list([
+                                dict(count=1, label="1m", step="month", stepmode="backward"),
+                                dict(count=6, label="6m", step="month", stepmode="backward"),
+                                dict(count=1, label="YTD", step="year", stepmode="todate"),
+                                dict(count=1, label="1y", step="year", stepmode="backward"),
+                                dict(step="all")
+                                ])
+                            )
                         )
-                    fig.update_xaxes(
-                    rangeslider_visible=True,
-                        rangeselector=dict(
-                            buttons=list([
-                            dict(count=1, label="1m", step="month", stepmode="backward"),
-                            dict(count=6, label="6m", step="month", stepmode="backward"),
-                            dict(count=1, label="YTD", step="year", stepmode="todate"),
-                            dict(count=1, label="1y", step="year", stepmode="backward"),
-                            dict(step="all")
-                            ])
-                        )
-                    )
+                except Exception  as e:
+                        is_open = True
+                        children = [dbc.ModalHeader("Error"),
+                            dbc.ModalBody(
+                                html.H6('Probelmas con la consulta, error: {}'.format(e), style={'textAlign': 'center', 'padding': 10}),
+                            ),
+                        ]
 
             con.close()
     return fig

@@ -276,6 +276,8 @@ def update_bar_chart(n_clicks, file_name, well_name, columns_list_y1, columns_li
                     for linea in contenido:
                         query +=  linea 
 
+                    
+
                     df =pd.read_sql(query, con)
                     df =df.sort_values("FECHA")
 

@@ -136,6 +136,13 @@ layout = html.Div([
         id="modal_error_survey",
         is_open=False,
     ),
+    dbc.Modal(
+        [
+            dbc.ModalHeader("error"),
+        ],
+        id="modal_error_ver",
+        is_open=False,
+    ),
 ])
 
 @app.callback(Output('inp-ruta-excel', 'value'),
@@ -152,25 +159,34 @@ def update_output( list_of_names, list_of_contents):
     return archivo
 
 @app.callback(
-    [Output("query_results_excel", "data"), Output("query_results_excel", "columns")],
+    [Output("query_results_excel", "data"), Output("query_results_excel", "columns"),
+     Output("modal_error_ver", "is_open")],
     [Input("btn_show_excel_data", "n_clicks"),
      Input('inp-ruta-excel', 'value'), 
      Input('inp_sheet_name', 'value'),
      Input('dpd-well-lists', 'value')], 
-    [State('query_results_excel', 'data'), State('query_results_excel', 'columns')]
+    [State('query_results_excel', 'data'), State('query_results_excel', 'columns'),State("modal_error_ver", "is_open")]
 )
-def update_table_excel(n_clicks, excel_name, sheet_excel_name, well_name, data, columns):
+def update_table_excel(n_clicks, excel_name, sheet_excel_name, well_name, data, columns, is_open):
     data_results = pd.DataFrame()
     changed_id = [p['prop_id'] for p in dash.callback_context.triggered][0]
 
     if 'btn_show_excel_data' in changed_id:
-        if sheet_excel_name and excel_name and well_name:
-            data_results = pd.read_excel(open(LOAD_DIRECTORY+excel_name, 'rb'), sheet_name=sheet_excel_name)  
-            data_results['NOMBRE']=well_name
+        try:
+            if sheet_excel_name and excel_name and well_name:
+                data_results = pd.read_excel(open(LOAD_DIRECTORY+excel_name, 'rb'), sheet_name=sheet_excel_name)  
+                data_results['NOMBRE']=well_name
+        except Exception  as e:
+                    is_open = True
+                    children = [dbc.ModalHeader("Error"),
+                        dbc.ModalBody(
+                            html.H6('Error: {}'.format(e), style={'textAlign': 'center', 'padding': 10}),
+                        ),
+                    ]
 
     columns = [{'name': i, 'id': i, 'renamable': True, 'deletable': True} for i in data_results.columns]
     data = data_results.to_dict('records')
-    return data, columns
+    return data, columns, is_open
 
 @app.callback(
     [Output("modal_survey", "is_open"),Output("modal_error_survey", "is_open")],

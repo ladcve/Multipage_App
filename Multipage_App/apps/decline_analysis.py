@@ -432,7 +432,7 @@ def update_line_chart(n_clicks1, n_clicks2, well_name, decline_type, total_days,
 
     if 'btn_show_data_prod' in changed_id:
         decl_end_date = decl_end_date.replace("T00:00:00","")
-        decl_end_date = datetime.datetime.strptime( decl_end_date, '%Y-%m-%d')
+        decl_end_datetime = datetime.datetime.strptime( decl_end_date, '%Y-%m-%d')
 
         #Filtra los datos por pozo y valores en diferentes a cero
         daily_prod_well = daily_prod[daily_prod['NOMBRE']==well_name]
@@ -479,6 +479,8 @@ def update_line_chart(n_clicks1, n_clicks2, well_name, decline_type, total_days,
                    )
 
     if 'btn_run_forecast' in changed_id:
+        decl_end_date = decl_end_date.replace("T00:00:00","")
+        decl_end_datetime = datetime.datetime.strptime( decl_end_date, '%Y-%m-%d')
 
         if well_name:
             #Filtra los datos por pozo y valores en diferentes a cero
@@ -504,7 +506,9 @@ def update_line_chart(n_clicks1, n_clicks2, well_name, decline_type, total_days,
 
             #Define fix variables
             if ts_days:
-                total_days = (decl_end_date - MAX_FECHA).days
+                print(type(decl_end_datetime))
+                print(type(MAX_FECHA))
+                total_days = (decl_end_datetime - MAX_FECHA).days
             else:
                 total_days = decl_days
 

@@ -331,6 +331,13 @@ layout = html.Div([
         id="modal_error_report",
         is_open=False,
     ),
+    dbc.Modal(
+        [
+            dbc.ModalHeader("Datos Exportados"),
+        ],
+        id="modal_export_data",
+        is_open=False,
+    ),
 ])
 
 @app.callback(
@@ -488,22 +495,23 @@ def open_report( list_of_names, list_of_contents):
     return archivo, consulta, var_list
 
 @app.callback( Output('export_report', 'is_open'),
+               Output('modal_export_data', 'is_open'),
               [Input('btn_export_report', 'n_clicks'),
               Input('btn_cancel', 'n_clicks'),
               Input('btn_export_data_format', 'n_clicks'),
               Input('dt_report_results','data'),
               Input('inp-export-file','value'),
               Input('rb-format-export-data','value')],
-              State('export_report','is_open')
+              [State('export_report','is_open'),
+              State('modal_export_data','is_open')]
               )
-def open_export( n_clicks, n_cancel, n_export, data, file_name, formato, is_open):
+def open_export( n_clicks, n_cancel, n_export, data, file_name, formato, is_open, is_open2):
     changed_id = [p['prop_id'] for p in dash.callback_context.triggered][0]
     if 'btn_export_report' in changed_id:
         is_open = True
     if 'btn_cancel' in changed_id:
         is_open = False
     if 'btn_export_data_format' in changed_id:
-
         if data and file_name:
             df = pd.DataFrame(data)
             if formato == 'EXCEL': 
@@ -513,4 +521,5 @@ def open_export( n_clicks, n_cancel, n_export, data, file_name, formato, is_open
             if formato == 'JSON':
                 df.to_json (EXPORT_DIRECTORY+file_name+".json")
             is_open = False
-    return is_open
+            is_open2 = True
+    return is_open, is_open2

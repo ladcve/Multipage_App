@@ -955,7 +955,6 @@ def update_column_list(file_name, var_list):
     Input('ts-annotation', 'value'), 
     Input('dpd-LineStile-y2', 'value'),
     Input('dpd-LineStile-y2', 'value'),
-
     Input("cb_clear_data_line1", "value"),
     Input("dpd-column-chart1-y1", "value"),
     Input("inp-color-chart1-y1", "value"),
@@ -980,13 +979,14 @@ def update_column_list(file_name, var_list):
     Input("inp-color-chart3-y2", "value"),
     Input("dpd-LineStile-chart3-y2", "value"),
     Input("dpd-var-chart3", "value"),
+    Input('cb_group_by', 'value'),
     State('modal_line', 'is_open')
     ]) 
 def save_linechart(n_clicks, n_clicks2, consulta, datos_y1, datos_y2, file_name, var_list, color_y1,
     color_y2, text_annot, stile_y1, stile_y2, clear1, datos1_y1, color1_y1, stile1_y1,
     datos1_y2, color1_y2, stile1_y2, var_list1, clear2, datos2_y1, color2_y1, stile2_y1,
     datos2_y2, color2_y2, stile2_y2, var_list2, clear3, datos3_y1, color3_y1, stile3_y1,
-    datos3_y2, color3_y2, stile3_y2, var_list3, is_open ):
+    datos3_y2, color3_y2, stile3_y2, var_list3, group_by, is_open ):
     mensaje=''
     changed_id = [p['prop_id'] for p in dash.callback_context.triggered][0]
     if 'btn_save_linechart' in changed_id:
@@ -1003,6 +1003,7 @@ def save_linechart(n_clicks, n_clicks2, consulta, datos_y1, datos_y2, file_name,
                 'annotation': text_annot,
                 'stile_y1' : stile_y1,
                 'stile_y2' : stile_y2,
+                'group_by': group_by,
                 })
             with open(CHART_DIRECTORY+file_name, 'w') as file:
                 json.dump(data, file, indent=4)
@@ -1083,6 +1084,7 @@ def save_linechart(n_clicks, n_clicks2, consulta, datos_y1, datos_y2, file_name,
                 Output("dpd-LineStile-chart3-y2", "value"),
                 Output("dpd-var-chart3", "value"),
                 Output("cb_clear_data_line3", "value"),
+                Output('cb_group_by', 'value'),
 
                 ],
               [Input('btn_open_linechart', 'filename'),
@@ -1125,6 +1127,7 @@ def open_linechart( list_of_names, list_of_contents, triple_file_name, triple_fi
     stile2_y2='solid'
     stile3_y1='solid'
     stile3_y2='solid'
+    group_by=[]
 
     changed_id = [p['prop_id'] for p in dash.callback_context.triggered][0]
     if 'btn_open_linechart' in changed_id:
@@ -1143,6 +1146,7 @@ def open_linechart( list_of_names, list_of_contents, triple_file_name, triple_fi
                     text_annot = drop_values['annotation']
                     stile_y1 = drop_values['stile_y1']
                     stile_y2 = drop_values['stile_y2']
+                    group_by = drop_values['group_by']
 
     if 'btn_open_triplechart.contents' in changed_id:
 
@@ -1180,5 +1184,5 @@ def open_linechart( list_of_names, list_of_contents, triple_file_name, triple_fi
                     clear3 = drop_values['clear3']
 
 
-    return archivo, consulta, datos_y1, datos_y2, var_list, color_y1, color_y2, text_annot, stile_y1, stile_y2, datos1_y1, color1_y1, stile1_y1, datos1_y2, color1_y2, stile1_y2, var_list1, clear1, datos2_y1, color2_y1, stile2_y1, datos2_y2, color2_y2, stile2_y2, var_list2, clear2, datos3_y1, color3_y1, stile3_y1, datos3_y2, color3_y2, stile3_y2, var_list3, clear3
+    return archivo, consulta, datos_y1, datos_y2, var_list, color_y1, color_y2, text_annot, stile_y1, stile_y2, datos1_y1, color1_y1, stile1_y1, datos1_y2, color1_y2, stile1_y2, var_list1, clear1, datos2_y1, color2_y1, stile2_y1, datos2_y2, color2_y2, stile2_y2, var_list2, clear2, datos3_y1, color3_y1, stile3_y1, datos3_y2, color3_y2, stile3_y2, var_list3, clear3,group_by
 

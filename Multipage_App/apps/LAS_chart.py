@@ -6,6 +6,7 @@ import dash_html_components as html
 from dash.dependencies import Input, Output, State, ALL, MATCH
 import plotly.graph_objects as go
 import dash_admin_components as dac
+import plotly.express as px
 from plotly.subplots import make_subplots
 import dash_table
 import configparser
@@ -95,6 +96,7 @@ def update_curve_chart(file_name):
         num_columns = len(df.columns)-1
         cols = 1
         columns_list = df.columns
+        df = df.sort_values("DEPTH").reset_index(drop=True)
 
         fig = make_subplots(rows=1, cols=num_columns, subplot_titles=columns_list[1:], shared_yaxes=True)
 
@@ -105,6 +107,7 @@ def update_curve_chart(file_name):
             )
             cols = cols+1
 
+        fig['layout']['yaxis']['autorange'] = "reversed"
         fig.update_layout(height=800, width=1400, title_text="Curvas del archivo: "+file_name)       
         fig.layout.plot_bgcolor='rgba(0,0,0,0)'
         fig.update_xaxes(showline=True,showgrid=True, gridwidth=1, gridcolor='Black', linewidth=1, linecolor='black', mirror=True)
