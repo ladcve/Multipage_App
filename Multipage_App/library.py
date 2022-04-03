@@ -42,11 +42,18 @@ def search_calcv( archivo, calc_variable):
 
 def search_unit(unidades, variable):
     #Busca las unidades para una variable en especifico
-    selec_unit = unidades.set_index(['VARIABLE'])
-    var_title = selec_unit.loc[variable]['GRAFICO']
-    var_unit = selec_unit.loc[variable]['UNIDAD']
-    var_color = selec_unit.loc[variable]['COLOR']
-    var_name = var_title + " " + var_unit
+    if variable == 'FECHA':
+        var_name = 'Fecha'
+        var_color = ''
+    elif variable == 'DIAS':
+        var_name = 'Fecha'
+        var_color = ''
+    else:
+        selec_unit = unidades.set_index(['VARIABLE'])
+        var_title = selec_unit.loc[variable]['GRAFICO']
+        var_unit = selec_unit.loc[variable]['UNIDAD']
+        var_color = selec_unit.loc[variable]['COLOR']
+        var_name = var_title + " " + var_unit
     return var_name, var_color
 
 def create_chart(archivo, unidades, file_name, well_name, column_list_y1, column_list_y2, show_annot, annot_data, var_list, color_y1, color_y2, clear_data, stile_y1, stile_y2, anota_color, group_by,agregation_fun, show_rocio, rocio_data):
@@ -417,7 +424,7 @@ def create_list(item=None, value=None, operator=None):
 
 def format_coefs(coefs):
     equation_list = [f"{coef}x^{i}" for i, coef in enumerate(coefs)]
-    equation = "$" +  " + ".join(equation_list) + "$"
+    equation = "(" +  " + ".join(equation_list) + ")"
 
     replace_map = {"x^0": "", "x^1": "x", '+ -': '- '}
     for old, new in replace_map.items():
